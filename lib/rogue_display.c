@@ -115,13 +115,13 @@ void td_set_integral_scale(int value) {
 int td_load_image(int index, const char* filename, int tile_width, int tile_height) {
 	uint32_t image_data_size;
 	char* image_data = fs_load_asset(filename, &image_data_size);
-	if(image_data == NULL) die("cannot load image '%s'", filename);
+	if(image_data == NULL) die("cannot load image '%s' from assets", filename);
 	SDL_RWops* ops = SDL_RWFromMem(image_data, image_data_size);
 	//SDL_Surface* surface = IMG_Load_RW(ops, 1);
 	SDL_Surface* surface = STBIMG_Load_RW(ops, 1);
 	free(image_data);
   //SDL_Surface* surface = IMG_Load(filename);
-	if(surface == NULL) die("cannot load image '%s'", filename);
+	if(surface == NULL) die("cannot decode image data '%s'", filename);
 	image_t image;
 	image.tile_width = tile_width;
 	image.tile_height = tile_height;

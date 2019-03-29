@@ -1,3 +1,5 @@
+#if ! defined(__MINGW32__) && ! defined(__MINGW64__)
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -92,3 +94,4 @@ void tty_print_array(array_t *a, const char *mapping, const char *fg, const char
   }
 }
 
+#endif

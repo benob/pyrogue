@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include "rogue_index.h"
 
 index_t* rl_index_new(int width, int height, int cell_size) {

@@ -12,6 +12,17 @@
 
 #include "rogue_filesystem.h"
 
+#define MAX_PATH_SIZE 1024
+#ifdef __WIN32__
+#define STR_PATH_SEPARATOR "\\"
+#define PATH_SEPARATOR '\\'
+#define PATH_SEPARATOR_OTHER '/'
+#else
+#define STR_PATH_SEPARATOR "/"
+#define PATH_SEPARATOR '/'
+#define PATH_SEPARATOR_OTHER '\\'
+#endif
+
 // marker is reversed to prevent it from showing in the regular executable
 #define REVERSED_MARKER "__DAOLYAP__"
 
@@ -25,18 +36,31 @@ mz_zip_archive* resource_zip = NULL;
 static zip_t* resource_zip = NULL;
 #endif
 
+// may need to change path separator if developed on a different platform
+static const char* normalize_path(const char* path) {
+	static char copy[MAX_PATH_SIZE];
+	strncpy(copy, path, MAX_PATH_SIZE);
+	for(int i = 0; copy[i]; i++) {
+		if(copy[i] == PATH_SEPARATOR_OTHER) copy[i] = PATH_SEPARATOR;
+	}
+	return copy;
+}
+
 static char* load_file(const char* filename, uint32_t* size) {
-	FILE* fp = fopen(filename, "r");
+	FILE* fp = fopen(filename, "rb");
 	if(!fp) {
+		//printf("cannot open file\n");
 		perror(filename);
 		return NULL;
 	}
 	if(fseek(fp, 0, SEEK_END) < 0) {
+		//printf("cannot seek to end\n");
 		perror(filename);
 		return NULL;
 	}
 	*size = ftell(fp);
 	if(*size < 0) {
+		//printf("cannot ftell\n");
 		perror(filename);
 		return NULL;
 	}
@@ -47,10 +71,12 @@ static char* load_file(const char* filename, uint32_t* size) {
 	}
 	if(fseek(fp, 0, SEEK_SET) < 0) {
 		free(data);
+		//printf("cannot seek to start\n");
 		perror(filename);
 		return NULL;
 	}
 	if(*size != fread(data, 1, *size, fp)) {
+		//printf("cannot read\n");
 		free(data);
 		perror(filename);
 		return NULL;
@@ -93,7 +119,8 @@ static char* load_file_zip(zip_t* archive, const char* filename, uint32_t* size)
 #endif
 }
 
-int fs_open_resources(const char* path) {
+int fs_open_resources(const char* _path) {
+	const char* path = normalize_path(_path);
 	resource_path = path;
 	if(!strcmp(path + strlen(path) - 4, ".zip")) {
 		resource_type = RESOURCE_ZIP;
@@ -122,7 +149,7 @@ int fs_open_resources(const char* path) {
 			return 0;
 		}
 #endif
-	} else if(!strcmp(path + strlen(path) - 1, "/")) {
+	} else if(!strcmp(path + strlen(path) - 1, STR_PATH_SEPARATOR)) {
 		resource_type = RESOURCE_DIR;
 	} else {
 		resource_type = RESOURCE_ZIP;
@@ -134,7 +161,7 @@ int fs_open_resources(const char* path) {
 		for(int i = 0; i < marker_length; i++) marker[i] = REVERSED_MARKER[marker_length - i - 1];
 		marker[marker_length] = 0;
 		for(uint32_t offset = data_size - marker_length - 1; offset > 0; offset--) {
-			if(!bcmp(data + offset, marker, marker_length)) {
+			if(!memcmp(data + offset, marker, marker_length)) {
 				//fprintf(stderr, "marker found at %u\n", offset);
 #ifdef USE_MINIZ
 				if(resource_zip != NULL) mz_zip_reader_end(resource_zip);
@@ -183,11 +210,12 @@ void fs_set_app_name(const char* app_name) {
   pref_dir = SDL_GetPrefPath("pyrogue", app_name);
 }
 
-char* fs_load_asset(const char* path, uint32_t* size) {
+char* fs_load_asset(const char* _path, uint32_t* size) {
+	const char* path = normalize_path(_path);
 	if(resource_type == RESOURCE_DIR) {
-		char filename[1024];
-		if(resource_path == NULL) snprintf(filename, 1024, "%s", path);
-		else snprintf(filename, 1024, "%s/%s", resource_path, path);
+		char filename[MAX_PATH_SIZE];
+		if(resource_path == NULL) snprintf(filename, MAX_PATH_SIZE, "%s", path);
+		else snprintf(filename, MAX_PATH_SIZE, "%s%c%s", resource_path, PATH_SEPARATOR, path);
 		return load_file(filename, size);
 	} else if (resource_type == RESOURCE_ZIP) {
 		return load_file_zip(resource_zip, path, size);
@@ -197,17 +225,18 @@ char* fs_load_asset(const char* path, uint32_t* size) {
 	}
 }
 
-char* fs_load_pref(const char* path, uint32_t* size) {
-	char filename[1024];
-	if(pref_dir == NULL) snprintf(filename, 1024, "%s", path);
-	else snprintf(filename, 1024, "%s/%s", pref_dir, path);
+char* fs_load_pref(const char* _path, uint32_t* size) {
+	const char* path = normalize_path(_path);
+	char filename[MAX_PATH_SIZE];
+	if(pref_dir == NULL) snprintf(filename, MAX_PATH_SIZE, "%s", path);
+	else snprintf(filename, MAX_PATH_SIZE, "%s%c%s", pref_dir, PATH_SEPARATOR, path);
 	return load_file(filename, size);
 }
 
 int fs_save_pref(const char* path, const char* data, uint32_t size) {
-	char filename[1024];
-	if(pref_dir == NULL) snprintf(filename, 1024, "%s", path);
-	else snprintf(filename, 1024, "%s/%s", pref_dir, path);
+	char filename[MAX_PATH_SIZE];
+	if(pref_dir == NULL) snprintf(filename, MAX_PATH_SIZE, "%s", path);
+	else snprintf(filename, MAX_PATH_SIZE, "%s%c%s", pref_dir, PATH_SEPARATOR, path);
 	FILE* fp = fopen(filename, "w");
 	if(!fp) {
 		perror(filename);
@@ -219,6 +248,10 @@ int fs_save_pref(const char* path, const char* data, uint32_t size) {
 	}
 	fclose(fp);
 	return 1;
+}
+
+int fs_extract_native(const char* self_exe, const char* dir, const char* target) {
+	// extract resources from executable
 }
 
 int fs_export_native(const char* self_exe, const char* dir, const char* target) {
