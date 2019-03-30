@@ -3,12 +3,12 @@ set(MP ${CMAKE_SOURCE_DIR}/micropython)
 set(GENHDR ${CMAKE_BINARY_DIR}/genhdr)
 
 include_directories(${MP} ${GENHDR}/..)
-add_definitions(-DDEBUG)
 
 set(micropython_CFLAGS 
 	-I. 
 	-I${GENHDR}/.. 
 	-I${CMAKE_SOURCE_DIR}/src 
+	-I${CMAKE_SOURCE_DIR}/include 
 	-I${MP}/ 
 	-I${MP}/ports/unix
 	-Wall
@@ -191,6 +191,7 @@ set(micropython_vm_SOURCE
 set(micropython_SOURCE
 	${micropython_regular_SOURCE}
 	${micropython_vm_SOURCE}
+	${micropython_EXTRA_MODULES}
 	)
 
 add_library(micropython ${micropython_regular_SOURCE} ${GENHDR}/qstrdefs.generated.h)
@@ -205,7 +206,7 @@ target_link_libraries(micropython micropython_vm)
 add_custom_command(OUTPUT ${GENHDR}/qstrdefs.generated.h
 	COMMAND mkdir -p ${GENHDR}
 	COMMAND python3 ${MP}/py/makeversionhdr.py ${GENHDR}/mpversion.h
-	COMMAND python3 ${MP}/py/makemoduledefs.py --vpath="., .., " ${GENHDR}/moduledefs.h > ${GENHDR}/moduledefs.h
+	COMMAND python3 ${MP}/py/makemoduledefs.py --vpath="., .., " ${micropython_SOURCE} ${GENHDR}/moduledefs.h > ${GENHDR}/moduledefs.h
 	COMMAND gcc -E -DNO_QSTR ${micropython_CFLAGS} -DFFCONF_H='\"${MP}/lib/oofatfs/ffconf.h\"' ${micropython_SOURCE} ${CMAKE_SOURCE_DIR}/src/mpconfigport.h > ${GENHDR}/qstr.i.last
 	COMMAND python3 ${MP}/py/makeqstrdefs.py split ${GENHDR}/qstr.i.last ${GENHDR}/qstr ${GENHDR}/qstrdefs.collected.h
 	COMMAND python3 ${MP}/py/makeqstrdefs.py cat ${GENHDR}/qstr.i.last ${GENHDR}/qstr ${GENHDR}/qstrdefs.collected.h

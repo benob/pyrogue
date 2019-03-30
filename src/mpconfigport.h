@@ -24,6 +24,9 @@
  * THE SOFTWARE.
  */
 
+// include pyrogue module
+#define PYROGUE_MOD_RL              (1)
+
 // options to control how MicroPython is built
 
 #define MICROPY_ALLOC_PATH_MAX      (PATH_MAX)
@@ -86,10 +89,12 @@
 #define MICROPY_PY_UBINASCII        (0)
 
 extern const struct _mp_obj_module_t mp_module_os;
+extern const struct _mp_obj_module_t mp_module_rl;
 //extern const struct _mp_obj_module_t mp_module_ffi;
 
 #define MICROPY_PORT_BUILTIN_MODULES \
     { MP_ROM_QSTR(MP_QSTR_uos), MP_ROM_PTR(&mp_module_os) }, \
+    { MP_ROM_QSTR(MP_QSTR_rl), MP_ROM_PTR(&mp_module_rl) }, \
 
 		//{ MP_ROM_QSTR(MP_QSTR_ffi), MP_ROM_PTR(&mp_module_ffi) }, 
 
