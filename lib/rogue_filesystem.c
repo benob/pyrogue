@@ -237,7 +237,7 @@ int fs_save_pref(const char* path, const char* data, uint32_t size) {
 	char filename[MAX_PATH_SIZE];
 	if(pref_dir == NULL) snprintf(filename, MAX_PATH_SIZE, "%s", path);
 	else snprintf(filename, MAX_PATH_SIZE, "%s%c%s", pref_dir, PATH_SEPARATOR, path);
-	FILE* fp = fopen(filename, "w");
+	FILE* fp = fopen(filename, "wb");
 	if(!fp) {
 		perror(filename);
 		return 0;
@@ -251,10 +251,12 @@ int fs_save_pref(const char* path, const char* data, uint32_t size) {
 }
 
 int fs_extract_native(const char* self_exe, const char* dir, const char* target) {
+	fprintf(stderr, "not implemented yet\n");
 	// extract resources from executable
 }
 
 int fs_export_native(const char* self_exe, const char* dir, const char* target) {
+	fprintf(stderr, "not implemented yet\n");
 	// 0) check that game.py exists in dir
 	// 1) create zip with contents of dir
 	// 2) append zip to argv[0]
