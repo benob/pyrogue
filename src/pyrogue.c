@@ -37,7 +37,7 @@
 #include "py/stackctrl.h"
 #include "extmod/misc.h"
 
-#include "fs.h"
+#include "rogue.h"
 
 STATIC void stderr_print_strn(void *env, const char *str, size_t len) {
 	(void)env;
@@ -248,6 +248,7 @@ int main(int argc, char** argv) {
 	/*if (execute_from_str(content)) {
 		printf("Error\n");
 	}*/
+	fprintf(stderr, "%s\n", content);
 	do_str(content);
 	free(content);
 
