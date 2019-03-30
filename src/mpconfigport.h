@@ -31,7 +31,7 @@
 
 #define MICROPY_ALLOC_PATH_MAX      (PATH_MAX)
 #define MICROPY_ENABLE_GC           (0)
-#define MICROPY_ENABLE_FINALISER    (0)
+#define MICROPY_ENABLE_FINALISER    (0) // TODO: need to enable to retrieve allocated memory
 #define MICROPY_STACK_CHECK         (0)
 #define MICROPY_COMP_CONST          (0)
 #define MICROPY_MEM_STATS           (0)

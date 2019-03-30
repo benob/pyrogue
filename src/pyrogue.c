@@ -248,7 +248,7 @@ int main(int argc, char** argv) {
 	/*if (execute_from_str(content)) {
 		printf("Error\n");
 	}*/
-	fprintf(stderr, "%s\n", content);
+	//fprintf(stderr, "%s\n", content);
 	do_str(content);
 	free(content);
 

@@ -56,6 +56,8 @@ set(micropython_regular_SOURCE
 	${MP}/py/stackctrl.c
 	${MP}/py/argcheck.c
 	${MP}/py/warning.c
+	${MP}/py/gc.c
+	${MP}/py/vm.c
 	${MP}/py/map.c
 	${MP}/py/obj.c
 	${MP}/py/nlr.c
@@ -183,25 +185,18 @@ set(micropython_regular_SOURCE
   ${MP}/py/mpconfig.h
 	)
 
-set(micropython_vm_SOURCE
-	${MP}/py/vm.c
-	${MP}/py/gc.c
-	)
+#TODO: verify that this works
+set_source_files_properties(${MP}/py/gc.c PROPERTIES COMPILE_FLAGS -O3)
+set_source_files_properties(${MP}/py/vm.c PROPERTIES COMPILE_FLAGS -O3)
 
 set(micropython_SOURCE
 	${micropython_regular_SOURCE}
-	${micropython_vm_SOURCE}
 	${micropython_EXTRA_MODULES}
 	)
 
 add_library(micropython ${micropython_regular_SOURCE} ${GENHDR}/qstrdefs.generated.h)
 target_compile_options(micropython PRIVATE ${micropython_CFLAGS})
 target_compile_definitions(micropython PRIVATE FFCONF_H=\"${MP}/lib/oofatfs/ffconf.h\")
-
-add_library(micropython_vm ${micropython_vm_SOURCE} ${GENHDR}/qstrdefs.generated.h)
-target_compile_options(micropython_vm PRIVATE -O3 ${micropython_CFLAGS})
-
-target_link_libraries(micropython micropython_vm)
 
 add_custom_command(OUTPUT ${GENHDR}/qstrdefs.generated.h
 	COMMAND mkdir -p ${GENHDR}

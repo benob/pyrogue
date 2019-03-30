@@ -127,6 +127,76 @@ STATIC mp_obj_t mod_fs_save_pref(mp_obj_t path_in, mp_obj_t data_in) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(mod_fs_save_pref_obj, mod_fs_save_pref);
 
+/************* rogue_array ********************/
+
+extern const mp_obj_type_t mp_type_rl_array;
+
+typedef struct {
+    mp_obj_base_t base;
+		array_t* array;
+} mp_obj_rl_array_t;
+
+mp_obj_t mod_rl_array_get(mp_obj_t self_in, mp_obj_t i_in, mp_obj_t j_in) {
+    mp_check_self(mp_obj_is_type(self_in, &mp_type_rl_array));
+    mp_obj_rl_array_t *self = MP_OBJ_TO_PTR(self_in);
+		mp_int_t i = mp_obj_get_int(i_in);
+		mp_int_t j = mp_obj_get_int(j_in);
+		mp_int_t result = rl_array_get(self->array, i, j);
+    return mp_obj_new_int(result);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_3(mod_rl_array_get_obj, mod_rl_array_get);
+
+STATIC mp_obj_t mod_rl_array_set(size_t n_args, const mp_obj_t *args) {
+    mp_check_self(mp_obj_is_type(self_in, &mp_type_rl_array));
+    mp_obj_rl_array_t *self = MP_OBJ_TO_PTR(args[0]);
+		mp_int_t i = mp_obj_get_int(args[1]);
+		mp_int_t j = mp_obj_get_int(args[2]);
+		mp_int_t value = mp_obj_get_int(args[3]);
+		rl_array_set(self->array, i, j, value);
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_rl_array_set_obj, 4, 4, mod_rl_array_set);
+
+mp_obj_t mod_rl_array_free(mp_obj_t self_in) {
+    mp_check_self(mp_obj_is_type(self_in, &mp_type_rl_array));
+    mp_obj_rl_array_t *self = MP_OBJ_TO_PTR(self_in);
+		fprintf(stderr, "free %p\n", self);
+		rl_array_free(self->array);
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_rl_array_free_obj, mod_rl_array_free);
+
+STATIC const mp_rom_map_elem_t mod_rl_array_locals_dict_table[] = {
+    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&mod_rl_array_free_obj) },
+    { MP_ROM_QSTR(MP_QSTR_get), MP_ROM_PTR(&mod_rl_array_get_obj) },
+    { MP_ROM_QSTR(MP_QSTR_set), MP_ROM_PTR(&mod_rl_array_set_obj) },
+};
+
+STATIC MP_DEFINE_CONST_DICT(mod_rl_array_locals_dict, mod_rl_array_locals_dict_table);
+
+STATIC mp_obj_t mod_rl_array_make_new(const mp_obj_type_t *type_in, size_t n_args, size_t n_kw, const mp_obj_t *args) {
+	(void)type_in;
+	mp_arg_check_num(n_args, n_kw, 2, 2, false);
+	mp_int_t width = mp_obj_get_int(args[0]);
+	mp_int_t height = mp_obj_get_int(args[1]);
+	mp_obj_rl_array_t* output = m_new_obj(mp_obj_rl_array_t);
+	output->base.type = &mp_type_rl_array;
+	output->array = rl_array_new(width, height);
+	return MP_OBJ_FROM_PTR(output);
+}
+
+const mp_obj_type_t mp_type_rl_array = {
+    { &mp_type_type },
+    .name = MP_QSTR_rl_array,
+    //.print = list_print,
+    .make_new = mod_rl_array_make_new,
+    //.unary_op = list_unary_op,
+    //.binary_op = list_binary_op,
+    //.subscr = list_subscr,
+    //.getiter = list_getiter,
+    .locals_dict = (mp_obj_dict_t*)&mod_rl_array_locals_dict,
+};
+
 STATIC const mp_rom_map_elem_t mp_module_rl_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_rl) },
 		/************** rogue_random *********************/
@@ -142,6 +212,8 @@ STATIC const mp_rom_map_elem_t mp_module_rl_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_load_asset), MP_ROM_PTR(&mod_fs_load_asset_obj) },
     { MP_ROM_QSTR(MP_QSTR_load_pref), MP_ROM_PTR(&mod_fs_load_pref_obj) },
     { MP_ROM_QSTR(MP_QSTR_save_pref), MP_ROM_PTR(&mod_fs_save_pref_obj) },
+		/************* rogue_array ********************/
+		{ MP_ROM_QSTR(MP_QSTR_Array), MP_ROM_PTR(&mp_type_rl_array) },
 };
 
 STATIC MP_DEFINE_CONST_DICT(mp_module_rl_globals, mp_module_rl_globals_table);
