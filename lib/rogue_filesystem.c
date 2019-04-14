@@ -28,7 +28,7 @@
 
 enum { RESOURCE_DIR, RESOURCE_ZIP };
 
-static const char* resource_path = NULL;
+static char* resource_path = NULL;
 static int resource_type = RESOURCE_DIR;
 #ifdef USE_MINIZ
 mz_zip_archive* resource_zip = NULL;
@@ -121,7 +121,8 @@ static char* load_file_zip(zip_t* archive, const char* filename, uint32_t* size)
 
 int fs_open_resources(const char* _path) {
 	const char* path = normalize_path(_path);
-	resource_path = path;
+	if(resource_path != NULL) free(resource_path);
+	resource_path = strdup(path);
 	if(!strcmp(path + strlen(path) - 4, ".zip")) {
 		resource_type = RESOURCE_ZIP;
 #ifdef USE_MINIZ
@@ -216,6 +217,7 @@ char* fs_load_asset(const char* _path, uint32_t* size) {
 		char filename[MAX_PATH_SIZE];
 		if(resource_path == NULL) snprintf(filename, MAX_PATH_SIZE, "%s", path);
 		else snprintf(filename, MAX_PATH_SIZE, "%s%c%s", resource_path, PATH_SEPARATOR, path);
+		//printf("_path = %s, path = %s, resource_path = %s, filename = %s\n", _path, path, resource_path, filename);
 		return load_file(filename, size);
 	} else if (resource_type == RESOURCE_ZIP) {
 		return load_file_zip(resource_zip, path, size);

@@ -46,6 +46,8 @@ void rl_array_replace(array_t *a, VALUE value1, VALUE value2);
 void rl_array_random_int(array_t *a, int lower, int upper);
 void rl_array_random(array_t *a);
 void rl_array_print(array_t *a);
+void rl_walk_line_start(int x1, int y1, int x2, int y2);
+int rl_walk_line_next(int *rx, int* ry);
 void rl_array_line(array_t* a, int x1, int y1, int x2, int y2, VALUE value);
 void rl_array_rect(array_t *a, int x, int y, uint32_t width, uint32_t height, VALUE value);
 int rl_array_can_see(array_t *a, int x1, int y1, int x2, int y2, VALUE blocking);

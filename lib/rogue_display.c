@@ -38,9 +38,10 @@ typedef struct {
 #else
 	STBTTF_Font* font;
 #endif
+	int line_height;
 	image_t images[TD_NUM_IMAGES];
 	SDL_Texture* buffers[TD_NUM_BUFFERS + 1];
-	int use_backbuffer, is_fullscreen;
+	int use_backbuffer, is_fullscreen, use_integral_scale;
 } display_t;
 
 static display_t display;
@@ -71,7 +72,7 @@ static void __attribute__((destructor)) _td_fini() {
 	}
 }
 
-int td_init(const char* title, const char* font_path, int font_size, int width, int height) {
+int td_init(const char* title, int width, int height) {
 	if(display.running) return 0;
 	if(SDL_Init(SDL_INIT_VIDEO) < 0) die("count not initialize SDL");
 	//if(IMG_Init(IMG_INIT_PNG) < 0) die("cannot init SDL_image");
@@ -86,26 +87,29 @@ int td_init(const char* title, const char* font_path, int font_size, int width, 
 	SDL_RenderSetLogicalSize(display.renderer, width, height);
 	SDL_SetRenderDrawBlendMode(display.renderer, SDL_BLENDMODE_BLEND);
 
-	if(font_path) {
-		uint32_t font_data_size;
-		char* font_data = fs_load_asset(font_path, &font_data_size);
-		if(font_data == NULL) die("cannot load font '%s'", font_path);
-		SDL_RWops* ops = SDL_RWFromMem(font_data, font_data_size);
-#ifdef USE_SDLTTF
-		display.font = TTF_OpenFontRW(ops, 1, font_size);
-#else
-		display.font = STBTTF_OpenFontRW(display.renderer, ops, font_size);
-#endif
-		//free(font_data);
-		//display.font = TTF_OpenFont(font_path, font_size);
-		if(display.font == NULL) die("cannot load font '%s'", font_path);
-	}
 	display.width = width;
 	display.height = height;
 	display.running = 1;
 	display.was_init = 1;
 	td_use_backbuffer(1);
 	return 1;
+}
+
+void td_load_font(const char* font_path, int font_size, int line_height) {
+	uint32_t font_data_size;
+	char* font_data = fs_load_asset(font_path, &font_data_size);
+	if(font_data == NULL) die("cannot load font '%s'", font_path);
+	SDL_RWops* ops = SDL_RWFromMem(font_data, font_data_size);
+#ifdef USE_SDLTTF
+	display.font = TTF_OpenFontRW(ops, 1, font_size);
+	if(display.font) display.line_height = TTF_FontLineSkip(display.font);
+#else
+	display.font = STBTTF_OpenFontRW(display.renderer, ops, font_size);
+	if(display.font) display.line_height = display.font->baseline;
+#endif
+	//free(font_data);
+	if(display.font == NULL) die("cannot load font '%s'", font_path);
+	if(line_height != 0) display.line_height = line_height;
 }
 
 void td_set_integral_scale(int value) {
@@ -246,18 +250,14 @@ void td_blit_buffer(int index) {
 	SDL_RenderCopy(display.renderer, display.buffers[index], NULL, NULL);
 }
 
-void td_print(int orig_x, int orig_y, const char* text, uint32_t color, int align) {
+void td_print_text(int orig_x, int orig_y, const char* text, uint32_t color, int align) {
 	if(!display.font) die("no font loaded")
-	int x = orig_x, y = orig_y;
+	int x = orig_x, y = orig_y + display.font->baseline;
 	SDL_Color fg = {td_color_r(color), td_color_g(color), td_color_b(color), td_color_a(color)};
 	while(text && *text != '\0') {
 		if(*text == '\n') {
 			x = orig_x;
-#ifdef USE_SDLTTF
-			y += TTF_FontLineSkip(display.font);
-#else
-			y += display.font->baseline;
-#endif
+			y += display.line_height;
 			text++;
 		} else {
 			char* eol = strchr(text, '\n');
@@ -294,12 +294,13 @@ void td_print(int orig_x, int orig_y, const char* text, uint32_t color, int alig
 }
 
 void td_size_text(const char* text, int* width, int* height) {
+	if(!display.font) die("no font loaded");
 #ifdef USE_SDLTTF
 	TTF_SizeUTF8(display.font, text, width, height);
 #else
 	*width = STBTTF_MeasureText(display.font, text);
-	*height = display.font->baseline;
 #endif
+	*height = display.line_height;
 };
 
 void td_fill_rect(int x, int y, int w, int h, uint32_t color) {
@@ -344,19 +345,26 @@ int td_wait_event(int include_mouse) {
 					break;
 				case SDL_KEYDOWN:
 					key = event.key.keysym.sym;
-					if(key == SDLK_RETURN && SDL_GetModState() & KMOD_ALT) {
-						if(display.is_fullscreen) {
-							SDL_SetWindowFullscreen(display.window, 0);
-							display.is_fullscreen = 0;
-						}
-						else {
-							SDL_SetWindowFullscreen(display.window, SDL_WINDOW_FULLSCREEN_DESKTOP);
-							display.is_fullscreen = 1;
+					if(SDL_GetModState() & KMOD_ALT) {
+						if(key == SDLK_RETURN) {
+							if(display.is_fullscreen) {
+								SDL_SetWindowFullscreen(display.window, 0);
+								display.is_fullscreen = 0;
+							}
+							else {
+								SDL_SetWindowFullscreen(display.window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+								display.is_fullscreen = 1;
+							}
+						} else if(key == SDLK_q) {
+							exit(1); // force quit
+						} else if(key == SDLK_i) {
+							display.use_integral_scale = 1 - display.use_integral_scale;
+							SDL_RenderSetIntegerScale(display.renderer, display.use_integral_scale ? SDL_TRUE : SDL_FALSE);
 						}
 						return TD_REDRAW;
 					}
-					if(key >= 32 && key < 127) continue;
-					if(key != SDLK_LALT && key != SDLK_LSHIFT && key != SDLK_LCTRL && key != SDLK_RALT && key != SDLK_RSHIFT && key != SDLK_RCTRL) return key;
+					else if(key >= 32 && key < 127) continue;
+					else if(key != SDLK_LALT && key != SDLK_LSHIFT && key != SDLK_LCTRL && key != SDLK_RALT && key != SDLK_RSHIFT && key != SDLK_RCTRL && key != SDLK_LGUI && key != SDLK_RGUI) return key;
 					break;
 				case SDL_MOUSEMOTION:
 					display.mouse_x = event.motion.x;

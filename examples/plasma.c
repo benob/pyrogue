@@ -8,7 +8,7 @@
 
 int main(int argc, char** argv) {
 	//fs_open_resources("examples/");
-	td_init("plasma", NULL, 0, WIDTH * TILE_WIDTH, HEIGHT * TILE_HEIGHT);
+	td_init("plasma", WIDTH * TILE_WIDTH, HEIGHT * TILE_HEIGHT);
 	td_load_image(0, "../examples/data/cp437.png", TILE_WIDTH, TILE_HEIGHT);
 
 	double shift = 0;

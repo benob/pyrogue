@@ -5,7 +5,7 @@
 #include "rogue_array.h"
 
 enum {TD_ALIGN_LEFT, TD_ALIGN_RIGHT, TD_ALIGN_CENTER};
-enum {TD_QUIT = -1, TD_MOUSE = -2, TD_REDRAW = 0, TD_ESCAPE = 27, TD_LEFT = 256, TD_RIGHT, TD_DOWN, TD_UP};
+enum {TD_QUIT = -1, TD_MOUSE = -2, TD_REDRAW = 0, TD_ESCAPE = 27, TD_LEFT = (1 << 30) | 80, TD_RIGHT = (1 << 30) | 79, TD_DOWN = (1 << 30) | 81, TD_UP = (1 << 30) | 82};
 
 typedef struct {
 	int x, y;
@@ -21,7 +21,10 @@ typedef struct {
 #define td_color_rgba(r, g, b, a) ((r) << 24 | (g) << 16 | (b) << 8 | (a))
 #define td_color_rgb(r, g, b) td_color_rgba(r, g, b, 255)
 
-int td_init(const char* title, const char* font_path, int font_size, int width, int height);
+// TODO: set images as render targets
+int td_init(const char* title, int width, int height);
+void td_load_font(const char* font_path, int font_size, int line_height);
+// TODO: associate to keypress and internalize
 void td_set_integral_scale(int value);
 void td_use_backbuffer(int value);
 int td_load_image(int image, const char* filename, int tile_width, int tile_height);
@@ -30,7 +33,8 @@ void td_draw_tile(int image, int x, int y, int tile);
 void td_colorize_tile(int image, int x, int y, int tile, uint32_t fg, uint32_t bg);
 void td_draw_array(int index, array_t* a, int x, int y, int x_shift, int y_shift, int info_size, int* info_mapping, uint32_t* info_fg, uint32_t* info_bg);
 void td_set_buffer(int buffer);
-void td_print(int orig_x, int orig_y, const char* text, uint32_t color, int align);
+// print utf8 characters
+void td_print_text(int orig_x, int orig_y, const char* text, uint32_t color, int align);
 void td_size_text(const char* text, int* width, int* height);
 void td_fill_rect(int x, int y, int w, int h, uint32_t color);
 void td_draw_rect(int x, int y, int w, int h, uint32_t color);

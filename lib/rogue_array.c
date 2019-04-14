@@ -104,26 +104,68 @@ void rl_array_print(array_t *a) {
   }
 }
 
-void rl_array_line(array_t* a, int x1, int y1, int x2, int y2, VALUE value) {
-  int dx = abs(x2 - x1), sx = x1 < x2 ? 1 : -1;
-  int dy = abs(y2 - y1), sy = y1 < y2 ? 1 : -1;
-  int err = dx - dy;
+// line walking based on libtcod/bresenham_c.c 
+typedef struct {
+	int x1, y1, x2, y2;
+	int dx, dy, sx, sy, e;
+} line_t;
+static line_t line;
 
-  while(1) {
-    if(x1 >= 0 && x1 < a->width && y1 >= 0 && y1 < a->height) {
-			array_value(a, x1, y1) = value;
+void rl_walk_line_start(int x1, int y1, int x2, int y2) {
+	line.x1=x1; line.y1=y1;
+	line.x2=x2; line.y2=y2;
+	line.dx=x2 - x1;
+	line.dy=y2 - y1;
+	if ( line.dx > 0 ) {
+		line.sx=1;
+	} else if ( line.dx < 0 ){
+		line.sx=-1;
+	} else line.sx=0;
+	if ( line.dy > 0 ) {
+		line.sy=1;
+	} else if ( line.dy < 0 ){
+		line.sy=-1;
+	} else line.sy = 0;
+	if ( line.sx*line.dx > line.sy*line.dy ) {
+		line.e = line.sx*line.dx;
+		line.dx *= 2;
+		line.dy *= 2;
+	} else {
+		line.e = line.sy*line.dy;
+		line.dx *= 2;
+		line.dy *= 2;
+	}
+}
+int rl_walk_line_next(int *x, int *y) {
+	if ( line.sx*line.dx > line.sy*line.dy ) {
+		if ( line.x1 == line.x2 ) return 0;
+		line.x1+=line.sx;
+		line.e -= line.sy*line.dy;
+		if ( line.e < 0) {
+			line.y1+=line.sy;
+			line.e+=line.sx*line.dx;
+		}
+	} else {
+		if ( line.y1 == line.y2 ) return 0;
+		line.y1+=line.sy;
+		line.e -= line.sx*line.dx;
+		if ( line.e < 0) {
+			line.x1+=line.sx;
+			line.e+=line.sy*line.dy;
+		}
+	}
+	*x=line.x1;
+	*y=line.y1;
+	return 1;
+}
+
+void rl_array_line(array_t* a, int x1, int y1, int x2, int y2, VALUE value) {
+	int x = x1, y = y1, has_next = 1;
+	for(rl_walk_line_start(x1, y1, x2, y2); has_next; has_next = rl_walk_line_next(&x, &y)) {
+    if(x >= 0 && x < a->width && y >= 0 && y < a->height) {
+			array_value(a, x, y) = value;
     }
-    if(x1 == x2 && y1 == y2) break;
-    int e2 = 2 * err;
-    if(e2 > -dx) {
-      err -= dy;
-      x1 += sx;
-    }
-    if(e2 < dx) {
-      err += dx;
-      y1 += sy;
-    }
-  }
+	}
 }
 
 // TODO: hollow rect (can be simulated with lines)
@@ -137,8 +179,19 @@ void rl_array_rect(array_t *a, int x, int y, uint32_t width, uint32_t height, VA
   }
 }
 
+// TODO: symetric line of sight
 int rl_array_can_see(array_t *a, int x1, int y1, int x2, int y2, VALUE blocking) {
-  int dx = abs(x2 - x1);
+	int x = x1, y = y1, has_next = 1;
+	for(rl_walk_line_start(x1, y1, x2, y2); has_next; has_next = rl_walk_line_next(&x, &y)) {
+    if(x >= 0 && x < a->width && y >= 0 && y < a->height) {
+      if(array_value(a, x, y) == blocking) return 0;
+    } else return 0;
+	}
+  //if(x1 == x2 && y1 == y2 && array_value(a, x1, y1) != blocking) return 1;
+  //if(x1 == x2 && y1 == y2) return 1;
+	return 1;
+
+  /*int dx = abs(x2 - x1);
   int dy = abs(y2 - y1);
   int sx = x1 < x2 ? 1 : -1;
   int sy = y1 < y2 ? 1 : -1;
@@ -161,7 +214,7 @@ int rl_array_can_see(array_t *a, int x1, int y1, int x2, int y2, VALUE blocking)
   }
   if(x1 == x2 && y1 == y2 && array_value(a, x1, y1) != blocking) return 1;
   //if(x1 == x2 && y1 == y2) return 1;
-  return 0;
+  return 0;*/
 }
 
 #define fov_test(x, y) \
@@ -178,21 +231,8 @@ int rl_array_can_see(array_t *a, int x1, int y1, int x2, int y2, VALUE blocking)
 
 array_t* rl_array_field_of_view(array_t* a, int xc, int yc, int radius, VALUE blocking, int light_walls) {
 	array_t* result = rl_array_new(a->width, a->height);
-	/*int x = 0, y = radius; 
-	int d = 3 - 2 * radius; 
-	fov_test_all_octants(x, y);
-	while (y >= x) { 
-		x++; 
-		if (d > 0) { 
-			y--;  
-			d = d + 4 * (x - y) + 10; 
-		} 
-		else
-			d = d + 4 * x + 6; 
-		fov_test_all_octants(x, y);
-	} */
 	int x, y;
-	for(y = yc - radius; y <= yc + radius; y++) {
+	/*for(y = yc - radius; y <= yc + radius; y++) {
 		for(x = xc - radius; x <= xc + radius; x++) {
 			if(x >= 0 && x < result->width && y >= 0 && y < result->height) {
 				int distance = (x - xc) * (x - xc) + (y - yc) * (y - yc);
@@ -200,6 +240,56 @@ array_t* rl_array_field_of_view(array_t* a, int xc, int yc, int radius, VALUE bl
 					array_value(result, x, y) = rl_array_can_see(a, xc, yc, x, y, blocking);
 				}
 			}
+		}
+	}*/
+	int x2, y2;
+	int radius_sqr = radius * radius;
+	for(x2 = xc - radius; x2 <= xc + radius; x2++) {
+		int x = xc, y = yc, has_next = 1;
+		for(rl_walk_line_start(xc, yc, x2, yc - radius); has_next; has_next = rl_walk_line_next(&x, &y)) {
+			if(x >= 0 && x < a->width && y >= 0 && y < a->height) {
+				int distance = (x - xc) * (x - xc) + (y - yc) * (y - yc);
+				if(distance > radius_sqr || array_value(a, x, y) == blocking) {
+					break;
+				} else {
+					array_value(result, x, y) = 1;
+				}
+			} else break;
+		}
+		x = xc, y = yc, has_next = 1;
+		for(rl_walk_line_start(xc, yc, x2, yc + radius); has_next; has_next = rl_walk_line_next(&x, &y)) {
+			if(x >= 0 && x < a->width && y >= 0 && y < a->height) {
+				int distance = (x - xc) * (x - xc) + (y - yc) * (y - yc);
+				if(distance > radius_sqr || array_value(a, x, y) == blocking) {
+					break;
+				} else {
+					array_value(result, x, y) = 1;
+				}
+			} else break;
+		}
+	}
+	for(y2 = yc - radius; y2 <= yc + radius; y2++) {
+		int x = xc, y = yc, has_next = 1;
+		for(rl_walk_line_start(xc, yc, xc - radius, y2); has_next; has_next = rl_walk_line_next(&x, &y)) {
+			if(x >= 0 && x < a->width && y >= 0 && y < a->height) {
+				int distance = (x - xc) * (x - xc) + (y - yc) * (y - yc);
+				if(distance > radius_sqr || array_value(a, x, y) == blocking) {
+					break;
+				} else {
+					array_value(result, x, y) = 1;
+				}
+			} else break;
+		}
+		x = xc, y = yc, has_next = 1;
+		for(rl_walk_line_start(xc, yc, xc + radius, y2); has_next; has_next = rl_walk_line_next(&x, &y)) {
+			if(x >= 0 && x < a->width && y >= 0 && y < a->height) {
+				int distance = (x - xc) * (x - xc) + (y - yc) * (y - yc);
+				if(distance > radius_sqr || array_value(a, x, y) == blocking) {
+					break;
+				} else {
+					array_value(result, x, y) = 1;
+				}
+			} else break;
 		}
 	}
 	if(light_walls) {
@@ -217,6 +307,7 @@ array_t* rl_array_field_of_view(array_t* a, int xc, int yc, int radius, VALUE bl
 							if(i >= 0 && i < result->width && j >= 0 && j < result->height) {
 								if(array_value(a, i, j) != blocking && array_value(result, i, j)) {
 									sum++;
+									break;
 								}
 							}
 						}
@@ -228,64 +319,6 @@ array_t* rl_array_field_of_view(array_t* a, int xc, int yc, int radius, VALUE bl
 	}
 	return result;
 }
-
-/* TODO
-static int array_field_of_view(lua_State* L) {
-  array_t *a = check_array(L, 1);
-  int x = luaL_checknumber(L, 2);
-  int y = luaL_checknumber(L, 3);
-  int radius = luaL_checknumber(L, 4);
-  VALUE blocking = luaL_optnumber(L, 5, -1);
-
-  luaL_argcheck(L, radius >= 0, 4, "radius must be positive");
-
-  lua_settop(L, 0);
-  lua_pushcfunction(L, array_new);
-  lua_pushnil(L);
-  lua_pushinteger(L, radius * 2 + 1);
-  lua_pushinteger(L, radius * 2 + 1);
-  lua_call(L, 3, 1);
-
-  array_t *b = check_array(L, 1);
-
-  for(size_t i = 0; i < b->width * b->height; i++) b->values[i] = 0;
-
-  x--; y--;
-
-  for(int y2 = y - radius; y2 < y + radius + 1; y2++) {
-    for(int x2 = x - radius; x2 < x + radius + 1; x2++) {
-      int x1 = x, y1 = y;
-      int dx = abs(x2 - x1), sx = x1 < x2 ? 1 : -1;
-      int dy = abs(y2 - y1), sy = y1 < y2 ? 1 : -1;
-
-      if(dx * dx + dy * dy > radius * radius) continue;
-
-      int err = dx - dy;
-      while(1) {
-        if(x1 >= 0 && x1 < a->width && y1 >= 0 && y1 < a->height) {
-          if(a->values[y1 * a->width + x1] == blocking) { break; }
-        } else { break; }
-        if(x1 == x2 && y1 == y2) { 
-          if(a->values[y1 * a->width + x1] != blocking) {
-            b->values[(radius + y2 - y) * b->width + radius + x2 - x] = 1;
-          }
-          break;
-        }
-        int e2 = 2 * err;
-        if(e2 > -dx) {
-          err -= dy;
-          x1 += sx;
-        }
-        if(e2 < dx) {
-          err += dx;
-          y1 += sy;
-        }
-      }
-    }
-  }
-
-  return 1;
-}*/
 
 #define coords2index(x, y) (x + y * a->width)
 path_t* rl_array_shortest_path(array_t* a, int x1, int y1, int x2, int y2, VALUE blocking) {
@@ -320,7 +353,6 @@ path_t* rl_array_shortest_path(array_t* a, int x1, int y1, int x2, int y2, VALUE
 		size--;
 		int current_x = current % a->width;
 		int current_y = current / a->width;
-		//printf("current = %d, %d\n", current_x, current_y);
 		for(uint32_t i = 0; i < 8; i++) {
 			int next_x = current_x + neighbor_x[i];
 			int next_y = current_y + neighbor_y[i];
@@ -401,27 +433,6 @@ void rl_array_dijkstra(array_t* a) {
   } while(!converged);
 }
 
-/* DEPCRECATED: use view and argmin */
-/*point_t rl_array_best_move(array_t *a, int x, int y) {
-  const int offset_x[9] = {0, 0, 0, -1, 1, -1, -1, 1, 1};
-  const int offset_y[9] = {0, -1, 1, 0, 0, -1, 1, -1, 1};
-
-  VALUE min = VALUE_MAX;
-  int argmin = 0;
-  for(int i = 1; i < 9; i++) {
-    if(x + offset_x[i] >= 0 && x + offset_x[i] < a->width
-        && y + offset_y[i] >= 0 && y + offset_y[i] < a->height) {
-      VALUE value = a->values[(y + offset_y[i]) * a->width + x + offset_x[i]];
-      if(value >= 0 && value < min) {
-        min = value;
-        argmin = i;
-      }
-    }
-  }
-	point_t result = {offset_x[argmin], offset_y[argmin]};
-	return result;
-}*/
-
 void rl_array_add(array_t* a, VALUE value, VALUE blocking) {
 	for(int j = 0; j < a->height; j++)
 		for(int i = 0; i < a->width; i++)
@@ -469,6 +480,7 @@ point_t rl_array_argmin(array_t* a, VALUE blocking) {
 	return result;
 }
 
+// TODO: remove point_t 
 point_t rl_array_argmax(array_t* a, VALUE blocking) {
   VALUE max = VALUE_MIN;
 	int argmax_x = 0, argmax_y = 0;
@@ -499,6 +511,7 @@ int rl_array_find_random(array_t* a, VALUE needle, int tries, int* rx, int* ry) 
 	return 0;
 }
 
+// TODO deprecate: can be obtained with find_random + set
 int rl_array_place_random(array_t* a, VALUE needle, VALUE value, int tries, int* rx, int *ry) {
 	for(int i = 0; i < tries; i++) {
 		int x = rl_random_next() % a->width;
@@ -515,6 +528,7 @@ int rl_array_place_random(array_t* a, VALUE needle, VALUE value, int tries, int*
 	return 0;
 }
 
+// TODO deprecate: can be obtained with view + copy
 array_t* rl_array_get_sub(array_t* a, int x, int y, uint32_t width, uint32_t height, VALUE default_value) {
   array_t *b = rl_array_new(width, height);
 
@@ -531,6 +545,7 @@ array_t* rl_array_get_sub(array_t* a, int x, int y, uint32_t width, uint32_t hei
   return b;
 }
 
+// TODO deprecate: can be obtained with view + assign
 void rl_array_set_sub(array_t *a, int x, int y, array_t* b) {
   for(uint32_t j = 0; j < b->height; j++) {
     for(uint32_t i = 0; i < b->width; i++) {

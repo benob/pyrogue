@@ -14,8 +14,10 @@ void tty_clear();
 void tty_move(int x, int y);
 void tty_put(const char* text, const char* fg, const char* bg);
 int tty_wait_key();
-void tty_print_array(array_t *a, const char *mapping, const char *fg, const char* bg);
 
 #endif
+
+void tty_print_array(array_t *a, const char *mapping, const char *fg, const char* bg);
+
 
 #endif
