@@ -41,7 +41,7 @@ typedef struct {
 	int line_height;
 	image_t images[TD_NUM_IMAGES];
 	SDL_Texture* buffers[TD_NUM_BUFFERS + 1];
-	int use_backbuffer, is_fullscreen, use_integral_scale;
+	int use_backbuffer, is_fullscreen, is_maximized, use_integral_scale;
 } display_t;
 
 static display_t display;
@@ -73,13 +73,18 @@ static void __attribute__((destructor)) _td_fini() {
 }
 
 int td_init(const char* title, int width, int height) {
-	if(display.running) return 0;
-	if(SDL_Init(SDL_INIT_VIDEO) < 0) die("count not initialize SDL");
-	//if(IMG_Init(IMG_INIT_PNG) < 0) die("cannot init SDL_image");
+	//if(display.running) return 0;
+	if(!display.was_init) {
+		if(SDL_Init(SDL_INIT_VIDEO) < 0) die("count not initialize SDL");
+		//if(IMG_Init(IMG_INIT_PNG) < 0) die("cannot init SDL_image");
 #ifdef USE_SDLTTF
-	if(TTF_Init() < 0) die("cannot init SDL_ttf");
+		if(TTF_Init() < 0) die("cannot init SDL_ttf");
 #endif
-	SDL_StartTextInput();
+		SDL_StartTextInput();
+	}
+	if(display.renderer != NULL) SDL_DestroyRenderer(display.renderer);
+	if(display.window != NULL) SDL_DestroyWindow(display.window);
+	printf("init\n");
 	display.window = SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, SDL_WINDOW_SHOWN | SDL_WINDOW_MAXIMIZED | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_OPENGL);
 	if(display.window == NULL) die("cannot create window");
 	display.renderer = SDL_CreateRenderer(display.window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_TARGETTEXTURE);

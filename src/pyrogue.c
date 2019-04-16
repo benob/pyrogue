@@ -156,9 +156,9 @@ STATIC int execute_from_lexer(int source_kind, const void *source, mp_parse_inpu
     }
 }
 
-STATIC int do_file(const char *file) {
+/*STATIC int do_file(const char *file) {
     return execute_from_lexer(LEX_SRC_FILENAME, file, MP_PARSE_FILE_INPUT, false);
-}
+}*/
 
 STATIC int do_str(const char *str) {
     return execute_from_lexer(LEX_SRC_STR, str, MP_PARSE_FILE_INPUT, false);

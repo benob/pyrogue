@@ -103,7 +103,7 @@ STATIC mp_obj_t mod_fs_load_asset(mp_obj_t path_in) {
 	size_t len;
 	const char *path = mp_obj_str_get_data(path_in, &len);
 	uint32_t size;
-	char* result = fs_load_asset(path, &size);
+	unsigned char* result = (unsigned char*) fs_load_asset(path, &size);
 	if(result == NULL) return mp_const_none;
 	return mp_obj_new_bytes(result, size);
 }
@@ -113,7 +113,7 @@ STATIC mp_obj_t mod_fs_load_pref(mp_obj_t path_in) {
 	size_t len;
 	const char *path = mp_obj_str_get_data(path_in, &len);
 	uint32_t size;
-	char* result = fs_load_pref(path, &size);
+	unsigned char* result = (unsigned char*) fs_load_pref(path, &size);
 	if(result == NULL) return mp_const_none;
 	return mp_obj_new_bytes(result, size);
 }
@@ -162,7 +162,6 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_rl_array_set_obj, 4, 4, mod_rl_ar
 STATIC mp_obj_t mod_rl_array_free(mp_obj_t self_in) {
 	mp_check_self(mp_obj_is_type(self_in, &mp_type_rl_array));
 	mp_obj_rl_array_t *self = MP_OBJ_TO_PTR(self_in);
-	fprintf(stderr, "free %p\n", self);
 	rl_array_free(self->array);
 	return mp_const_none;
 }
@@ -442,8 +441,8 @@ STATIC mp_obj_t mod_rl_array_find_random(size_t n_args, const mp_obj_t *args) {
 	mp_int_t needle = mp_obj_get_int(args[1]);
 	mp_int_t tries = 100;
 	if(n_args > 2) tries = mp_obj_get_int(args[2]);
-	int rx, ry;
-	int found = rl_array_find_random(self->array, needle, tries, &rx, &ry);
+	int rx = -1, ry = -1;
+	rl_array_find_random(self->array, needle, tries, &rx, &ry);
 	mp_obj_tuple_t *tuple = MP_OBJ_TO_PTR(mp_obj_new_tuple(2, NULL));
 	tuple->items[0] = mp_obj_new_int(rx);
 	tuple->items[1] = mp_obj_new_int(ry);
@@ -458,8 +457,8 @@ STATIC mp_obj_t mod_rl_array_place_random(size_t n_args, const mp_obj_t *args) {
 	mp_int_t value = mp_obj_get_int(args[2]);
 	mp_int_t tries = 100;
 	if(n_args > 3) tries = mp_obj_get_int(args[3]);
-	int rx, ry;
-	int found = rl_array_place_random(self->array, needle, value, tries, &rx, &ry);
+	int rx = -1, ry = -1;
+	rl_array_place_random(self->array, needle, value, tries, &rx, &ry);
 	mp_obj_tuple_t *tuple = MP_OBJ_TO_PTR(mp_obj_new_tuple(2, NULL));
 	tuple->items[0] = mp_obj_new_int(rx);
 	tuple->items[1] = mp_obj_new_int(ry);
@@ -559,9 +558,9 @@ STATIC mp_obj_t mod_td_load_image(size_t n_args, const mp_obj_t *args) {
 	size_t len;
 	const char *path = mp_obj_str_get_data(args[1], &len);
 	mp_int_t tile_width = 8;
-	if(n_args > 2) mp_obj_get_int(args[2]);
+	if(n_args > 2) tile_width = mp_obj_get_int(args[2]);
 	mp_int_t tile_height = 8;
-	if(n_args > 3) mp_obj_get_int(args[3]);
+	if(n_args > 3) tile_height = mp_obj_get_int(args[3]);
 	mp_int_t result = td_load_image(image, path, tile_width, tile_height);
 	return mp_obj_new_bool(result);
 }

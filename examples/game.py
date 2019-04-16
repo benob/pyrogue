@@ -3,7 +3,7 @@ import math
 import ujson
 
 rl.set_app_name('example-game')
-WIDTH, HEIGHT = 60, 40
+WIDTH, HEIGHT = 60, 25
 
 class Tile:
     def __init__(self, name, num, fg, bg, blocking=False):
@@ -13,8 +13,8 @@ class Tile:
         self.bg = bg
         self.blocking = blocking
 
-    WIDTH = 8
-    HEIGHT = 8
+    WIDTH = 9
+    HEIGHT = 16
 
     FLOOR = 0
     WALL = 1
@@ -226,10 +226,24 @@ except:
     game.new()
 
 
-rl.init('example roguelike', WIDTH * Tile.WIDTH, (HEIGHT + 4) * Tile.HEIGHT)
 rl.load_font('data/font.ttf', 8)
-#rl.load_image(0, b'data/minirogue-c64-all.png', Tile.WIDTH, Tile.HEIGHT)
-rl.load_image(0, 'data/ascii_8x8.png', Tile.WIDTH, Tile.HEIGHT)
+
+def rotate_tileset():
+    global current_tileset
+    current_tileset += 1
+    tilesets = [
+            ['data/ascii_8x8.png', 8, 8],
+            ['data/polyducks_gloop_8x8.png', 8, 8],
+            ['data/cp437.png', 9, 16],
+        ]
+    filename, Tile.WIDTH, Tile.HEIGHT = tilesets[current_tileset % len(tilesets)]
+    messages.append('loading tileset ' + filename)
+
+    rl.init('Pyrogue: Example roguelike [' + filename + ']', WIDTH * Tile.WIDTH, (HEIGHT + 4) * Tile.HEIGHT)
+    rl.load_image(0, filename, Tile.WIDTH, Tile.HEIGHT)
+
+current_tileset = 0
+rotate_tileset()
 
 def handle_input():
     global fov
@@ -257,6 +271,8 @@ def handle_input():
         dx, dy = -1, -1
     elif key == ord('u'):
         dx, dy = 1, -1
+    elif key == ord('t'):
+        rotate_tileset()
     if dx != 0 or dy != 0:
         player.move(dx, dy)
         fov = level.array.field_of_view(player.x, player.y, 10, Tile.WALL, True)
@@ -280,7 +296,7 @@ def redraw():
         if player.can_see(actor):
             rl.colorize_tile(0, actor.x * Tile.WIDTH, actor.y * Tile.HEIGHT, actor.tile, actor.color, 0)
     #rl.draw_image(0, 8 * WIDTH - 80, 0)
-    rl.print_text(0, 8 * HEIGHT, '\n'.join(messages[-4:]), rl.WHITE, rl.ALIGN_LEFT)
+    rl.print_text(0, Tile.HEIGHT * HEIGHT, '\n'.join(messages[-4:]))
     rl.present()
 
 while rl.still_running():

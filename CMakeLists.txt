@@ -23,12 +23,11 @@ target_link_libraries(rogue ${SDL2_LIBRARY} -lm)
 
 set(micropython_EXTRA_MODULES ${CMAKE_SOURCE_DIR}/src/modrl.c)
 include(cmake/micropython.cmake)
-add_library(micropython_extra_modules ${micropython_EXTRA_MODULES} ${GENHDR}/qstrdefs.generated.h)
 target_link_libraries(micropython micropython_extra_modules rogue)
 
 # pyrogue
 add_executable(pyrogue src/pyrogue.c)
-target_compile_options(pyrogue PRIVATE -DNO_QSTR)
+target_compile_options(pyrogue PRIVATE -DNO_QSTR ${micropython_CFLAGS})
 target_link_libraries(pyrogue micropython)
 
 # examples

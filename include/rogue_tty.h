@@ -4,7 +4,7 @@
 #include "rogue_array.h"
 
 #if defined(__MINGW32__) || defined(__MINGW64__)
-#warning tty functions disabled on windows
+//#warning tty functions disabled on windows
 #else
 
 enum {TTY_LEFT=256, TTY_RIGHT, TTY_UP, TTY_DOWN, TTY_RETURN=10, TTY_ESCAPE=27};

@@ -88,14 +88,14 @@
 #define MICROPY_PY_UHASHLIB         (0)
 #define MICROPY_PY_UBINASCII        (0)
 
-extern const struct _mp_obj_module_t mp_module_os;
+//extern const struct _mp_obj_module_t mp_module_os;
 extern const struct _mp_obj_module_t mp_module_rl;
 //extern const struct _mp_obj_module_t mp_module_ffi;
 
 #define MICROPY_PORT_BUILTIN_MODULES \
-    { MP_ROM_QSTR(MP_QSTR_uos), MP_ROM_PTR(&mp_module_os) }, \
     { MP_ROM_QSTR(MP_QSTR_rl), MP_ROM_PTR(&mp_module_rl) }, \
 
+    //{ MP_ROM_QSTR(MP_QSTR_uos), MP_ROM_PTR(&mp_module_os) },
 		//{ MP_ROM_QSTR(MP_QSTR_ffi), MP_ROM_PTR(&mp_module_ffi) }, 
 
 #define MICROPY_PORT_ROOT_POINTERS \
@@ -116,6 +116,66 @@ extern const struct _mp_obj_module_t mp_module_rl;
 
 // type definitions for the specific machine
 
+#ifdef __MINGW32__ // windows support
+
+// From windows port
+//#define MICROPY_PORT_INIT_FUNC      init()
+//#define MICROPY_PORT_DEINIT_FUNC    deinit()
+
+#if defined( __MINGW32__ ) && defined( __LP64__ )
+typedef long mp_int_t; // must be pointer size
+typedef unsigned long mp_uint_t; // must be pointer size
+#elif defined ( __MINGW32__ ) && defined( _WIN64 )
+#include <stdint.h>
+typedef __int64 mp_int_t;
+typedef unsigned __int64 mp_uint_t;
+#define MP_SSIZE_MAX __INT64_MAX__
+#elif defined ( _MSC_VER ) && defined( _WIN64 )
+typedef __int64 mp_int_t;
+typedef unsigned __int64 mp_uint_t;
+#else
+// These are definitions for machines where sizeof(int) == sizeof(void*),
+// regardless for actual size.
+typedef int mp_int_t; // must be pointer size
+typedef unsigned int mp_uint_t; // must be pointer size
+#endif
+
+#define MP_ENDIANNESS_LITTLE (1)
+
+// Cannot include <sys/types.h>, as it may lead to symbol name clashes
+#if _FILE_OFFSET_BITS == 64 && !defined(__LP64__)
+typedef long long mp_off_t;
+#else
+typedef long mp_off_t;
+#endif
+
+#if MICROPY_PY_OS_DUPTERM
+#define MP_PLAT_PRINT_STRN(str, len) mp_hal_stdout_tx_strn_cooked(str, len)
+void mp_hal_dupterm_tx_strn(const char *str, size_t len);
+#else
+#include <unistd.h>
+#define MP_PLAT_PRINT_STRN(str, len) do { int ret = write(1, str, len); (void)ret; } while (0)
+#define mp_hal_dupterm_tx_strn(s, l)
+#endif
+
+#define MP_STATE_PORT               MP_STATE_VM
+
+#define MICROPY_MPHALPORT_H         "windows_mphal.h"
+
+#include "realpath.h"
+#include "init.h"
+#include "sleep.h"
+
+#define UINT_FMT "%I64u"
+#define INT_FMT "%I64d"
+
+#ifdef __GNUC__
+#define MP_NOINLINE __attribute__((noinline))
+#endif
+
+
+#else // not __MINGW32__
+
 #ifdef __LP64__
 typedef long mp_int_t; // must be pointer size
 typedef unsigned long mp_uint_t; // must be pointer size
@@ -133,9 +193,13 @@ typedef long long mp_off_t;
 typedef long mp_off_t;
 #endif
 
+#endif // end not __MINGW32__
+
 // We need to provide a declaration/definition of alloca()
 #ifdef __FreeBSD__
 #include <stdlib.h>
+#elif __MINGW32__
+#include <malloc.h>
 #else
 #include <alloca.h>
 #endif

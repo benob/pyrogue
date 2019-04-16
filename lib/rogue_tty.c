@@ -1,12 +1,6 @@
-#if ! defined(__MINGW32__) && ! defined(__MINGW64__)
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <termios.h>
-#include <unistd.h>
-#include <signal.h>
-
 #include "rogue_tty.h"
 
 static int hex2int(char ch) {
@@ -19,6 +13,12 @@ static int hex2int(char ch) {
 static int palette[16] = {
 	30, 31, 32, 33, 34, 35, 36, 37, 90, 91, 92, 93, 94, 95, 96, 97
 };
+
+#if ! defined(__MINGW32__) && ! defined(__MINGW64__)
+
+#include <termios.h>
+#include <unistd.h>
+#include <signal.h>
 
 void tty_clear() {
 	printf("\33[H\33[2J");
@@ -77,6 +77,8 @@ void tty_init() {
 	printf("\33[?25l");
 }
 
+#endif
+
 void tty_print_array(array_t *a, const char *mapping, const char *fg, const char* bg) {
 	int max_mapping = mapping ? strlen(mapping) : 0;
 	int max_fg = fg ? strlen(fg) : 0;
@@ -94,4 +96,3 @@ void tty_print_array(array_t *a, const char *mapping, const char *fg, const char
   }
 }
 
-#endif

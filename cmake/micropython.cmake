@@ -4,13 +4,51 @@ set(GENHDR ${CMAKE_BINARY_DIR}/genhdr)
 
 include_directories(${MP} ${GENHDR}/..)
 
+if(MINGW) # windows
+	set(micropython_platform_CFLAGS
+		-I${MP}/ports/windows
+		)
+	set(micropython_platform_SOURCE 
+		${MP}/ports/unix/main.c
+		${MP}/ports/unix/file.c
+		${MP}/ports/unix/input.c
+		${MP}/ports/unix/modos.c
+		${MP}/ports/unix/modmachine.c
+		${MP}/ports/unix/modtime.c
+		${MP}/ports/unix/gccollect.c
+		${MP}/ports/windows/fmode.c  
+		${MP}/ports/windows/init.c  
+		${MP}/ports/windows/realpath.c
+		${MP}/ports/windows/sleep.c
+		${MP}/ports/windows/windows_mphal.c
+		)
+else(MINGW) # regular unix
+	set(micropython_platform_CFLAGS
+		-I${MP}/ports/unix
+		${micropython_CFLAGS}
+		)
+	set(micropython_platform_SOURCE 
+		${MP}/ports/unix/main.c
+		${MP}/ports/unix/gccollect.c
+		${MP}/ports/unix/unix_mphal.c
+		${MP}/ports/unix/input.c
+		${MP}/ports/unix/file.c
+		${MP}/ports/unix/modmachine.c
+		${MP}/ports/unix/modos.c
+		${MP}/ports/unix/moduselect.c
+		${MP}/ports/unix/alloc.c
+		${MP}/ports/unix/coverage.c
+		${MP}/ports/unix/fatfs_port.c
+		)
+endif(MINGW)
+
 set(micropython_CFLAGS 
 	-I. 
 	-I${GENHDR}/.. 
 	-I${CMAKE_SOURCE_DIR}/src 
 	-I${CMAKE_SOURCE_DIR}/include 
+	${micropython_platform_CFLAGS}
 	-I${MP}/ 
-	-I${MP}/ports/unix
 	-Wall
 	-Werror
 	-Wpointer-arith
@@ -169,18 +207,6 @@ set(micropython_regular_SOURCE
 	${MP}/extmod/uos_dupterm.c
 	${MP}/lib/embed/abort_.c
 	${MP}/lib/utils/printf.c
-  ${MP}/ports/unix/main.c
-  ${MP}/ports/unix/gccollect.c
-  ${MP}/ports/unix/unix_mphal.c
-  ${MP}/ports/unix/input.c
-  ${MP}/ports/unix/file.c
-  ${MP}/ports/unix/modmachine.c
-  ${MP}/ports/unix/modos.c
-  ${MP}/ports/unix/moduselect.c
-  ${MP}/ports/unix/alloc.c
-  ${MP}/ports/unix/coverage.c
-  ${MP}/ports/unix/fatfs_port.c
-	#${MP}/ports/unix/modffi.c
   ${MP}/lib/timeutils/timeutils.c
   ${MP}/py/mpconfig.h
 	)
@@ -191,21 +217,25 @@ set_source_files_properties(${MP}/py/vm.c PROPERTIES COMPILE_FLAGS -O3)
 
 set(micropython_SOURCE
 	${micropython_regular_SOURCE}
+	${micropython_platform_SOURCE}
 	${micropython_EXTRA_MODULES}
 	)
 
-add_library(micropython ${micropython_regular_SOURCE} ${GENHDR}/qstrdefs.generated.h)
+add_library(micropython ${micropython_regular_SOURCE} ${micropython_platform_SOURCE} ${GENHDR}/qstrdefs.generated.h)
 target_compile_options(micropython PRIVATE ${micropython_CFLAGS})
 target_compile_definitions(micropython PRIVATE FFCONF_H=\"${MP}/lib/oofatfs/ffconf.h\")
+
+add_library(micropython_extra_modules ${micropython_EXTRA_MODULES} ${GENHDR}/qstrdefs.generated.h)
+target_compile_options(micropython_extra_modules PRIVATE ${micropython_CFLAGS})
 
 add_custom_command(OUTPUT ${GENHDR}/qstrdefs.generated.h
 	COMMAND mkdir -p ${GENHDR}
 	COMMAND python3 ${MP}/py/makeversionhdr.py ${GENHDR}/mpversion.h
 	COMMAND python3 ${MP}/py/makemoduledefs.py --vpath="., .., " ${micropython_SOURCE} ${GENHDR}/moduledefs.h > ${GENHDR}/moduledefs.h
-	COMMAND gcc -E -DNO_QSTR ${micropython_CFLAGS} -DFFCONF_H='\"${MP}/lib/oofatfs/ffconf.h\"' ${micropython_SOURCE} ${CMAKE_SOURCE_DIR}/src/mpconfigport.h > ${GENHDR}/qstr.i.last
+	COMMAND ${CMAKE_C_COMPILER} -E -DNO_QSTR ${micropython_CFLAGS} -DFFCONF_H='\"${MP}/lib/oofatfs/ffconf.h\"' ${micropython_SOURCE} ${CMAKE_SOURCE_DIR}/src/mpconfigport.h > ${GENHDR}/qstr.i.last
 	COMMAND python3 ${MP}/py/makeqstrdefs.py split ${GENHDR}/qstr.i.last ${GENHDR}/qstr ${GENHDR}/qstrdefs.collected.h
 	COMMAND python3 ${MP}/py/makeqstrdefs.py cat ${GENHDR}/qstr.i.last ${GENHDR}/qstr ${GENHDR}/qstrdefs.collected.h
-	COMMAND cat ${MP}/py/qstrdefs.h ${MP}/ports/unix/qstrdefsport.h ${GENHDR}/qstrdefs.collected.h | sed [=['s/^Q(.*)/"&"/']=] | gcc -E ${micropython_CFLAGS} -DFFCONF_H='\"${MP}/lib/oofatfs/ffconf.h\"' - | sed [=['s/^"\(Q(.*)\)"/\1/']=] > ${GENHDR}/qstrdefs.preprocessed.h
+	COMMAND cat ${MP}/py/qstrdefs.h ${MP}/ports/unix/qstrdefsport.h ${GENHDR}/qstrdefs.collected.h | sed [=['s/^Q(.*)/"&"/']=] | ${CMAKE_C_COMPILER} -E ${micropython_CFLAGS} -DFFCONF_H='\"${MP}/lib/oofatfs/ffconf.h\"' - | sed [=['s/^"\(Q(.*)\)"/\1/']=] > ${GENHDR}/qstrdefs.preprocessed.h
 	COMMAND python3 ${MP}/py/makeqstrdata.py ${GENHDR}/qstrdefs.preprocessed.h > ${GENHDR}/qstrdefs.generated.h
 	DEPENDS ${micropython_SOURCE} ${CMAKE_SOURCE_DIR}/src/mpconfigport.h
 	)
