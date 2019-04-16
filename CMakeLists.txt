@@ -1,8 +1,7 @@
 cmake_minimum_required (VERSION 3.0)
-project (plasma)
+project (pyrogue)
 
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
-set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -DDEBUG")
 
 find_package(SDL2 REQUIRED)
 
@@ -21,6 +20,7 @@ add_library(rogue STATIC
 target_compile_options(rogue PRIVATE -DMINIZ_NO_STDIO -DMINIZ_NO_ZLIB_COMPATIBLE_NAMES -DMINIZ_NO_ZLIB_APIS)
 target_link_libraries(rogue ${SDL2_LIBRARY} -lm)
 
+# micropython module rl
 set(micropython_EXTRA_MODULES ${CMAKE_SOURCE_DIR}/src/modrl.c)
 include(cmake/micropython.cmake)
 target_link_libraries(micropython micropython_extra_modules rogue)
@@ -30,7 +30,7 @@ add_executable(pyrogue src/pyrogue.c)
 target_compile_options(pyrogue PRIVATE -DNO_QSTR ${micropython_CFLAGS})
 target_link_libraries(pyrogue micropython)
 
-# examples
+# c examples
 add_executable(plasma examples/plasma.c)
 target_link_libraries(plasma rogue)
 

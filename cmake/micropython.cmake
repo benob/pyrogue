@@ -4,6 +4,8 @@ set(GENHDR ${CMAKE_BINARY_DIR}/genhdr)
 
 include_directories(${MP} ${GENHDR}/..)
 
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -DDEBUG")
+
 if(MINGW) # windows
 	set(micropython_platform_CFLAGS
 		-I${MP}/ports/windows
