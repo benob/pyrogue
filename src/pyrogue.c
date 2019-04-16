@@ -96,7 +96,7 @@ STATIC int handle_uncaught_exception(mp_obj_base_t *exc) {
 // Returns standard error codes: 0 for success, 1 for all other errors,
 // except if FORCED_EXIT bit is set then script raised SystemExit and the
 // value of the exit is in the lower 8 bits of the return value
-STATIC int execute_from_lexer(int source_kind, const void *source, mp_parse_input_kind_t input_kind, bool is_repl) {
+STATIC int execute_from_lexer(int source_kind, const void *source, uint32_t size, mp_parse_input_kind_t input_kind, bool is_repl) {
     //mp_hal_set_interrupt_char('c');
 
     nlr_buf_t nlr;
@@ -105,7 +105,7 @@ STATIC int execute_from_lexer(int source_kind, const void *source, mp_parse_inpu
         mp_lexer_t *lex;
         if (source_kind == LEX_SRC_STR) {
             const char *line = source;
-            lex = mp_lexer_new_from_str_len(MP_QSTR__lt_stdin_gt_, line, strlen(line), false);
+            lex = mp_lexer_new_from_str_len(MP_QSTR__lt_stdin_gt_, line, size, /*strlen(line),*/ false);
         } else if (source_kind == LEX_SRC_VSTR) {
             const vstr_t *vstr = source;
             lex = mp_lexer_new_from_str_len(MP_QSTR__lt_stdin_gt_, vstr->buf, vstr->len, false);
@@ -160,12 +160,12 @@ STATIC int execute_from_lexer(int source_kind, const void *source, mp_parse_inpu
     return execute_from_lexer(LEX_SRC_FILENAME, file, MP_PARSE_FILE_INPUT, false);
 }*/
 
-STATIC int do_str(const char *str) {
-    return execute_from_lexer(LEX_SRC_STR, str, MP_PARSE_FILE_INPUT, false);
+STATIC int do_str(const char *str, uint32_t size) {
+    return execute_from_lexer(LEX_SRC_STR, str, size, MP_PARSE_FILE_INPUT, false);
 }
 
 /* Usage:
- * ./pyrogue (no args) => show usage unless a game is embedded in the executable
+ * ./pyrogue (no args) => execute game.py from embedded zip if exits else show usage 
  * ./pyrogue script.py => cd to script directory and run script.py
  * ./pyrogue archive.zip => load archive and run game.py from archive root
  * TODO ./pyrogue directory/ => cd to directory and run game.py
@@ -249,7 +249,7 @@ int main(int argc, char** argv) {
 		printf("Error\n");
 	}*/
 	//fprintf(stderr, "%s\n", content);
-	do_str(content);
+	do_str(content, content_size);
 	free(content);
 
 	mp_deinit();
@@ -260,15 +260,23 @@ int main(int argc, char** argv) {
 }
 
 uint mp_import_stat(const char *path) {
-	struct stat st;
+	/*struct stat st;
 	if (stat(path, &st) == 0) {
 		if (S_ISDIR(st.st_mode)) {
 			return MP_IMPORT_STAT_DIR;
 		} else if (S_ISREG(st.st_mode)) {
 			return MP_IMPORT_STAT_FILE;
 		}
+	} else {
+		uint32_t content_size; // TODO: cleaner check of file/dir existence
+		char* content = fs_load_asset(path, &content_size);
+		if(content != NULL) {
+			free(content);
+			return MP_IMPORT_STAT_FILE;
+		}
 	}
-	return MP_IMPORT_STAT_NO_EXIST;
+	return MP_IMPORT_STAT_NO_EXIST;*/
+	return MP_IMPORT_STAT_FILE; // only file import supported at this time
 }
 
 void nlr_jump_fail(void *val) {

@@ -147,7 +147,11 @@ set(micropython_regular_SOURCE
 	${MP}/py/sequence.c
 	${MP}/py/stream.c
 	${MP}/py/binary.c
-	${MP}/py/builtinimport.c
+
+	# patched to support importing from assets
+	#${MP}/py/builtinimport.c
+	${CMAKE_SOURCE_DIR}/src/builtinimport.c
+
 	${MP}/py/builtinevex.c
 	${MP}/py/modarray.c
 	${MP}/py/modbuiltins.c

@@ -64,7 +64,7 @@ static char* load_file(const char* filename, uint32_t* size) {
 		perror(filename);
 		return NULL;
 	}
-	char* data = malloc(*size);
+	char* data = malloc(*size + 1);
 	if(data == NULL) {
 		perror("malloc");
 		return NULL;
@@ -81,6 +81,7 @@ static char* load_file(const char* filename, uint32_t* size) {
 		perror(filename);
 		return NULL;
 	}
+	data[*size] = 0; // ensure terminal zero
 	fclose(fp);
 	return data;
 }

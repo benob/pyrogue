@@ -1,0 +1,15 @@
+** General **
+port to osx
+port to web
+write doc and examples
+write tests
+
+** Pyrogue **
+load directory modules from assets 
+cleanup available modules and remove filesystem access (only assets shall be allowed)
+rework embedding format
+embed / extract from command line
+
+** librogue **
+Graphical REPL
+cleanup API
