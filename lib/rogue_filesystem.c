@@ -38,12 +38,13 @@ static zip_t* resource_zip = NULL;
 
 // may need to change path separator if developed on a different platform
 static const char* normalize_path(const char* path) {
-	static char copy[MAX_PATH_SIZE];
+	return path;
+	/*static char copy[MAX_PATH_SIZE];
 	strncpy(copy, path, MAX_PATH_SIZE);
 	for(int i = 0; copy[i]; i++) {
 		if(copy[i] == PATH_SEPARATOR_OTHER) copy[i] = PATH_SEPARATOR;
 	}
-	return copy;
+	return copy;*/
 }
 
 static char* load_file(const char* filename, uint32_t* size) {

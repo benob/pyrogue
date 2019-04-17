@@ -24,6 +24,36 @@ array_t* rl_array_new(uint32_t width, uint32_t height) {
   return a;
 }
 
+array_t* rl_array_from_string(const char* string) {
+	const char* start = string, *end=NULL;
+	int width = strtol(start, (char**) &end, 10); start = end + 1;
+	int height = strtol(start, (char**) &end, 10); start = end + 1;
+	array_t* a = rl_array_new(width, height);
+	for(int i = 0; i < width * height; i++) {
+		a->values[i] = strtol(start, (char**) &end, 10); 
+		start = end + 1;
+	}
+	return a;
+}
+
+char* rl_array_to_string(array_t* a) {
+	int allocated = 128, size = 0;
+	char* result = malloc(allocated);
+	char buffer[16];
+	snprintf(result, 128, "%d %d", a->width, a->height);
+	size = strlen(result);
+	for(int i = 0; i < a->width * a->height; i++) {
+		snprintf(buffer, 16, " %d", a->values[i]);
+		if(size + strlen(buffer) + 1 > allocated) {
+			allocated += allocated / 2;
+			result = realloc(result, allocated);
+		}
+		strcat(result + size, buffer);
+		size += strlen(buffer);
+	}
+	return result;
+}
+
 array_t* rl_array_view(array_t* b, int x, int y, uint32_t width, uint32_t height) {
 	if(x >= (int) b->width || y >= (int) b->height) return NULL; // won't allow an empty view
 	if(x < 0) { width -= -x; x = 0; }
@@ -89,7 +119,7 @@ void rl_array_random_int(array_t *a, int lower, int upper) {
 void rl_array_random(array_t *a) {
 	for(int j = 0; j < a->height; j++)
 		for(int i = 0; i < a->width; i++)
-			array_value(a, i, j) = (VALUE) rl_random_next() / UINT_MAX;
+			array_value(a, i, j) = (VALUE) rl_random_next(); // / UINT_MAX;
 }
 
 void rl_array_print(array_t *a) {
@@ -565,6 +595,17 @@ array_t* rl_array_copy(array_t* a) {
 		for(int i = 0; i < a->width * a->height; i++) b->values[i] = a->values[i];
 		return b;
 	}
+}
+
+int rl_array_copy_masked(array_t* src, array_t* dest, array_t* mask, VALUE keep) {
+	if(src->width != dest->width || src->width != mask->width || src->height != dest->height || src->height != mask->height) {
+		printf("error: sizes mismatch");
+		return 0;
+	}
+	for(int i = 0; i < dest->width * dest->height; i++) {
+		if(mask->values[i] == keep) dest->values[i] = src->values[i];
+	}
+	return 1;
 }
 
 array_t* rl_array_equals(array_t* a, VALUE value) {

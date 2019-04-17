@@ -84,7 +84,6 @@ int td_init(const char* title, int width, int height) {
 	}
 	if(display.renderer != NULL) SDL_DestroyRenderer(display.renderer);
 	if(display.window != NULL) SDL_DestroyWindow(display.window);
-	printf("init\n");
 	display.window = SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, SDL_WINDOW_SHOWN | SDL_WINDOW_MAXIMIZED | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_OPENGL);
 	if(display.window == NULL) die("cannot create window");
 	display.renderer = SDL_CreateRenderer(display.window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_TARGETTEXTURE);
@@ -106,9 +105,11 @@ void td_load_font(const char* font_path, int font_size, int line_height) {
 	if(font_data == NULL) die("cannot load font '%s'", font_path);
 	SDL_RWops* ops = SDL_RWFromMem(font_data, font_data_size);
 #ifdef USE_SDLTTF
+	if(display.font != NULL) TTF_CloseFont(display.font);
 	display.font = TTF_OpenFontRW(ops, 1, font_size);
 	if(display.font) display.line_height = TTF_FontLineSkip(display.font);
 #else
+	if(display.font != NULL) STBTTF_CloseFont(display.font);
 	display.font = STBTTF_OpenFontRW(display.renderer, ops, font_size);
 	if(display.font) display.line_height = display.font->baseline;
 #endif
@@ -363,6 +364,7 @@ int td_wait_event(int include_mouse) {
 						} else if(key == SDLK_q) {
 							exit(1); // force quit
 						} else if(key == SDLK_i) {
+							// TODO: investgate why it doesn't update immediately.
 							display.use_integral_scale = 1 - display.use_integral_scale;
 							SDL_RenderSetIntegerScale(display.renderer, display.use_integral_scale ? SDL_TRUE : SDL_FALSE);
 						}

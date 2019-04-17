@@ -7,7 +7,7 @@ TILE_WIDTH = 9
 TILE_HEIGHT = 16
 
 rl.init("plasma", WIDTH * TILE_WIDTH, HEIGHT * TILE_HEIGHT)
-rl.load_image(0, "../examples/data/cp437.png", TILE_WIDTH, TILE_HEIGHT)
+rl.load_image(0, "data/cp437.png", TILE_WIDTH, TILE_HEIGHT)
 
 shift = 0.0
 colors = [rl.hsv_color(i, 255, 255, 255) for i in range(256)]

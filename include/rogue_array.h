@@ -35,6 +35,8 @@ typedef struct {
 } path_t;
 
 array_t* rl_array_new(uint32_t width, uint32_t height);
+array_t* rl_array_from_string(const char* string);
+char* rl_array_to_string(array_t* a);
 array_t* rl_array_view(array_t* b, int x, int y, uint32_t width, uint32_t height);
 void rl_array_free(array_t* a);
 uint32_t rl_array_width(array_t* a);
@@ -66,6 +68,7 @@ int rl_array_place_random(array_t* a, VALUE needle, VALUE value, int tries, int*
 array_t* rl_array_get_sub(array_t* a, int x, int y, uint32_t width, uint32_t height, VALUE default_value);
 void rl_array_set_sub(array_t *a, int x, int y, array_t* b);
 array_t* rl_array_copy(array_t* a);
+int rl_array_copy_masked(array_t* src, array_t* dest, array_t* mask, VALUE keep);
 array_t* rl_array_equals(array_t* a, VALUE value);
 
 #endif

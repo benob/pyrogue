@@ -26,6 +26,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "py/objlist.h"
 #include "py/objstringio.h"
@@ -103,9 +104,11 @@ STATIC mp_obj_t mod_fs_load_asset(mp_obj_t path_in) {
 	size_t len;
 	const char *path = mp_obj_str_get_data(path_in, &len);
 	uint32_t size;
-	unsigned char* result = (unsigned char*) fs_load_asset(path, &size);
-	if(result == NULL) return mp_const_none;
-	return mp_obj_new_bytes(result, size);
+	unsigned char* data = (unsigned char*) fs_load_asset(path, &size);
+	if(data == NULL) return mp_const_none;
+	mp_obj_t result = mp_obj_new_bytes(data, size);
+	free(data);
+	return result;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_fs_load_asset_obj, mod_fs_load_asset);
 
@@ -113,9 +116,11 @@ STATIC mp_obj_t mod_fs_load_pref(mp_obj_t path_in) {
 	size_t len;
 	const char *path = mp_obj_str_get_data(path_in, &len);
 	uint32_t size;
-	unsigned char* result = (unsigned char*) fs_load_pref(path, &size);
-	if(result == NULL) return mp_const_none;
-	return mp_obj_new_bytes(result, size);
+	unsigned char* data = (unsigned char*) fs_load_pref(path, &size);
+	if(data == NULL) return mp_const_none;
+	mp_obj_t result = mp_obj_new_bytes(data, size);
+	free(data);
+	return result;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_fs_load_pref_obj, mod_fs_load_pref);
 
@@ -137,6 +142,28 @@ typedef struct {
 	mp_obj_base_t base;
 	array_t* array;
 } mp_obj_rl_array_t;
+
+STATIC mp_obj_t mod_rl_array_to_string(mp_obj_t self_in) {
+	mp_check_self(mp_obj_is_type(self_in, &mp_type_rl_array));
+	mp_obj_rl_array_t *self = MP_OBJ_TO_PTR(self_in);
+	char* string = rl_array_to_string(self->array);
+	mp_obj_t result = mp_obj_new_bytes((unsigned char*) string, strlen(string));
+	free(string);
+	return result;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_rl_array_to_string_obj, mod_rl_array_to_string);
+
+STATIC mp_obj_t mod_rl_array_from_string(mp_obj_t string_in) {
+	size_t len;
+	const char *string = mp_obj_str_get_data(string_in, &len);
+	array_t* array = rl_array_from_string(string);
+	if(array == NULL) return mp_const_none;
+	mp_obj_rl_array_t* output = m_new_obj(mp_obj_rl_array_t);
+	output->base.type = &mp_type_rl_array;
+	output->array = array;
+	return MP_OBJ_FROM_PTR(output);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_rl_array_from_string_obj, mod_rl_array_from_string);
 
 STATIC mp_obj_t mod_rl_array_get(mp_obj_t self_in, mp_obj_t i_in, mp_obj_t j_in) {
 	mp_check_self(mp_obj_is_type(self_in, &mp_type_rl_array));
@@ -476,9 +503,26 @@ STATIC mp_obj_t mod_rl_array_copy(mp_obj_t self_in) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_rl_array_copy_obj, mod_rl_array_copy);
 
+STATIC mp_obj_t mod_rl_array_copy_masked(size_t n_args, const mp_obj_t *args) {
+	mp_check_self(mp_obj_is_type(args[0], &mp_type_rl_array));
+	if(!mp_obj_is_type(args[1], &mp_type_rl_array)) mp_raise_msg(&mp_type_TypeError, "arg 1 should be of type array");
+	if(!mp_obj_is_type(args[2], &mp_type_rl_array)) mp_raise_msg(&mp_type_TypeError, "arg 2 should be of type array");
+
+	mp_obj_rl_array_t *src = MP_OBJ_TO_PTR(args[0]);
+	mp_obj_rl_array_t *dest = MP_OBJ_TO_PTR(args[1]);
+	mp_obj_rl_array_t *mask = MP_OBJ_TO_PTR(args[2]);
+
+	mp_int_t keep = 1;
+	if(n_args > 3) keep = mp_obj_get_int(args[3]);
+	rl_array_copy_masked(src->array, dest->array, mask->array, keep);
+	return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_rl_array_copy_masked_obj, 3, 4, mod_rl_array_copy_masked);
+
 STATIC const mp_rom_map_elem_t mod_rl_array_locals_dict_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&mod_rl_array_free_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_free), MP_ROM_PTR(&mod_rl_array_free_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_to_string), MP_ROM_PTR(&mod_rl_array_to_string_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_get), MP_ROM_PTR(&mod_rl_array_get_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_set), MP_ROM_PTR(&mod_rl_array_set_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_width), MP_ROM_PTR(&mod_rl_array_width_obj) },
@@ -503,6 +547,7 @@ STATIC const mp_rom_map_elem_t mod_rl_array_locals_dict_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR_find_random), MP_ROM_PTR(&mod_rl_array_find_random_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_place_random), MP_ROM_PTR(&mod_rl_array_place_random_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_copy), MP_ROM_PTR(&mod_rl_array_copy_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_copy_masked), MP_ROM_PTR(&mod_rl_array_copy_masked_obj) },
 };
 
 STATIC MP_DEFINE_CONST_DICT(mod_rl_array_locals_dict, mod_rl_array_locals_dict_table);
@@ -879,6 +924,7 @@ STATIC const mp_rom_map_elem_t mp_module_rl_globals_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR_save_pref), MP_ROM_PTR(&mod_fs_save_pref_obj) },
 	/************* rogue_array ********************/
 	{ MP_ROM_QSTR(MP_QSTR_array), MP_ROM_PTR(&mp_type_rl_array) },
+	{ MP_ROM_QSTR(MP_QSTR_array_from_string), MP_ROM_PTR(&mod_rl_array_from_string_obj) },
 	/************* rogue_display ******************/
 	{ MP_ROM_QSTR(MP_QSTR_init), MP_ROM_PTR(&mod_td_init_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_load_font), MP_ROM_PTR(&mod_td_load_font_obj) },

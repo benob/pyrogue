@@ -1,29 +1,84 @@
+# TODO:
+# load / save array data as strings
+# player attack other
+# pickup items
+# use item
+# actor index
+
 import rl
 import math
 import ujson
 
 rl.set_app_name('example-game')
-WIDTH, HEIGHT = 60, 25
+WIDTH, HEIGHT = 40, 20
 
 class Tile:
-    def __init__(self, name, num, fg, bg, blocking=False):
+    def __init__(self, name, num, fg=0, bg=0):
         self.name = name
         self.num = num
         self.fg = fg
         self.bg = bg
-        self.blocking = blocking
 
     WIDTH = 9
     HEIGHT = 16
 
-    FLOOR = 0
-    WALL = 1
-    STAIRS = 2
+    NOTHING = 0
+    FLOOR = 1
+    WALL = 2
+    STAIRS = 3
 
-Tile.mapping = [
-        Tile('floor', ord('.'), rl.DARKGRAY, rl.color(32, 32, 32)),
-        Tile('wall', ord('#'), rl.LIGHTGRAY, rl.color(32, 32, 32)),
-        Tile('stairs', ord('>'), rl.BROWN, rl.color(32, 32, 32)),
+Tile.minirogue = [
+        Tile('nothing', 0),
+        Tile('floor', 0, rl.DARKGRAY, rl.color(32, 32, 32)),
+        Tile('wall', 2, rl.DARKGREEN, rl.color(32, 32, 32)),
+        Tile('stairs', 13, rl.LIGHTGRAY, rl.color(32, 32, 32)),
+
+        Tile('player', 88, rl.PEACH),
+        Tile('bat', 74, rl.INDIGO),
+        Tile('cat', 75, rl.ORANGE),
+        Tile('rat', 76, rl.BROWN),
+        Tile('orc', 83, rl.DARKGREEN),
+
+        Tile('key', 22, rl.YELLOW),
+        Tile('heart', 38, rl.RED),
+        Tile('sword', 69, rl.WHITE),
+        Tile('potion', 52, rl.GREEN),
+    ]
+
+Tile.dcss = [
+        Tile('nothing', 0),
+        Tile('floor', 13),
+        Tile('wall', 1),
+        Tile('stairs', 14),
+
+        Tile('player', 2),
+        Tile('bat', 11),
+        Tile('cat', 4),
+        Tile('rat', 5),
+        Tile('orc', 6),
+
+        Tile('key', 10),
+        Tile('heart', 12),
+        Tile('sword', 8),
+        Tile('potion', 9),
+    ]
+
+Tile.ascii = [
+        Tile('nothing', 0),
+        Tile('floor', 0, rl.DARKGRAY, rl.color(32, 32, 32)),
+        Tile('wall', ord('#'), rl.DARKGREEN, rl.color(32, 32, 32)),
+        Tile('stairs', ord('>'), rl.LIGHTGRAY, rl.color(32, 32, 32)),
+
+        Tile('player', ord('@'), rl.PEACH),
+        Tile('bat', ord('b'), rl.INDIGO),
+        Tile('cat', ord('c'), rl.ORANGE),
+        Tile('rat', ord('r'), rl.BROWN),
+        Tile('orc', ord('o'), rl.DARKGREEN),
+
+        Tile('key', ord('*'), rl.YELLOW),
+        Tile('heart', ord('%'), rl.RED),
+        Tile('sword', ord('|'), rl.WHITE),
+        Tile('potion', ord('!'), rl.GREEN),
     ]
 
 class Level:
@@ -31,6 +86,7 @@ class Level:
         self.array = rl.array(width, height)
         self.array.fill(Tile.FLOOR)
         self.bsp(0, 0, WIDTH, HEIGHT, Tile.FLOOR, Tile.WALL)
+        self.memory = rl.array(width, height)
 
         self.array.line(0, 0, WIDTH - 1, 0, Tile.WALL)
         self.array.line(0, HEIGHT - 1, WIDTH, HEIGHT - 1, Tile.WALL)
@@ -54,7 +110,7 @@ class Level:
                 l = y + rl.random_int(2, h - 2)
                 if self.array[x + split - 1, l] == floor and self.array[x + split + 1, l] == floor:
                     break
-            self.array[x + split, l] = 0
+            self.array[x + split, l] = floor
         else:
             split = rl.random_int(5, h - 5)
             for i in range(1, w):
@@ -65,10 +121,10 @@ class Level:
                 l = x + rl.random_int(2, w - 2)
                 if self.array[l, y + split - 1] == floor and self.array[l, y + split + 1] == floor:
                     break
-            self.array[l, y + split] = 0
+            self.array[l, y + split] = floor
 
     def is_empty(self, x, y):
-        if self.array[x, y] == Tile.WALL:
+        if self.array[x, y] != Tile.FLOOR:
             return False
         for actor in actors:
             if actor.x == x and actor.y == y:
@@ -113,7 +169,7 @@ class Actor:
     def can_see(self, other):
         if self.distance_to(other) > self.vision:
             return False
-        return level.array.can_see(self.x, self.y, other.x, other.y)
+        return level.array.can_see(self.x, self.y, other.x, other.y, Tile.WALL)
 
     def __repr__(self):
         return ujson.dumps(self.__dict__)
@@ -146,7 +202,14 @@ class Monster(Actor):
         self.move(dx, dy)
 
     def attack(self, other):
-        messages.append(self.name + ' attack ' + other.name)
+        messages.append(self.name + ' attacks ' + other.name + ' for ' + str(self.damage) + ' hp')
+        other.hp -= self.damage
+        if other.hp <= 0:
+            other.hp = 0
+            messages.append(other.name + ' dies')
+            if other is player:
+                game.state = 'dead'
+                messages.append('game over')
 
     def take_turn(self):
         distance = self.distance_to(player)
@@ -178,20 +241,24 @@ class Game:
         level = Level(WIDTH, HEIGHT)
         actors = LevelActors()
 
-        player = Player(name='player', tile=ord('@'), color=rl.PEACH)
+        player = Player(name='player', tile=4, hp=10, damage=3)
         actors.place(player)
         for i in range(3):
-            actors.place(Monster(name='bat', tile=ord('b'), color=rl.INDIGO))
-            actors.place(Monster(name='cat', tile=ord('c'), color=rl.ORANGE))
-            actors.place(Monster(name='rat', tile=ord('r'), color=rl.BROWN))
-            actors.place(Monster(name='orc', tile=ord('o'), color=rl.DARKGREEN))
+            actors.place(Monster(name='bat', tile=5, hp=1, damage=1))
+            actors.place(Monster(name='cat', tile=6, hp=5, damage=2))
+            actors.place(Monster(name='rat', tile=7, hp=3, damage=1))
+            actors.place(Monster(name='orc', tile=8, hp=8, damage=2))
 
-        actors.place(Item(name='key', tile=ord('*'), color=rl.YELLOW))
-        actors.place(Item(name='heart', tile=ord('!'), color=rl.RED))
-        actors.place(Item(name='sword', tile=ord('|'), color=rl.WHITE))
-        actors.place(Item(name='potion', tile=ord('!'), color=rl.GREEN))
+        actors.place(Item(name='key', tile=9))
+        actors.place(Item(name='heart', tile=10))
+        actors.place(Item(name='sword', tile=11))
+        actors.place(Item(name='potion', tile=12))
 
-        fov = level.array.field_of_view(player.x, player.y, 10, 1, True)
+        fov = level.array.field_of_view(player.x, player.y, 10, Tile.WALL, True)
+        level.array.copy_masked(level.memory, fov)
+
+        self.state = 'playing'
+        self.theme = 0
 
     def save(self):
         data = {}
@@ -200,12 +267,14 @@ class Game:
         data['messages'] = messages
         data['player'] = actors.index(player)
         data['level'] = level
+        data['state'] = self.state
+        data['theme'] = self.theme
         rl.save_pref('state.json', ujson.dumps(data))
 
     def load(self):
         global level, actors, player, messages, fov
         data = ujson.loads(rl.load_pref('state.json'))
-        rl.seed(data['seed'])
+        rl.set_seed(data['seed'])
         actors = LevelActors()
         mapping = {'actor': Actor, 'player': Player, 'monster': Monster, 'item': Item}
         for actor in data['actors']:
@@ -214,48 +283,55 @@ class Game:
         level = Level(WIDTH, HEIGHT)
         for j, row in enumerate(data['level']):
             for i, value in enumerate(row):
-                level[i, j] = value
+                level.array[i, j] = value
         player = actors[data['player']]
-        fov = level.field_of_view(player.x, player.y, 10)
+        fov = level.array.field_of_view(player.x, player.y, 10)
+        self.state = data['state']
+        self.theme = data['theme']
 
 
 game = Game()
 try:
     game.load()
-except:
+except Exception as e:
+    print(e)
     game.new()
 
-
-rl.load_font('data/font.ttf', 8)
-
-def rotate_tileset():
-    global current_tileset
-    current_tileset += 1
+def load_theme():
     tilesets = [
-            ['data/ascii_8x8.png', 8, 8],
-            ['data/polyducks_gloop_8x8.png', 8, 8],
-            ['data/cp437.png', 9, 16],
+            ['data/cp437.png', 9, 16, Tile.ascii, 16],
+            ['data/ascii_8x8.png', 8, 8, Tile.ascii, 8],
+            ['data/minirogue-c64-all.png', 8, 8, Tile.minirogue, 8],
+            ['data/polyducks_12x12.png', 12, 12, Tile.ascii, 8],
+            ['data/dcss.png', 32, 32, Tile.dcss, 32],
         ]
-    filename, Tile.WIDTH, Tile.HEIGHT = tilesets[current_tileset % len(tilesets)]
+    filename, Tile.WIDTH, Tile.HEIGHT, Tile.mapping, font_size = tilesets[game.theme % len(tilesets)]
     messages.append('loading tileset ' + filename)
 
-    rl.init('Pyrogue: Example roguelike [' + filename + ']', WIDTH * Tile.WIDTH, (HEIGHT + 4) * Tile.HEIGHT)
+    rl.init('Example roguelike [' + filename + ']', WIDTH * Tile.WIDTH, (HEIGHT + 4) * Tile.HEIGHT)
     rl.load_image(0, filename, Tile.WIDTH, Tile.HEIGHT)
+    rl.load_font('data/font.ttf', font_size, font_size)
 
-current_tileset = 0
-rotate_tileset()
+load_theme()
 
 def handle_input():
     global fov
     key = rl.wait_key()
-    print(key, rl.LEFT, rl.RIGHT, rl.UP, rl.DOWN)
     dx = dy = 0
     if key == rl.ESCAPE or key == rl.QUIT:
         game.save()
         rl.quit()
+    elif key == ord('t'):
+        game.theme += 1
+        load_theme()
+        return rl.REDRAW
     elif key == ord('N'):
         game.new()
-    elif key == ord('h') or key == rl.LEFT:
+
+    if game.state == 'dead':
+        return rl.REDRAW
+
+    if key == ord('h') or key == rl.LEFT:
         dx = -1
     elif key == ord('j') or key == rl.DOWN:
         dy = 1
@@ -271,11 +347,11 @@ def handle_input():
         dx, dy = -1, -1
     elif key == ord('u'):
         dx, dy = 1, -1
-    elif key == ord('t'):
-        rotate_tileset()
     if dx != 0 or dy != 0:
         player.move(dx, dy)
         fov = level.array.field_of_view(player.x, player.y, 10, Tile.WALL, True)
+        level.array.copy_masked(level.memory, fov)
+    return key
 
 def update():
     for actor in actors:
@@ -284,23 +360,35 @@ def update():
 
 def redraw():
     rl.clear()
-    rl.draw_array(level.array, 0, 0, 
+    # draw the full level
+    '''rl.draw_array(level.array, 0, 0, 
+            mapping=[tile.num for tile in Tile.mapping],
+            fg=[tile.fg for tile in Tile.mapping],
+            bg=[tile.bg for tile in Tile.mapping])'''
+
+    # draw memorized tiles
+    rl.draw_array(level.memory, 0, 0, 
+            mapping=[tile.num for tile in Tile.mapping],
+            fg=[rl.color(255, 255, 255, 64) for tile in Tile.mapping])
+    # draw level masked with fov
+    to_draw = rl.array(WIDTH, HEIGHT)
+    level.array.copy_masked(to_draw, fov)
+    rl.draw_array(to_draw, 0, 0, 
             mapping=[tile.num for tile in Tile.mapping],
             fg=[tile.fg for tile in Tile.mapping],
             bg=[tile.bg for tile in Tile.mapping])
-    rl.draw_array(fov, 0, 0, 
-            mapping=[0, 0],
-            bg=[rl.color(0, 0, 0, 255), rl.color(0, 0, 0, 0)],
-            fg=None)
+    to_draw.free()
     for actor in actors:
         if player.can_see(actor):
-            rl.colorize_tile(0, actor.x * Tile.WIDTH, actor.y * Tile.HEIGHT, actor.tile, actor.color, 0)
-    #rl.draw_image(0, 8 * WIDTH - 80, 0)
+            tile = Tile.mapping[actor.tile]
+            rl.colorize_tile(0, actor.x * Tile.WIDTH, actor.y * Tile.HEIGHT, tile.num, tile.fg, tile.bg)
+    #rl.draw_image(0, Tile.WIDTH * WIDTH - 128, 0)
+    rl.print_text(0, 0, 'hp: %d  damage: %d' % (player.hp, player.damage))
     rl.print_text(0, Tile.HEIGHT * HEIGHT, '\n'.join(messages[-4:]))
     rl.present()
 
 while rl.still_running():
     redraw()
-    handle_input()
-    update()
+    if handle_input() != rl.REDRAW:
+        update()
 
