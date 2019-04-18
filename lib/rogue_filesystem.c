@@ -1,14 +1,7 @@
 #include <stdio.h>
-
-#define USE_MINIZ
-
-#ifdef USE_MINIZ
-#include "miniz.h"
-#else
-#include <zip.h>
-#endif
-
+#include <sys/stat.h>
 #include <SDL2/SDL.h>
+#include "miniz.h"
 
 #include "rogue_filesystem.h"
 
@@ -24,17 +17,13 @@
 #endif
 
 // marker is reversed to prevent it from showing in the regular executable
-#define REVERSED_MARKER "__DAOLYAP__"
+char* embed_marker = "__PYROGUE_EMBED__";
 
 enum { RESOURCE_DIR, RESOURCE_ZIP };
 
 static char* resource_path = NULL;
 static int resource_type = RESOURCE_DIR;
-#ifdef USE_MINIZ
 mz_zip_archive* resource_zip = NULL;
-#else
-static zip_t* resource_zip = NULL;
-#endif
 
 // may need to change path separator if developed on a different platform
 static const char* normalize_path(const char* path) {
@@ -88,37 +77,11 @@ static char* load_file(const char* filename, uint32_t* size) {
 }
 
 // TODO: print error messages
-#ifdef USE_MINIZ
 static char* load_file_zip(mz_zip_archive* archive, const char* filename, uint32_t* size) {
 	size_t uncompressed_size;
 	char* data = mz_zip_reader_extract_file_to_heap(archive, filename, &uncompressed_size, 0);
 	*size = uncompressed_size;
 	return data;
-#else
-static char* load_file_zip(zip_t* archive, const char* filename, uint32_t* size) {
-	struct zip_stat info;
-	if(archive == NULL) return NULL;
-	if(-1 == zip_stat(archive, filename, 0, &info)) {
-		fprintf(stderr, "%s: %s\n", filename, zip_error_strerror(zip_get_error(archive)));
-		return NULL;
-	}
-	zip_file_t *fp = zip_fopen(archive, filename, 0);
-	if(fp == NULL) {
-		fprintf(stderr, "%s: %s\n", filename, zip_error_strerror(zip_get_error(archive)));
-		return NULL;
-	}
-	*size = info.size;
-
-	char* data = malloc(*size);
-	if(zip_fread(fp, data, *size) != *size) {
-		fprintf(stderr, "%s: %s\n", filename, zip_error_strerror(zip_get_error(archive)));
-		free(data);
-		zip_fclose(fp);
-		return NULL;
-	}
-	zip_fclose(fp);
-	return data;
-#endif
 }
 
 int fs_open_resources(const char* _path) {
@@ -127,7 +90,6 @@ int fs_open_resources(const char* _path) {
 	resource_path = strdup(path);
 	if(!strcmp(path + strlen(path) - 4, ".zip")) {
 		resource_type = RESOURCE_ZIP;
-#ifdef USE_MINIZ
 		if(resource_zip != NULL) mz_zip_reader_end(resource_zip);
 		resource_zip = calloc(sizeof(mz_zip_archive), 1);
 		uint32_t zip_data_size;
@@ -140,18 +102,6 @@ int fs_open_resources(const char* _path) {
 			fprintf(stderr, "%s: invalid zip\n", resource_path);
 			return 0;
 		}
-#else
-		int ze;
-		if(resource_zip != NULL) zip_close(resource_zip);
-		resource_zip = zip_open(resource_path, ZIP_RDONLY, &ze);
-		if(resource_zip == NULL) {
-			zip_error_t error;
-			zip_error_init_with_code(&error, ze);
-			fprintf(stderr, "%s: %s\n", resource_path, zip_error_strerror(&error));
-			zip_error_fini(&error);
-			return 0;
-		}
-#endif
 	} else if(!strcmp(path + strlen(path) - 1, STR_PATH_SEPARATOR)) {
 		resource_type = RESOURCE_DIR;
 	} else {
@@ -159,52 +109,123 @@ int fs_open_resources(const char* _path) {
 		uint32_t data_size;
 		char* data = load_file(path, &data_size);
 		if(data == NULL) return 0;
-		uint32_t marker_length = strlen(REVERSED_MARKER);
-		char marker[marker_length + 1];
-		for(int i = 0; i < marker_length; i++) marker[i] = REVERSED_MARKER[marker_length - i - 1];
-		marker[marker_length] = 0;
-		for(uint32_t offset = data_size - marker_length - 1; offset > 0; offset--) {
-			if(!memcmp(data + offset, marker, marker_length)) {
-				//fprintf(stderr, "marker found at %u\n", offset);
-#ifdef USE_MINIZ
-				if(resource_zip != NULL) mz_zip_reader_end(resource_zip);
-				resource_zip = calloc(sizeof(mz_zip_archive), 1);
-				if(!mz_zip_reader_init_mem(resource_zip, data + offset + marker_length, data_size - offset - marker_length, 0)) {
-					fprintf(stderr, "%s: invalid zip\n", resource_path);
-					return 0;
-				}
-				return 1;
-#else
-				zip_error_t error;
-				zip_source_t* src = zip_source_buffer_create(data + offset + marker_length, data_size - offset - marker_length, 1, &error);
-
-				if(src == NULL) {
-					fprintf(stderr, "can't create source: %s\n", zip_error_strerror(&error));
-					free(data);
-					zip_error_fini(&error);
-					return 0;
-				}
-				if ((resource_zip = zip_open_from_source(src, 0, &error)) == NULL) {
-					fprintf(stderr, "can't open zip from source: %s\n", zip_error_strerror(&error));
-					zip_source_free(src);
-					zip_error_fini(&error);
-					return 0;
-				}
-				return 1;
-#endif
+		int marker_size = strlen(embed_marker);
+		if(!strncmp(data + data_size - marker_size, embed_marker, marker_size)) {
+			uint32_t offset = *(uint32_t*)(data + data_size - marker_size - sizeof(uint32_t));
+			uint32_t size = data_size - offset - marker_size - sizeof(uint32_t);
+			if(resource_zip != NULL) mz_zip_reader_end(resource_zip);
+			resource_zip = calloc(sizeof(mz_zip_archive), 1);
+			if(!mz_zip_reader_init_mem(resource_zip, data + offset, size, 0)) {
+				fprintf(stderr, "%s: invalid zip\n", resource_path);
+				return 0;
 			}
+			return 1;
 		}
-		//fprintf(stderr, "marker not found in '%s'\n", path);
 		return 0;
 	}
 	return 1;
 }
 
-static void __attribute__((destructor)) _fs_cleanup() {
-	//if(resource_zip != NULL) zip_close(resource_zip);
-#ifdef USE_MINIZ
-	if(resource_zip != NULL) mz_zip_reader_end(resource_zip);
+int fs_has_embed(const char* exe) {
+	FILE* fp = fopen(exe, "r");
+	if(!fp) {
+		perror(exe);
+		return 0;
+	}
+	int marker_size = strlen(embed_marker);
+	fseek(fp, marker_size, SEEK_END);
+	char buffer[marker_size];
+	if(marker_size != fread(buffer, 1, marker_size, fp)) {
+		perror(exe);
+		fclose(fp);
+		return 0;
+	}
+	fclose(fp);
+	if(!strncmp(buffer, embed_marker, marker_size)) {
+		return 1;
+	}
+	return 0;
+}
+
+int fs_add_embed(const char* exe, const char* zip, const char* target) {
+	uint32_t exe_size, zip_size;
+	char* exe_content = load_file(exe, &exe_size);
+	if(exe_content == NULL) return 0;
+	char* zip_content = load_file(zip, &zip_size);
+	if(zip_content == NULL) {
+		free(exe_content); 
+		return 0;
+	}
+	FILE* fp = fopen(target, "w");
+	if(exe_size != fwrite(exe_content, 1, exe_size, fp)) {
+		perror(target);
+		fclose(fp);
+		free(exe_content);
+		free(zip_content);
+		return 0;
+	}
+	if(zip_size != fwrite(zip_content, 1, zip_size, fp)) {
+		perror(target);
+		fclose(fp);
+		free(exe_content);
+		free(zip_content);
+		return 0;
+	}
+	if(sizeof(uint32_t) != fwrite(&exe_size, 1, sizeof(uint32_t), fp)) {
+		perror(target);
+		fclose(fp);
+		free(exe_content);
+		free(zip_content);
+		return 0;
+	}
+	if(strlen(embed_marker) != fwrite(embed_marker, 1, strlen(embed_marker), fp)) {
+		perror(target);
+		fclose(fp);
+		free(exe_content);
+		free(zip_content);
+		return 0;
+	}
+	fclose(fp);
+	free(exe_content);
+	free(zip_content);
+#ifndef __WIN32__
+	chmod(target, 0755);
 #endif
+	fprintf(stderr, "created '%s' with embedded zip '%s'.\n", target, zip);
+	return 1;
+}
+
+int fs_extract_embed(const char* exe, const char* target) {
+	uint32_t data_size;
+	char* data = load_file(exe, &data_size);
+	if(data == NULL) return 0;
+	int marker_size = strlen(embed_marker);
+	if(!strncmp(data + data_size - marker_size, embed_marker, marker_size)) {
+		uint32_t offset = *(uint32_t*)(data + data_size - marker_size - sizeof(uint32_t));
+		uint32_t size = data_size - offset - marker_size - sizeof(uint32_t);
+		FILE* fp = fopen(target, "w");
+		if(!fp) {
+			perror(target);
+			free(data);
+			return 0;
+		}
+		if(size != fwrite(data + offset, 1, size, fp)) {
+			perror(target);
+			fclose(fp);
+			free(data);
+			return 0;
+		}
+		fclose(fp);
+		free(data);
+		fprintf(stderr, "extracted embedded zip to '%s'.\n", target);
+		return 1;
+	}
+	fprintf(stderr, "no embedded zip found.\n");
+	return 0;
+}
+
+static void __attribute__((destructor)) _fs_cleanup() {
+	if(resource_zip != NULL) mz_zip_reader_end(resource_zip);
 }
 
 static char* pref_dir = NULL;
@@ -219,7 +240,6 @@ char* fs_load_asset(const char* _path, uint32_t* size) {
 		char filename[MAX_PATH_SIZE];
 		if(resource_path == NULL) snprintf(filename, MAX_PATH_SIZE, "%s", path);
 		else snprintf(filename, MAX_PATH_SIZE, "%s%c%s", resource_path, PATH_SEPARATOR, path);
-		//printf("_path = %s, path = %s, resource_path = %s, filename = %s\n", _path, path, resource_path, filename);
 		return load_file(filename, size);
 	} else if (resource_type == RESOURCE_ZIP) {
 		return load_file_zip(resource_zip, path, size);
@@ -254,14 +274,3 @@ int fs_save_pref(const char* path, const char* data, uint32_t size) {
 	return 1;
 }
 
-int fs_extract_native(const char* self_exe, const char* dir, const char* target) {
-	fprintf(stderr, "not implemented yet\n");
-	// extract resources from executable
-}
-
-int fs_export_native(const char* self_exe, const char* dir, const char* target) {
-	fprintf(stderr, "not implemented yet\n");
-	// 0) check that game.py exists in dir
-	// 1) create zip with contents of dir
-	// 2) append zip to argv[0]
-}

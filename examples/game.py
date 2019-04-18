@@ -1,5 +1,5 @@
 # TODO:
-# load / save array data as strings
+# text with shadow
 # player attack other
 # pickup items
 # use item
@@ -43,6 +43,8 @@ Tile.minirogue = [
         Tile('heart', 38, rl.RED),
         Tile('sword', 69, rl.WHITE),
         Tile('potion', 52, rl.GREEN),
+
+        Tile('corpse', 17, rl.RED),
     ]
 
 Tile.dcss = [
@@ -61,6 +63,8 @@ Tile.dcss = [
         Tile('heart', 12),
         Tile('sword', 8),
         Tile('potion', 9),
+
+        Tile('corpse', 7),
     ]
 
 Tile.ascii = [
@@ -76,10 +80,26 @@ Tile.ascii = [
         Tile('orc', ord('o'), rl.DARKGREEN),
 
         Tile('key', ord('*'), rl.YELLOW),
-        Tile('heart', ord('%'), rl.RED),
+        Tile('heart', ord('$'), rl.RED),
         Tile('sword', ord('|'), rl.WHITE),
         Tile('potion', ord('!'), rl.GREEN),
+
+        Tile('corpse', ord('%'), rl.RED),
     ]
+
+def load_theme():
+    tilesets = [
+            ['data/ascii_8x8.png', 8, 8, Tile.ascii, 8],
+            ['data/minirogue-c64-all.png', 8, 8, Tile.minirogue, 8],
+            ['data/cp437.png', 9, 16, Tile.ascii, 16],
+            ['data/polyducks_12x12.png', 12, 12, Tile.ascii, 8],
+            ['data/dcss.png', 32, 32, Tile.dcss, 32],
+        ]
+    filename, Tile.WIDTH, Tile.HEIGHT, Tile.mapping, font_size = tilesets[game.theme % len(tilesets)]
+
+    rl.init('Example roguelike [' + filename + ']', WIDTH * Tile.WIDTH, (HEIGHT + 4) * Tile.HEIGHT)
+    rl.load_image(0, filename, Tile.WIDTH, Tile.HEIGHT)
+    rl.load_font('data/font.ttf', font_size, font_size)
 
 class Level:
     def __init__(self, width, height):
@@ -147,18 +167,20 @@ class LevelActors(list):
                 break
         self.append(actor)
 
-    def around(self, x, y, radius):
+    def around(self, x, y, radius, blocking=False):
         found = []
         for actor in self:
-            distance = (actor.x - x) ** 2 + (actor.y - y) ** 2
-            if distance < radius ** 2:
-                found.append(actor)
+            if not blocking or (blocking and actor.blocking):
+                distance = (actor.x - x) ** 2 + (actor.y - y) ** 2
+                if distance < radius ** 2:
+                    found.append(actor)
         return found
 
 class Actor:
     def __init__(self, **kwargs):
-        self.x = self.y = 0
+        self.x = self.y = self.z = 0
         self.vision = 10
+        self.blocking = False
         self.type = 'actor'
         for name, value in kwargs.items():
             setattr(self, name, value)
@@ -179,15 +201,19 @@ class Monster(Actor):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.type = 'monster'
+        self.z = 1
+        self.blocking = True
 
     def move(self, dx, dy):
         x, y = self.x + dx, self.y + dy
         if level.array[x, y] == Tile.WALL:
             return
-        found = actors.around(x, y, 1)
+        found = actors.around(x, y, 1, blocking=True)
         if len(found) == 0:
             self.x = x
             self.y = y
+        elif found[0].type == 'monster' and self is player:
+            self.attack(found[0])
 
     def move_towards(self, x, y):
         dx = dy = 0
@@ -206,12 +232,16 @@ class Monster(Actor):
         other.hp -= self.damage
         if other.hp <= 0:
             other.hp = 0
+            other.tile = 13
+            other.blocking = False
             messages.append(other.name + ' dies')
             if other is player:
                 game.state = 'dead'
                 messages.append('game over')
 
     def take_turn(self):
+        if self.hp <= 0:
+            return
         distance = self.distance_to(player)
         if distance < 2:
             self.attack(player)
@@ -225,6 +255,7 @@ class Player(Monster):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.type = 'player'
+        self.z = 2
 
 
 class Item(Actor):
@@ -241,7 +272,7 @@ class Game:
         level = Level(WIDTH, HEIGHT)
         actors = LevelActors()
 
-        player = Player(name='player', tile=4, hp=10, damage=3)
+        player = Player(name='player', tile=4, hp=30, damage=3)
         actors.place(player)
         for i in range(3):
             actors.place(Monster(name='bat', tile=5, hp=1, damage=1))
@@ -266,7 +297,8 @@ class Game:
         data['actors'] = actors
         data['messages'] = messages
         data['player'] = actors.index(player)
-        data['level'] = level
+        data['level'] = level.array.to_string()
+        data['memory'] = level.memory.to_string()
         data['state'] = self.state
         data['theme'] = self.theme
         rl.save_pref('state.json', ujson.dumps(data))
@@ -274,43 +306,27 @@ class Game:
     def load(self):
         global level, actors, player, messages, fov
         data = ujson.loads(rl.load_pref('state.json'))
-        rl.set_seed(data['seed'])
         actors = LevelActors()
         mapping = {'actor': Actor, 'player': Player, 'monster': Monster, 'item': Item}
         for actor in data['actors']:
             actors.append(mapping[actor['type']](**actor))
         messages = data['messages']
         level = Level(WIDTH, HEIGHT)
-        for j, row in enumerate(data['level']):
-            for i, value in enumerate(row):
-                level.array[i, j] = value
+        level.array = rl.array_from_string(data['level'])
+        level.memory = rl.array_from_string(data['memory'])
         player = actors[data['player']]
-        fov = level.array.field_of_view(player.x, player.y, 10)
         self.state = data['state']
         self.theme = data['theme']
-
+        fov = level.array.field_of_view(player.x, player.y, 10, Tile.WALL, True)
+        rl.set_seed(data['seed'])
 
 game = Game()
+
 try:
     game.load()
 except Exception as e:
     print(e)
     game.new()
-
-def load_theme():
-    tilesets = [
-            ['data/cp437.png', 9, 16, Tile.ascii, 16],
-            ['data/ascii_8x8.png', 8, 8, Tile.ascii, 8],
-            ['data/minirogue-c64-all.png', 8, 8, Tile.minirogue, 8],
-            ['data/polyducks_12x12.png', 12, 12, Tile.ascii, 8],
-            ['data/dcss.png', 32, 32, Tile.dcss, 32],
-        ]
-    filename, Tile.WIDTH, Tile.HEIGHT, Tile.mapping, font_size = tilesets[game.theme % len(tilesets)]
-    messages.append('loading tileset ' + filename)
-
-    rl.init('Example roguelike [' + filename + ']', WIDTH * Tile.WIDTH, (HEIGHT + 4) * Tile.HEIGHT)
-    rl.load_image(0, filename, Tile.WIDTH, Tile.HEIGHT)
-    rl.load_font('data/font.ttf', font_size, font_size)
 
 load_theme()
 
@@ -378,12 +394,20 @@ def redraw():
             fg=[tile.fg for tile in Tile.mapping],
             bg=[tile.bg for tile in Tile.mapping])
     to_draw.free()
+
+    # draw actors
+    actors.sort(key=lambda x: x.z)
     for actor in actors:
         if player.can_see(actor):
             tile = Tile.mapping[actor.tile]
+            floor = Tile.mapping[level.array[actor.x, actor.y]]
+            rl.colorize_tile(0, actor.x * Tile.WIDTH, actor.y * Tile.HEIGHT, floor.num, floor.fg, floor.bg)
             rl.colorize_tile(0, actor.x * Tile.WIDTH, actor.y * Tile.HEIGHT, tile.num, tile.fg, tile.bg)
     #rl.draw_image(0, Tile.WIDTH * WIDTH - 128, 0)
+
+    rl.print_text(Tile.WIDTH // 8, Tile.HEIGHT // 8, 'hp: %d  damage: %d' % (player.hp, player.damage), rl.color(0, 0, 0, 192))
     rl.print_text(0, 0, 'hp: %d  damage: %d' % (player.hp, player.damage))
+
     rl.print_text(0, Tile.HEIGHT * HEIGHT, '\n'.join(messages[-4:]))
     rl.present()
 

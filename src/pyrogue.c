@@ -164,24 +164,17 @@ STATIC int do_str(const char *str, uint32_t size) {
     return execute_from_lexer(LEX_SRC_STR, str, size, MP_PARSE_FILE_INPUT, false);
 }
 
-/* Usage:
- * ./pyrogue (no args) => execute game.py from embedded zip if exits else show usage 
- * ./pyrogue script.py => cd to script directory and run script.py
- * ./pyrogue archive.zip => load archive and run game.py from archive root
- * TODO ./pyrogue directory/ => cd to directory and run game.py
- * TODO ./pyrogue -embed directory output => create exectuable with embedded directory content
- * TODO ./pyrogue -extract directory => extract embedded data if it exists
- *
- * embedded executable is a zip at the end of current executable after the "__RLPY__PAYLOAD__" marker
- * TODO change to a marker and offset at the end of the executable
- */
 void usage(char* arg0) {
-	printf("usage: %s <game.py>|<game.zip>\n", arg0);
+	printf("usage: %s [options]\n", arg0);
+	printf("  without arguments             run game.py from embedded zip if any\n");
+	printf("  <file.py>                     run script with resource path set to its directory\n");
+	printf("  <zip>                         run game.py from root of zip\n");
+	printf("  -embed <zip> <target-exe>     create exe embedding zip for standalone execution\n");
+	printf("  -extract <zip>                extract embedd zip from executable\n");
 	exit(1);
 }
 
 int main(int argc, char** argv) {
-	if(argc > 2) usage(argv[0]);
 
 	// Initialized stack limit
 	mp_stack_set_limit(40000 * (BYTES_PER_WORD / 4));
@@ -205,19 +198,19 @@ int main(int argc, char** argv) {
 	mp_obj_list_init(MP_OBJ_TO_PTR(mp_sys_argv), 0);
 
 	uint32_t content_size;
-	char* content;
+	char* content = NULL;
 	if(argc == 1) {
 		fs_open_resources(argv[0]);
 		content = fs_load_asset("game.py", &content_size);
 		if(content == NULL) usage(argv[0]);
-	} else if(!strcmp(argv[1] + strlen(argv[1]) - 4, ".zip")) {
+	} else if(argc == 2 && !strcmp(argv[1] + strlen(argv[1]) - 4, ".zip")) {
 		fs_open_resources(argv[1]);
 		content = fs_load_asset("game.py", &content_size);
 		if(content == NULL) {
 			fprintf(stderr, "cannot load 'game.py' from '%s'\n", argv[1]);
 			exit(1);
 		}
-	} else {
+	} else if(argc == 2) {
 		FILE* fp = fopen(argv[1], "r");
 		if(!fp) {
 			perror(argv[1]);
@@ -243,11 +236,14 @@ int main(int argc, char** argv) {
 			*(slash + 1) = '\0';
 			fs_open_resources(argv[1]);
 		}
+	} else if (argc == 3 && !strcmp(argv[1], "-extract")) {
+		fs_extract_embed(argv[0], argv[2]);
+	} else if (argc == 4 && !strcmp(argv[1], "-embed")) {
+		fs_add_embed(argv[0], argv[2], argv[3]);
+	} else {
+		usage(argv[0]);
 	}
 
-	/*if (execute_from_str(content)) {
-		printf("Error\n");
-	}*/
 	//fprintf(stderr, "%s\n", content);
 	do_str(content, content_size);
 	free(content);
