@@ -37,7 +37,7 @@ int rl_random_int(int a, int b) {
 }
 
 float rl_random() {
-	return (float)rl_random_next() / UINT_MAX;
+	return (float)(rl_random_next() & 0xffff) / 0xffff;
 }
 
 int rl_roll(const char* dice) {

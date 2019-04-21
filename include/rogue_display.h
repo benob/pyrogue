@@ -3,9 +3,12 @@
 
 #include <stdint.h>
 #include "rogue_array.h"
+#include "rogue_keys.h"
 
+// text alignment
 enum {TD_ALIGN_LEFT, TD_ALIGN_RIGHT, TD_ALIGN_CENTER};
-enum {TD_QUIT = -1, TD_MOUSE = -2, TD_REDRAW = 0, TD_ESCAPE = 27, TD_LEFT = (1 << 30) | 80, TD_RIGHT = (1 << 30) | 79, TD_DOWN = (1 << 30) | 81, TD_UP = (1 << 30) | 82};
+// events
+enum {TD_QUIT = -1, TD_MOUSE = -2, TD_REDRAW = 0};
 
 typedef struct {
 	int x, y;

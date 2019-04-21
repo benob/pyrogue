@@ -96,30 +96,30 @@ STATIC int handle_uncaught_exception(mp_obj_base_t *exc) {
 // Returns standard error codes: 0 for success, 1 for all other errors,
 // except if FORCED_EXIT bit is set then script raised SystemExit and the
 // value of the exit is in the lower 8 bits of the return value
-STATIC int execute_from_lexer(int source_kind, const void *source, uint32_t size, mp_parse_input_kind_t input_kind, bool is_repl) {
+STATIC int execute_from_lexer(int source_kind, const void *source, uint32_t size, mp_parse_input_kind_t input_kind, bool is_repl, const char* name) {
     //mp_hal_set_interrupt_char('c');
 
     nlr_buf_t nlr;
     if (nlr_push(&nlr) == 0) {
         // create lexer based on source kind
         mp_lexer_t *lex;
+				qstr qname = qstr_from_strn(name, strlen(name));
         if (source_kind == LEX_SRC_STR) {
             const char *line = source;
-            lex = mp_lexer_new_from_str_len(MP_QSTR__lt_stdin_gt_, line, size, /*strlen(line),*/ false);
+            lex = mp_lexer_new_from_str_len(qname, line, size, /*strlen(line),*/ false);
         } else if (source_kind == LEX_SRC_VSTR) {
             const vstr_t *vstr = source;
-            lex = mp_lexer_new_from_str_len(MP_QSTR__lt_stdin_gt_, vstr->buf, vstr->len, false);
+            lex = mp_lexer_new_from_str_len(qname, vstr->buf, vstr->len, false);
         } else if (source_kind == LEX_SRC_FILENAME) {
             lex = mp_lexer_new_from_file((const char*)source);
         } else { // LEX_SRC_STDIN
-            lex = mp_lexer_new_from_fd(MP_QSTR__lt_stdin_gt_, 0, false);
+            lex = mp_lexer_new_from_fd(qname, 0, false);
         }
-
-        qstr source_name = lex->source_name;
+				qstr source_name = lex->source_name;
 
         #if MICROPY_PY___FILE__
         if (input_kind == MP_PARSE_FILE_INPUT) {
-            //mp_store_global(MP_QSTR___file__, MP_OBJ_NEW_QSTR(source_name));
+					mp_store_global(MP_QSTR___file__, MP_OBJ_NEW_QSTR(source_name));
         }
         #endif
 
@@ -160,8 +160,8 @@ STATIC int execute_from_lexer(int source_kind, const void *source, uint32_t size
     return execute_from_lexer(LEX_SRC_FILENAME, file, MP_PARSE_FILE_INPUT, false);
 }*/
 
-STATIC int do_str(const char *str, uint32_t size) {
-    return execute_from_lexer(LEX_SRC_STR, str, size, MP_PARSE_FILE_INPUT, false);
+STATIC int do_str(const char *str, uint32_t size, const char* name) {
+    return execute_from_lexer(LEX_SRC_STR, str, size, MP_PARSE_FILE_INPUT, false, name);
 }
 
 void usage(char* arg0) {
@@ -199,10 +199,12 @@ int main(int argc, char** argv) {
 
 	uint32_t content_size;
 	char* content = NULL;
+	const char* filename = NULL;
 	if(argc == 1) {
 		fs_open_resources(argv[0]);
 		content = fs_load_asset("game.py", &content_size);
 		if(content == NULL) usage(argv[0]);
+		filename = "game.py";
 	} else if(argc == 2 && !strcmp(argv[1] + strlen(argv[1]) - 4, ".zip")) {
 		fs_open_resources(argv[1]);
 		content = fs_load_asset("game.py", &content_size);
@@ -210,6 +212,7 @@ int main(int argc, char** argv) {
 			fprintf(stderr, "cannot load 'game.py' from '%s'\n", argv[1]);
 			exit(1);
 		}
+		filename = "game.py";
 	} else if(argc == 2) {
 		FILE* fp = fopen(argv[1], "r");
 		if(!fp) {
@@ -231,11 +234,14 @@ int main(int argc, char** argv) {
 		fread(content, content_size, 1, fp);
 		content[content_size] = '\0';
 		fclose(fp);
-		char* slash = strrchr(argv[1], '/');
+		filename = argv[1];
+		char* path = strdup(argv[1]);
+		char* slash = strrchr(path, '/');
 		if(slash != NULL) {
 			*(slash + 1) = '\0';
-			fs_open_resources(argv[1]);
+			fs_open_resources(path);
 		}
+		free(path);
 	} else if (argc == 3 && !strcmp(argv[1], "-extract")) {
 		fs_extract_embed(argv[0], argv[2]);
 	} else if (argc == 4 && !strcmp(argv[1], "-embed")) {
@@ -245,8 +251,10 @@ int main(int argc, char** argv) {
 	}
 
 	//fprintf(stderr, "%s\n", content);
-	do_str(content, content_size);
-	free(content);
+	if(content != NULL) {
+		do_str(content, content_size, filename);
+		free(content);
+	}
 
 	mp_deinit();
 

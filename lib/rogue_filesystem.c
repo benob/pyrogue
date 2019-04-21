@@ -102,6 +102,7 @@ int fs_open_resources(const char* _path) {
 			fprintf(stderr, "%s: invalid zip\n", resource_path);
 			return 0;
 		}
+		//free(zip_data);
 	} else if(!strcmp(path + strlen(path) - 1, STR_PATH_SEPARATOR)) {
 		resource_type = RESOURCE_DIR;
 	} else {
@@ -117,17 +118,20 @@ int fs_open_resources(const char* _path) {
 			resource_zip = calloc(sizeof(mz_zip_archive), 1);
 			if(!mz_zip_reader_init_mem(resource_zip, data + offset, size, 0)) {
 				fprintf(stderr, "%s: invalid zip\n", resource_path);
+				free(data);
 				return 0;
 			}
+			//free(data);
 			return 1;
 		}
+		//free(data);
 		return 0;
 	}
 	return 1;
 }
 
 int fs_has_embed(const char* exe) {
-	FILE* fp = fopen(exe, "r");
+	FILE* fp = fopen(exe, "rb");
 	if(!fp) {
 		perror(exe);
 		return 0;
@@ -156,7 +160,7 @@ int fs_add_embed(const char* exe, const char* zip, const char* target) {
 		free(exe_content); 
 		return 0;
 	}
-	FILE* fp = fopen(target, "w");
+	FILE* fp = fopen(target, "wb");
 	if(exe_size != fwrite(exe_content, 1, exe_size, fp)) {
 		perror(target);
 		fclose(fp);
@@ -203,7 +207,7 @@ int fs_extract_embed(const char* exe, const char* target) {
 	if(!strncmp(data + data_size - marker_size, embed_marker, marker_size)) {
 		uint32_t offset = *(uint32_t*)(data + data_size - marker_size - sizeof(uint32_t));
 		uint32_t size = data_size - offset - marker_size - sizeof(uint32_t);
-		FILE* fp = fopen(target, "w");
+		FILE* fp = fopen(target, "wb");
 		if(!fp) {
 			perror(target);
 			free(data);

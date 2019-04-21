@@ -55,6 +55,7 @@
 #define MICROPY_OPT_COMPUTED_GOTO   (1)
 #define MICROPY_OPT_CACHE_MAP_LOOKUP_IN_BYTECODE (0)
 #define MICROPY_CAN_OVERRIDE_BUILTINS (1)
+#define MICROPY_PY_FUNCTION_ATTRS   (1)
 #define MICROPY_BUILTIN_METHOD_CHECK_SELF_ARG (1)
 #define MICROPY_CPYTHON_COMPAT      (1)
 #define MICROPY_PY_BUILTINS_BYTEARRAY (1)
@@ -101,6 +102,8 @@ extern const struct _mp_obj_module_t mp_module_rl;
     { MP_ROM_QSTR(MP_QSTR_uos), MP_ROM_PTR(&mp_module_os) }, \
 
 #define MICROPY_PORT_ROOT_POINTERS \
+
+#define mp_check_self(pred) if(!(pred)) mp_raise_msg(&mp_type_TypeError, "wrong type for self");
 
 //////////////////////////////////////////
 // Do not change anything beyond this line

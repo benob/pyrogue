@@ -1,4 +1,5 @@
-/*
+/* Modified to allow importing modules from pyrogue assets
+ * ***************
  * This file is part of the MicroPython project, http://micropython.org/
  *
  * The MIT License (MIT)

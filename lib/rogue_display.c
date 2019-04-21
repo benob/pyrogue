@@ -113,7 +113,7 @@ void td_load_font(const char* font_path, int font_size, int line_height) {
 	display.font = STBTTF_OpenFontRW(display.renderer, ops, font_size);
 	if(display.font) display.line_height = display.font->baseline;
 #endif
-	//free(font_data);
+	free(font_data);
 	if(display.font == NULL) die("cannot load font '%s'", font_path);
 	if(line_height != 0) display.line_height = line_height;
 }
