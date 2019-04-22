@@ -72,8 +72,8 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_rl_roll_obj, mod_rl_roll);
 
 STATIC mp_obj_t mod_rl_set_seed(mp_obj_t seed_in) {
 	mp_uint_t seed = mp_obj_get_int(seed_in);
-	mp_uint_t result = rl_set_seed(seed);
-	return mp_obj_new_int_from_uint(result);
+	rl_set_seed(seed);
+	return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_rl_set_seed_obj, mod_rl_set_seed);
 

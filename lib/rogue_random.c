@@ -5,29 +5,37 @@
 
 #include "rogue_array.h"
 
-// MINSTD3 Lehmer generator
-static uint32_t random_state = 123;
+static uint64_t random_state = 123;
 
+// PCG generator
+uint32_t rl_random_next() {
+    uint64_t oldstate = random_state;
+    random_state = oldstate * 6364136223846793005ULL + 1;
+    uint32_t xorshifted = ((oldstate >> 18u) ^ oldstate) >> 27u;
+    uint32_t rot = oldstate >> 59u;
+    return (xorshifted >> rot) | (xorshifted << ((-rot) & 31));
+}
+
+/* MINSTD3 Lehmer generator
 uint32_t rl_random_next() {
   uint64_t state = random_state;
   state *= 69621;
   random_state = state % 2147483647;
   return random_state;
-}
+}*/
 
-uint32_t rl_set_seed(uint32_t start) {
+void rl_set_seed(uint64_t start) {
 	if(start == 0) {
 		/*struct timespec now;
 		clock_gettime(CLOCK_MONOTONIC, &now);
 		random_state = now.tv_nsec | 1;*/
-		random_state = time(NULL);
+		random_state = time(NULL) ^ random_state;
 	} else {
 		random_state = start;
 	}
-	return random_state;
 }
 
-uint32_t rl_get_seed() {
+uint64_t rl_get_seed() {
 	return random_state;
 }
 
