@@ -244,3 +244,9 @@ add_custom_command(OUTPUT ${GENHDR}/qstrdefs.generated.h
 	DEPENDS ${micropython_SOURCE} ${CMAKE_SOURCE_DIR}/src/mpconfigport.h
 	)
 
+# fix handling on object files exporting no symbols on OSX
+if(APPLE)
+set(CMAKE_C_ARCHIVE_CREATE "<CMAKE_AR> Scr <TARGET> <LINK_FLAGS> <OBJECTS>")
+set(CMAKE_C_ARCHIVE_FINISH "<CMAKE_RANLIB> -no_warning_for_no_symbols -c <TARGET>")
+endif()
+
