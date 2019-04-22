@@ -227,21 +227,19 @@ set(micropython_SOURCE
 	${micropython_EXTRA_MODULES}
 	)
 
-add_library(micropython ${micropython_regular_SOURCE} ${micropython_platform_SOURCE} ${GENHDR}/qstrdefs.generated.h)
+add_library(micropython ${micropython_SOURCE} ${GENHDR}/qstrdefs.generated.h)
 target_compile_options(micropython PRIVATE ${micropython_CFLAGS})
 target_compile_definitions(micropython PRIVATE FFCONF_H=\"${MP}/lib/oofatfs/ffconf.h\")
 
-add_library(micropython_extra_modules ${micropython_EXTRA_MODULES} ${GENHDR}/qstrdefs.generated.h)
-target_compile_options(micropython_extra_modules PRIVATE ${micropython_CFLAGS})
-
+# hack to get cmake's C_FLAGS
 add_custom_command(OUTPUT ${GENHDR}/qstrdefs.generated.h
 	COMMAND mkdir -p ${GENHDR}
 	COMMAND python3 ${MP}/py/makeversionhdr.py ${GENHDR}/mpversion.h
 	COMMAND python3 ${MP}/py/makemoduledefs.py --vpath="., .., " ${micropython_SOURCE} ${GENHDR}/moduledefs.h > ${GENHDR}/moduledefs.h
-	COMMAND ${CMAKE_C_COMPILER} -E -DNO_QSTR ${micropython_CFLAGS} -DFFCONF_H='\"${MP}/lib/oofatfs/ffconf.h\"' ${micropython_SOURCE} ${CMAKE_SOURCE_DIR}/src/mpconfigport.h > ${GENHDR}/qstr.i.last
+	COMMAND ${CMAKE_C_COMPILER} `grep ^C_FLAGS ${CMAKE_BINARY_DIR}/CMakeFiles/micropython.dir/flags.make | cut -f2- -d=` -E -DNO_QSTR ${micropython_CFLAGS} -DFFCONF_H='\"${MP}/lib/oofatfs/ffconf.h\"' ${micropython_SOURCE} ${CMAKE_SOURCE_DIR}/src/mpconfigport.h > ${GENHDR}/qstr.i.last
 	COMMAND python3 ${MP}/py/makeqstrdefs.py split ${GENHDR}/qstr.i.last ${GENHDR}/qstr ${GENHDR}/qstrdefs.collected.h
 	COMMAND python3 ${MP}/py/makeqstrdefs.py cat ${GENHDR}/qstr.i.last ${GENHDR}/qstr ${GENHDR}/qstrdefs.collected.h
-	COMMAND cat ${MP}/py/qstrdefs.h ${MP}/ports/unix/qstrdefsport.h ${GENHDR}/qstrdefs.collected.h | sed [=['s/^Q(.*)/"&"/']=] | ${CMAKE_C_COMPILER} -E ${micropython_CFLAGS} -DFFCONF_H='\"${MP}/lib/oofatfs/ffconf.h\"' - | sed [=['s/^"\(Q(.*)\)"/\1/']=] > ${GENHDR}/qstrdefs.preprocessed.h
+	COMMAND cat ${MP}/py/qstrdefs.h ${MP}/ports/unix/qstrdefsport.h ${GENHDR}/qstrdefs.collected.h | sed [=['s/^Q(.*)/"&"/']=] | ${CMAKE_C_COMPILER} `grep ^C_FLAGS ${CMAKE_BINARY_DIR}/CMakeFiles/micropython.dir/flags.make | cut -f2- -d=` -E ${micropython_CFLAGS} -DFFCONF_H='\"${MP}/lib/oofatfs/ffconf.h\"' - | sed [=['s/^"\(Q(.*)\)"/\1/']=] > ${GENHDR}/qstrdefs.preprocessed.h
 	COMMAND python3 ${MP}/py/makeqstrdata.py ${GENHDR}/qstrdefs.preprocessed.h > ${GENHDR}/qstrdefs.generated.h
 	DEPENDS ${micropython_SOURCE} ${CMAKE_SOURCE_DIR}/src/mpconfigport.h
 	)

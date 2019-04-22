@@ -20,7 +20,7 @@ rl.load_image(0, 'data/tileset.png', 8, 8)
 
 print(sys.argv)
 #debug = '-debug' in sys.argv[1:]
-debug = False
+debug = True
 
 def capitalize(text):
     return text[0].upper() + text[1:]
@@ -88,9 +88,6 @@ class Graphics:
     TOMB1 = 80
     TOMB2 = 96
 
-    #PLAYER_NOEYES = 80
-    #PLAYER = 81
-
 # actual size of the window
 SCREEN_WIDTH = 40
 SCREEN_HEIGHT = 30
@@ -122,7 +119,7 @@ NO_RANGE = 1000
 LIGHTNING_DAMAGE = 8
 LIGHTNING_RANGE = 3
 FEAR_RANGE = 5
-FEAR_DURATION = 10
+FEAR_DURATION = 3
 CONFUSE_RANGE = 8
 CONFUSE_NUM_TURNS = 10
 POSSESS_RANGE = 10
@@ -237,6 +234,8 @@ class Level:
         self.blocked = rl.array(width, height)
         self.visited = rl.array(width, height)
         self.fov = rl.array(width, height)
+        self.width = width
+        self.height = height
 
     def __setitem__(self, index, tile):
         #print('set', index, type(index))
@@ -334,7 +333,7 @@ class Actor:
         # move by the given amount, if the destination is not blocked
         x = self.x + dx
         y = self.y + dy
-        if x < 0 or x >= MAP_WIDTH or y < 0 or y >= MAP_HEIGHT:
+        if x < 0 or x >= level.width or y < 0 or y >= level.height:
             return False
         # TODO: refrain from walking in lava
         if not is_blocked(x, y):
@@ -524,7 +523,7 @@ class Monster(Actor):
         self.name = 'remains of ' + self.name
         self.skills = [x for x in self.skills if x != 'invisible']
         self.master = self.target = self.flee = None
-        self.z = 0
+        self.z = -1
 
         if 'boss' in self.skills:
             # show dead boss and trigger ending
@@ -826,7 +825,7 @@ class PlayerInput(Controller):
  
  
 def is_blocked(x, y):
-    if x < 0 or x >= MAP_WIDTH or y < 0 or y >= MAP_HEIGHT:
+    if x < 0 or x >= level.width or y < 0 or y >= level.height:
         return True
     # first test the map tile
     if level[x, y].blocked or level.blocked[x, y]:
@@ -843,32 +842,37 @@ def is_blocked(x, y):
 def fill_circle(x, y, r, tile):
     for i in range(int(x - r), int(x + r)):
         for j in range(int(y - r), int(y + r)):
-            if i >= 0 and i < MAP_WIDTH and j >= 0 and j < MAP_HEIGHT:
+            if i >= 0 and i < level.width and j >= 0 and j < level.height:
                 distance = math.sqrt((x - i) ** 2 + (y - j) ** 2)
                 if distance < r:
                     level[i, j] = Tile.mapping[tile]
 
 def create_river(tile):
-    center_x = MAP_WIDTH // 2
-    center_y = MAP_HEIGHT // 2
-    #configs = [(center_x, 1, 90), (center_x, MAP_HEIGHT - 2, -90), (1, center_y, 0), (MAP_WIDTH - 2, center_y, 180)]
-    #choice = rl.random_int(0, len(configs) - 1)
-    #x, y, angle = configs[choice]
-    x, y, angle = center_x, center_y, rl.random_int(0, 359)
+    center_x = level.width // 2
+    center_y = level.height // 2
+    # from one side towards the other
+    configs = [(center_x, 0, 90), (center_x, level.height - 1, -90), (0, center_y, 0), (level.width - 1, center_y, 180)]
+    choice = rl.random_int(0, len(configs) - 1)
+    x, y, angle = configs[choice]
+    #x, y, angle = center_x, center_y, rl.random_int(0, 359)
     width = 2
-    while x >= 1 and x < MAP_WIDTH - 1 and y >= 1 and y < MAP_HEIGHT - 1:
-        if player.distance(x, y) < 10:
-            break
+    finished = False
+    while not finished:
+        #if player.distance(x, y) < 10:
+        #    break
         dx = int(math.cos(math.pi * angle / 180) * 5)
         dy = int(math.sin(math.pi * angle / 180) * 5)
         for i, j in line_iter(x, y, x + dx, y + dy):
+            if i < 0 or i >= level.width or j < 0 or j >= level.height:
+                finished = True
+                break
             fill_circle(i, j, width, tile)
         x += dx
         y += dy
         angle += rl.random_int(0, 60) - 30
         width += (rl.random_int(0, 100) - 50) / 100
-        if width < 1:
-            width = 1
+        if width < 2:
+            width = 2
         if width > 5:
             width = 5
 
@@ -891,8 +895,12 @@ def create_v_tunnel(y1, y2, x, tile=Tile.FLOOR):
 def make_forest_map():
     global level, objects, stairs
 
-    center_x = MAP_WIDTH // 2
-    center_y = MAP_HEIGHT // 2
+    level = Level(MAP_WIDTH, MAP_HEIGHT)
+    level.tiles.fill(Tile.GRASS)
+    level.blocked.fill(0)
+
+    center_x = level.width // 2
+    center_y = level.height // 2
     radius = min([center_x, center_y])
 
     def contains_tree(x, y):
@@ -905,15 +913,11 @@ def make_forest_map():
         v = rl.random_int(0, 100)
         return v < p
 
-    level = Level(MAP_WIDTH, MAP_HEIGHT)
-    level.tiles.fill(Tile.GRASS)
-    level.blocked.fill(0)
-
     objects = [player]
     player.x = center_x
     player.y = center_y
-    for y in range(MAP_HEIGHT):
-        for x in range(MAP_WIDTH):
+    for y in range(level.height):
+        for x in range(level.width):
             if contains_tree(x, y):
                 objects.append(Actor(x, y, Graphics.TREE, 'tree', rl.GREEN, always_visible=True))
                 level.blocked[x, y] = 1
@@ -931,8 +935,8 @@ def make_boss_map():
     level.tiles.fill(Tile.BOSS_WALL)
     level.blocked.fill(1)
 
-    center_x = MAP_WIDTH // 2
-    center_y = MAP_HEIGHT // 2
+    center_x = level.width // 2
+    center_y = level.height // 2
     create_room(Rect(center_x - 20, center_y - 20, 40, 40), Tile.BOSS_FLOOR)
     create_room(Rect(center_x - 30, center_y - 3, 6, 6), Tile.BOSS_FLOOR)
     create_h_tunnel(center_x - 24, center_x - 20, center_y, Tile.BOSS_FLOOR)
@@ -959,6 +963,35 @@ def make_boss_map():
     make_monster('nuphrindas', center_x - 3, center_y)
     compute_fov()
 
+def make_dungeon_map2():
+    global level, objects, stairs
+    import rooms
+    size = [1, 10, 20, 30, 30, 20, 10, 20, 1]
+    generated = rooms.generate_level(size[dungeon_level], rooms.room_templates_old) #[dungeon_level % len(rooms.room_templates)])
+    level = Level(generated.width(), generated.height())
+    level.tiles.free()
+    level.tiles = generated
+    level.blocked.free()
+    level.blocked = level.tiles.equals(Tile.ROCK)
+    if dungeon_level == 3:
+        create_river(Tile.WATER)
+    elif dungeon_level == 5:
+        create_river(Tile.LAVA)
+    level.blocked.print_ascii('.#')
+
+    x, y = level.tiles.find_random(Tile.FLOOR)
+    stairs = Actor(x, y, Graphics.ROCK_STAIRS, 'stairs', rl.WHITE, always_visible=True)
+    objects = [player, stairs]
+    player.x, player.y = level.tiles.find_random(Tile.FLOOR)
+    for i in range(10):
+        name = random_choice(get_monster_chances())
+        while True:
+            x, y = level.tiles.find_random(Tile.FLOOR)
+            if not player.can_see_tile(x, y):
+                break
+        make_monster(name, x, y)
+    compute_fov()
+
 def make_dungeon_map():
     global level, objects, stairs
  
@@ -982,8 +1015,8 @@ def make_dungeon_map():
             w = rl.random_int(ROOM_MIN_SIZE, ROOM_MAX_SIZE)
             h = rl.random_int(ROOM_MIN_SIZE, ROOM_MAX_SIZE)
         # random position without going out of the boundaries of the map
-        x = rl.random_int(0, MAP_WIDTH - w - 1)
-        y = rl.random_int(0, MAP_HEIGHT - h - 1)
+        x = rl.random_int(0, level.width - w - 1)
+        y = rl.random_int(0, level.height - h - 1)
  
         # "Rect" class makes rectangles easier to work with
         new_room = Rect(x, y, w, h)
@@ -1049,9 +1082,8 @@ def make_dungeon_map():
             Graphics.ROCK_STAIRS, # level 7 (wizards)
             Graphics.ROCK_STAIRS, # level 8 (boss)
     ]
-    stairs = Actor(new_x, new_y, stairs_by_level[dungeon_level], 'stairs', rl.WHITE, always_visible=True)
+    stairs = Actor(new_x, new_y, stairs_by_level[dungeon_level], 'stairs', rl.WHITE, always_visible=True, z=-1)
     objects.append(stairs)
-    stairs.z = -1  # so it's drawn below everything else
     compute_fov()
 
  
@@ -1150,7 +1182,7 @@ def get_monster_chances():
     monster_chances[8] = {'rat': 5, 'bat': 5, 'orc': 1, 'troll': 1, 'fire_elemental': 1, 'octopus': 1, 'necromancer': 1, 'wizard': 1, 'ghost': 5, 'eye': 1, 'ghoul': 1}
     return monster_chances[dungeon_level]
 
-def place_objects(room):
+def place_objects(level, x1, y1, x2, y2):
     # this is where we decide the chance of each monster or item appearing.
  
     # maximum number of monsters per room
@@ -1203,7 +1235,7 @@ def compute_fov():
     level.tiles.copy_masked(level.visited, level.fov)
 
 def tile_in_fov(x, y):
-    if x >= 0 and x < MAP_WIDTH and y >= 0 and y < MAP_HEIGHT:
+    if x >= 0 and x < level.width and y >= 0 and y < level.height:
         return level.fov[x, y] == 1
     return False
  
@@ -1211,8 +1243,8 @@ def render_all():
     x_offset = SCREEN_WIDTH // 2 - player.x
     y_offset = PANEL_Y // 2 - player.y
 
-    for y in range(MAP_HEIGHT):
-        for x in range(MAP_WIDTH):
+    for y in range(level.height):
+        for x in range(level.width):
             screen_x = x + x_offset
             screen_y = y + y_offset
             if screen_x < 0 or screen_x >= SCREEN_WIDTH or screen_y < 0 or screen_y >= SCREEN_HEIGHT:
@@ -1279,7 +1311,7 @@ def wrap_text(text, width):
 last_message = None
 def message(new_msg, color=rl.WHITE):
     global last_message
-    if new_msg == last_message:
+    if new_msg == last_message and len(game_msgs) > 0:
         found = ure.search('\((\d+)\)$', game_msgs[-1][0])
         if found:
             value = int(found.group(1)) + 1
@@ -1494,7 +1526,8 @@ def handle_keys(state=None):
  
             #if key_char == '>':
             elif key == rl.P:
-                cast_possess(player)
+                if cast_possess(player) == 'cancelled':
+                    return 'didnt-take-turn'
             elif key == rl.GREATER:
                 # go down stairs, if the player is on them
                 if stairs.x == player.x and stairs.y == player.y:
@@ -1687,7 +1720,7 @@ def cast_dig(caster, x=None, y=None):
         dy = y - caster.y
         num = 0
         for i, j in line_iter(caster.x, caster.y, caster.x + dx * DIG_RANGE, caster.y + dy * DIG_RANGE):
-            if i >= 0 and i < MAP_WIDTH and j >= 0 and j < MAP_HEIGHT:
+            if i >= 0 and i < level.width and j >= 0 and j < level.height:
                 if level[i, j].type == 'rock':
                     level[i, j] = Tile.mapping[Tile.FLOOR]
             if num > DIG_RANGE:
@@ -1711,6 +1744,7 @@ def cast_possess(caster):
     if len(in_fov) == 0:
         if caster is player:
             message('No monster in sight to possess.', rl.BLUE)
+        return 'cancelled'
     elif len(in_fov) == 1:
         monster = in_fov[0]
         if monster.name == 'nuphrindas':
@@ -1824,8 +1858,9 @@ def load_game():
     data = ujson.loads(rl.load_pref('savegame'))
     registry = ujson.loads(rl.load_pref('registry'))
     data = serialize.decode(data, globals(), registry)
-    level = Level(MAP_WIDTH, MAP_HEIGHT)
-    level.tiles = rl.array_from_string(data['tiles'])
+    tiles = rl.array_from_string(data['tiles'])
+    level = Level(tiles.width(), tiles.height())
+    level.tiles = tiles
     level.blocked = rl.array_from_string(data['blocked'])
     level.visited = rl.array_from_string(data['visited'])
     objects = data['objects'] 
@@ -1979,7 +2014,7 @@ def new_game(no_story=False):
     # generate map (at this point it's not drawn to the screen)
     if no_story:
         dungeon_level = 1
-        make_dungeon_map()
+        make_dungeon_map2()
     else:
         dungeon_level = 0
         make_forest_map()
@@ -2016,7 +2051,7 @@ def next_level():
     dungeon_level += 1
     message(level_message[dungeon_level], rl.BLUE)
     if dungeon_level < 8:
-        make_dungeon_map()  # create a fresh new level!
+        make_dungeon_map2()  # create a fresh new level!
     else:
         make_boss_map()
  

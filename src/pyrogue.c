@@ -244,8 +244,10 @@ int main(int argc, char** argv) {
 		free(path);
 	} else if (argc == 3 && !strcmp(argv[1], "-extract")) {
 		fs_extract_embed(argv[0], argv[2]);
+		return 0;
 	} else if (argc == 4 && !strcmp(argv[1], "-embed")) {
 		fs_add_embed(argv[0], argv[2], argv[3]);
+		return 0;
 	} else {
 		usage(argv[0]);
 	}

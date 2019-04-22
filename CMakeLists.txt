@@ -1,7 +1,9 @@
 cmake_minimum_required (VERSION 3.0)
 project (pyrogue)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+include(cmake/utils.cmake)
 
 find_package(SDL2 REQUIRED)
 
@@ -23,7 +25,7 @@ target_link_libraries(rogue ${SDL2_LIBRARY} -lm)
 # micropython module rl
 set(micropython_EXTRA_MODULES ${CMAKE_SOURCE_DIR}/src/modrl.c)
 include(cmake/micropython.cmake)
-target_link_libraries(micropython micropython_extra_modules rogue)
+target_link_libraries(micropython rogue)
 
 # pyrogue
 add_executable(pyrogue src/pyrogue.c)
@@ -33,5 +35,4 @@ target_link_libraries(pyrogue micropython)
 # c examples
 add_executable(plasma examples/plasma.c)
 target_link_libraries(plasma rogue)
-
 
