@@ -506,6 +506,18 @@ STATIC mp_obj_t mod_rl_array_copy(mp_obj_t self_in) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_rl_array_copy_obj, mod_rl_array_copy);
 
+STATIC mp_obj_t mod_rl_array_copy_to(size_t n_args, const mp_obj_t *args) {
+	mp_check_self(mp_obj_is_type(args[0], &mp_type_rl_array));
+	if(!mp_obj_is_type(args[1], &mp_type_rl_array)) mp_raise_msg(&mp_type_TypeError, "arg 1 should be of type array");
+
+	mp_obj_rl_array_t *src = MP_OBJ_TO_PTR(args[0]);
+	mp_obj_rl_array_t *dest = MP_OBJ_TO_PTR(args[1]);
+
+	rl_array_copy_masked(src->array, dest->array, NULL, 0);
+	return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_rl_array_copy_to_obj, 2, 2, mod_rl_array_copy_to);
+
 STATIC mp_obj_t mod_rl_array_copy_masked(size_t n_args, const mp_obj_t *args) {
 	mp_check_self(mp_obj_is_type(args[0], &mp_type_rl_array));
 	if(!mp_obj_is_type(args[1], &mp_type_rl_array)) mp_raise_msg(&mp_type_TypeError, "arg 1 should be of type array");
@@ -562,6 +574,7 @@ STATIC const mp_rom_map_elem_t mod_rl_array_locals_dict_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR_place_random), MP_ROM_PTR(&mod_rl_array_place_random_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_copy), MP_ROM_PTR(&mod_rl_array_copy_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_copy_masked), MP_ROM_PTR(&mod_rl_array_copy_masked_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_copy_to), MP_ROM_PTR(&mod_rl_array_copy_to_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_equals), MP_ROM_PTR(&mod_rl_array_equals_obj) },
 };
 

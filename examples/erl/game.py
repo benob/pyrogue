@@ -88,6 +88,18 @@ class Graphics:
     TOMB1 = 80
     TOMB2 = 96
 
+Graphics.stairs_for_level = [
+            None, # level 0
+            Graphics.CAVE_STAIRS, # level 1 (no healing)
+            Graphics.CAVE_STAIRS, # level 2 (skills)
+            Graphics.BLUE_STAIRS, # level 3 (water)
+            Graphics.CAVE_STAIRS, # level 4 (invisibles)
+            Graphics.RED_STAIRS, # level 5 (lava)
+            Graphics.ROCK_STAIRS, # level 6 (necromancers)
+            Graphics.ROCK_STAIRS, # level 7 (wizards)
+            Graphics.ROCK_STAIRS, # level 8 (boss)
+    ]
+
 # actual size of the window
 SCREEN_WIDTH = 40
 SCREEN_HEIGHT = 30
@@ -127,7 +139,7 @@ FIREBALL_RADIUS = 2
 FIREBALL_RANGE = 7
 FIREBALL_DAMAGE = 5
 FREEZE_RANGE = 3
-FREEZE_DURATION = 20
+FREEZE_DURATION = 4
 TELEPORT_RANGE = 9
 DIG_RANGE = 10
  
@@ -924,9 +936,8 @@ def make_forest_map():
     
     angle = rl.random_int(0, 360)
     distance = rl.random_int(2, 3)
-    stairs = Actor(center_x + int(distance * math.cos(angle)), center_y + int(distance * math.sin(angle)), Graphics.ROCK_STAIRS, 'stairs', rl.WHITE, always_visible=True)
+    stairs = Actor(center_x + int(distance * math.cos(angle)), center_y + int(distance * math.sin(angle)), Graphics.ROCK_STAIRS, 'stairs', rl.WHITE, always_visible=True, z=-2)
     objects.append(stairs)
-    stairs.z = 0  # so it's drawn below the monsters
     compute_fov()
 
 def make_boss_map():
@@ -956,7 +967,7 @@ def make_boss_map():
     amulet = Actor(center_x + 3, center_y, Graphics.YENDOR_AMULET, 'Amulet of Yendor', rl.YELLOW)
 
     # need stairs to save game
-    stairs = Actor(0, 0, Graphics.ROCK_STAIRS, 'stairs', rl.WHITE, always_visible=True)
+    stairs = Actor(0, 0, Graphics.ROCK_STAIRS, 'stairs', rl.WHITE, always_visible=True, z=-2)
     objects = [stairs, amulet, player]
 
     make_monster('original-body', center_x, center_y)
@@ -965,9 +976,10 @@ def make_boss_map():
 
 def make_dungeon_map2():
     global level, objects, stairs
-    import rooms
-    size = [1, 10, 20, 30, 30, 20, 10, 20, 1]
-    generated = rooms.generate_level(size[dungeon_level], rooms.room_templates_old) #[dungeon_level % len(rooms.room_templates)])
+    import rooms   #0  1   2   3   4   5   6   7   8
+    num_monsters = [0, 10, 20, 30, 10, 30, 10, 20, 0]
+    size =         [0, 10, 20, 30, 10, 30, 10, 20, 0]
+    generated = rooms.generate_level(size[dungeon_level], rooms.room_templates[dungeon_level - 1])
     level = Level(generated.width(), generated.height())
     level.tiles.free()
     level.tiles = generated
@@ -980,10 +992,10 @@ def make_dungeon_map2():
     level.blocked.print_ascii('.#')
 
     x, y = level.tiles.find_random(Tile.FLOOR)
-    stairs = Actor(x, y, Graphics.ROCK_STAIRS, 'stairs', rl.WHITE, always_visible=True)
+    stairs = Actor(x, y, Graphics.stairs_for_level[dungeon_level], 'stairs', rl.WHITE, always_visible=True, z=-2)
     objects = [player, stairs]
     player.x, player.y = level.tiles.find_random(Tile.FLOOR)
-    for i in range(10):
+    for i in range(num_monsters[dungeon_level]):
         name = random_choice(get_monster_chances())
         while True:
             x, y = level.tiles.find_random(Tile.FLOOR)
@@ -1071,18 +1083,7 @@ def make_dungeon_map():
         create_river(Tile.LAVA)
 
     # create stairs at the center of the last room
-    stairs_by_level = [
-            None, # level 0
-            Graphics.CAVE_STAIRS, # level 1 (no healing)
-            Graphics.CAVE_STAIRS, # level 2 (skills)
-            Graphics.BLUE_STAIRS, # level 3 (water)
-            Graphics.CAVE_STAIRS, # level 4 (invisibles)
-            Graphics.RED_STAIRS, # level 5 (lava)
-            Graphics.ROCK_STAIRS, # level 6 (necromancers)
-            Graphics.ROCK_STAIRS, # level 7 (wizards)
-            Graphics.ROCK_STAIRS, # level 8 (boss)
-    ]
-    stairs = Actor(new_x, new_y, stairs_by_level[dungeon_level], 'stairs', rl.WHITE, always_visible=True, z=-1)
+    stairs = Actor(new_x, new_y, Graphics.stairs_for_level[dungeon_level], 'stairs', rl.WHITE, always_visible=True, z=-2)
     objects.append(stairs)
     compute_fov()
 
@@ -1263,11 +1264,11 @@ def render_all():
     for object in objects:
         if object is not player:
             object.draw(x_offset, y_offset)
+    player.draw(x_offset, y_offset)
     # draw hp on top of actors
     for object in objects:
         if isinstance(object, Monster) and object is not player:
             object.draw_hp_bar(x_offset, y_offset)
-    player.draw(x_offset, y_offset)
     player.draw_hp_bar(x_offset, y_offset)
 
     rl.fill_rect(0, PANEL_Y * 8, SCREEN_WIDTH * 8, SCREEN_HEIGHT * 8, rl.BLACK)
@@ -1582,7 +1583,7 @@ def target_monster(max_range=None):
  
         # return the first clicked monster, otherwise continue looping
         for obj in objects:
-            if obj.x == x and obj.y == y and obj is not player:
+            if isinstance(obj, Monster) and obj.alive and obj.x == x and obj.y == y and obj is not player:
                 return obj
         message("That's not a monster.")
  

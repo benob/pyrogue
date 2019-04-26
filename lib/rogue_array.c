@@ -598,14 +598,24 @@ array_t* rl_array_copy(array_t* a) {
 }
 
 int rl_array_copy_masked(array_t* src, array_t* dest, array_t* mask, VALUE keep) {
-	if(src->width != dest->width || src->width != mask->width || src->height != dest->height || src->height != mask->height) {
-		printf("error: sizes mismatch");
-		return 0;
+	if(mask == NULL) {
+		if(src->width != dest->width || src->height != dest->height) {
+			printf("error: sizes mismatch");
+			return 0;
+		}
+		for(int i = 0; i < dest->width * dest->height; i++) {
+			dest->values[i] = src->values[i];
+		}
+	} else {
+		if(src->width != dest->width || src->width != mask->width || src->height != dest->height || src->height != mask->height) {
+			printf("error: sizes mismatch");
+			return 0;
+		}
+		for(int i = 0; i < dest->width * dest->height; i++) {
+			if(mask->values[i] == keep) dest->values[i] = src->values[i];
+		}
+		return 1;
 	}
-	for(int i = 0; i < dest->width * dest->height; i++) {
-		if(mask->values[i] == keep) dest->values[i] = src->values[i];
-	}
-	return 1;
 }
 
 array_t* rl_array_equals(array_t* a, VALUE value) {
