@@ -1,7 +1,7 @@
 #ifndef __STBTTF_H__
 #define __STBTTF_H__
 
-#include <SDL2/SDL.h>
+#include <SDL.h>
 
 #include "stb_rect_pack.h"
 #include "stb_truetype.h"
@@ -150,7 +150,7 @@ void STBTTF_RenderText(SDL_Renderer* renderer, STBTTF_Font* font, float x, float
 float STBTTF_MeasureText(STBTTF_Font* font, const char *text) {
 	float width = 0;
 	for(int i = 0; text[i]; i++) {
-		if (text[i] >= 32 && text[i] < 128) {
+		if (text[i] >= 32 && text[i] <= 127) {
 			//if(i > 0) width += stbtt_GetCodepointKernAdvance(font->info, text[i - 1], text[i]) * font->scale;
 
 			stbtt_packedchar* info = &font->chars[text[i] - 32];

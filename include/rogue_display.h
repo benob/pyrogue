@@ -8,7 +8,7 @@
 // text alignment
 enum {TD_ALIGN_LEFT, TD_ALIGN_RIGHT, TD_ALIGN_CENTER};
 // events
-enum {TD_QUIT = -1, TD_MOUSE = -2, TD_REDRAW = 0};
+enum {TD_QUIT = -3, TD_MOUSE = -2, TD_REDRAW = -1, TD_PASS = 0};
 
 typedef struct {
 	int x, y;
@@ -31,6 +31,8 @@ void td_load_font(const char* font_path, int font_size, int line_height);
 void td_set_integral_scale(int value);
 void td_use_backbuffer(int value);
 int td_load_image(int image, const char* filename, int tile_width, int tile_height);
+void td_array_to_image(int index, array_t* a, int tile_width, int tile_height);
+array_t* td_image_to_array(int index);
 void td_draw_image(int image, int x, int y);
 void td_draw_tile(int image, int x, int y, int tile);
 void td_colorize_tile(int image, int x, int y, int tile, uint32_t fg, uint32_t bg);

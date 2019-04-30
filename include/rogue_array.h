@@ -46,6 +46,7 @@ void rl_array_set(array_t* a, int x, int y, VALUE value);
 void rl_array_fill(array_t *a, VALUE value);
 void rl_array_replace(array_t *a, VALUE value1, VALUE value2);
 void rl_array_random_int(array_t *a, int lower, int upper);
+void rl_array_random_2d(array_t *a, int lower, int upper);
 void rl_array_random(array_t *a);
 void rl_array_print(array_t *a);
 void rl_walk_line_start(int x1, int y1, int x2, int y2);

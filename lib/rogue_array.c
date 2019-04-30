@@ -122,6 +122,12 @@ void rl_array_random(array_t *a) {
 			array_value(a, i, j) = (VALUE) rl_random_next(); // / UINT_MAX;
 }
 
+void rl_array_random_2d(array_t *a, int32_t x, int32_t y) {
+	for(int j = 0; j < a->height; j++)
+		for(int i = 0; i < a->width; i++)
+			array_value(a, i, j) = (VALUE) rl_random_2d(x + i, y + j); // / UINT_MAX;
+}
+
 void rl_array_print(array_t *a) {
   for(int y = 0; y < a->height; y++) {
     for(int x = 0; x < a->width; x++) {
@@ -614,8 +620,8 @@ int rl_array_copy_masked(array_t* src, array_t* dest, array_t* mask, VALUE keep)
 		for(int i = 0; i < dest->width * dest->height; i++) {
 			if(mask->values[i] == keep) dest->values[i] = src->values[i];
 		}
-		return 1;
 	}
+	return 1;
 }
 
 array_t* rl_array_equals(array_t* a, VALUE value) {

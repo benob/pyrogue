@@ -16,13 +16,22 @@ uint32_t rl_random_next() {
     return (xorshifted >> rot) | (xorshifted << ((-rot) & 31));
 }
 
-/* MINSTD3 Lehmer generator
-uint32_t rl_random_next() {
-  uint64_t state = random_state;
-  state *= 69621;
-  random_state = state % 2147483647;
-  return random_state;
-}*/
+// static 1d-3d noise
+uint32_t rl_random_3d(int32_t x, int32_t y, int32_t z) {
+	uint64_t start = (x * 1619) ^ (y * 31337) ^ (z * 6971);
+	uint64_t state = (start * 6364136223846793005ULL) + 1875;
+	uint32_t xorshifted = ((state >> 18u) ^ state) >> 27u;
+	uint32_t rot = state >> 59u;
+	return (xorshifted >> rot) | (xorshifted << ((-rot) & 31));
+}
+
+uint32_t rl_random_2d(int32_t x, int32_t y) {
+	return rl_random_3d(x, y, 0);
+}
+
+uint32_t rl_random_1d(int32_t x) {
+	return rl_random_3d(x, 0, 0);
+}
 
 void rl_set_seed(uint64_t start) {
 	if(start == 0) {

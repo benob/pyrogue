@@ -214,7 +214,7 @@ set(micropython_regular_SOURCE
 	${MP}/lib/embed/abort_.c
 	${MP}/lib/utils/printf.c
   ${MP}/lib/timeutils/timeutils.c
-  ${MP}/py/mpconfig.h
+	#${MP}/py/mpconfig.h
 	)
 
 #TODO: verify that this works
@@ -236,10 +236,12 @@ add_custom_command(OUTPUT ${GENHDR}/qstrdefs.generated.h
 	COMMAND mkdir -p ${GENHDR}
 	COMMAND python3 ${MP}/py/makeversionhdr.py ${GENHDR}/mpversion.h
 	COMMAND python3 ${MP}/py/makemoduledefs.py --vpath="., .., " ${micropython_SOURCE} ${GENHDR}/moduledefs.h > ${GENHDR}/moduledefs.h
-	COMMAND ${CMAKE_C_COMPILER} `grep ^C_FLAGS ${CMAKE_BINARY_DIR}/CMakeFiles/micropython.dir/flags.make | cut -f2- -d=` -E -DNO_QSTR ${micropython_CFLAGS} -DFFCONF_H='\"${MP}/lib/oofatfs/ffconf.h\"' ${micropython_SOURCE} ${CMAKE_SOURCE_DIR}/src/mpconfigport.h > ${GENHDR}/qstr.i.last
+	#${CMAKE_SOURCE_DIR}/src/mpconfigport.h 
+	COMMAND ${CMAKE_C_COMPILER} `grep ^C_FLAGS ${CMAKE_BINARY_DIR}/CMakeFiles/micropython.dir/flags.make | cut -f2- -d=` -E -DNO_QSTR ${micropython_CFLAGS} -DFFCONF_H='\"${MP}/lib/oofatfs/ffconf.h\"' ${micropython_SOURCE} > ${GENHDR}/qstr.i.last
 	COMMAND python3 ${MP}/py/makeqstrdefs.py split ${GENHDR}/qstr.i.last ${GENHDR}/qstr ${GENHDR}/qstrdefs.collected.h
 	COMMAND python3 ${MP}/py/makeqstrdefs.py cat ${GENHDR}/qstr.i.last ${GENHDR}/qstr ${GENHDR}/qstrdefs.collected.h
-	COMMAND cat ${MP}/py/qstrdefs.h ${MP}/ports/unix/qstrdefsport.h ${GENHDR}/qstrdefs.collected.h | sed [=['s/^Q(.*)/"&"/']=] | ${CMAKE_C_COMPILER} `grep ^C_FLAGS ${CMAKE_BINARY_DIR}/CMakeFiles/micropython.dir/flags.make | cut -f2- -d=` -E ${micropython_CFLAGS} -DFFCONF_H='\"${MP}/lib/oofatfs/ffconf.h\"' - | sed [=['s/^"\(Q(.*)\)"/\1/']=] > ${GENHDR}/qstrdefs.preprocessed.h
+	COMMAND cat ${MP}/py/qstrdefs.h ${MP}/ports/unix/qstrdefsport.h ${GENHDR}/qstrdefs.collected.h | sed [=['s/^Q(.*)/"&"/']=] > ${GENHDR}/tmp.c 
+	COMMAND ${CMAKE_C_COMPILER} `grep ^C_FLAGS ${CMAKE_BINARY_DIR}/CMakeFiles/micropython.dir/flags.make | cut -f2- -d=` -E ${micropython_CFLAGS} -DFFCONF_H='\"${MP}/lib/oofatfs/ffconf.h\"' ${GENHDR}/tmp.c | sed [=['s/^"\(Q(.*)\)"/\1/']=] > ${GENHDR}/qstrdefs.preprocessed.h
 	COMMAND python3 ${MP}/py/makeqstrdata.py ${GENHDR}/qstrdefs.preprocessed.h > ${GENHDR}/qstrdefs.generated.h
 	DEPENDS ${micropython_SOURCE} ${CMAKE_SOURCE_DIR}/src/mpconfigport.h
 	)

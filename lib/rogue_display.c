@@ -1,18 +1,18 @@
-#include <SDL2/SDL.h>
-#ifdef USE_SDLTTF
-#include <SDL2/SDL_ttf.h>
-#else
+#include <SDL.h>
 #define STB_RECT_PACK_IMPLEMENTATION
 #define STB_TRUETYPE_IMPLEMENTATION
 #define STBTTF_IMPLEMENTATION
 #include "stbttf.h"
-#endif
 
 #define STBI_NO_STDIO
 #define STBI_NO_LINEAR
 #define STBI_NO_HDR
 #define SDL_STBIMAGE_IMPLEMENTATION
 #include "SDL_stbimage.h"
+
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
 
 #include "rogue_display.h"
 #include "rogue_filesystem.h"
@@ -24,6 +24,7 @@ typedef struct {
 	int width, height;
 	int tile_width, tile_height;
 	int tiles_per_line;
+	uint32_t* pixels;
 	SDL_Texture* texture;
 } image_t;
 
@@ -33,11 +34,7 @@ typedef struct {
 	int mouse_x, mouse_y, mouse_button;
 	SDL_Window* window;
 	SDL_Renderer* renderer;
-#ifdef USE_SDLTTF
-	TTF_Font* font;
-#else
 	STBTTF_Font* font;
-#endif
 	int line_height;
 	image_t images[TD_NUM_IMAGES];
 	SDL_Texture* buffers[TD_NUM_BUFFERS + 1];
@@ -50,36 +47,30 @@ static void __attribute__((constructor)) _td_init() {
 	memset(&display, 0, sizeof(display_t));
 }
 
+// TODO: merge buffers and images
 static void __attribute__((destructor)) _td_fini() {
 	if(display.was_init) {
-		for(int i = 0; i < TD_NUM_IMAGES; i++)
+		for(int i = 0; i < TD_NUM_IMAGES; i++) {
 			if(display.images[i].texture != NULL) SDL_DestroyTexture(display.images[i].texture);
+			if(display.images[i].pixels != NULL) free(display.images[i].pixels);
+		}
 		for(int i = 0; i < TD_NUM_BUFFERS + 1; i++)
 			if(display.buffers[i] != NULL) SDL_DestroyTexture(display.buffers[i]);
 
 		if(display.font != NULL) {
-#ifdef USE_SDLTTF
-			TTF_CloseFont(display.font);
-#else
 			STBTTF_CloseFont(display.font);
-#endif
 		}
-		//IMG_Quit();
-#ifdef USE_SDLTTF
-		TTF_Quit();
-#endif
 		SDL_Quit();
 	}
 }
+
+static void (*rander_callback)(void*) = NULL;
+static void* render_callback_data = NULL;
 
 int td_init(const char* title, int width, int height) {
 	//if(display.running) return 0;
 	if(!display.was_init) {
 		if(SDL_Init(SDL_INIT_VIDEO) < 0) die("count not initialize SDL");
-		//if(IMG_Init(IMG_INIT_PNG) < 0) die("cannot init SDL_image");
-#ifdef USE_SDLTTF
-		if(TTF_Init() < 0) die("cannot init SDL_ttf");
-#endif
 		SDL_StartTextInput();
 	}
 	if(display.renderer != NULL) SDL_DestroyRenderer(display.renderer);
@@ -96,6 +87,7 @@ int td_init(const char* title, int width, int height) {
 	display.running = 1;
 	display.was_init = 1;
 	td_use_backbuffer(1);
+	td_set_integral_scale(1);
 	return 1;
 }
 
@@ -104,15 +96,9 @@ void td_load_font(const char* font_path, int font_size, int line_height) {
 	char* font_data = fs_load_asset(font_path, &font_data_size);
 	if(font_data == NULL) die("cannot load font '%s'", font_path);
 	SDL_RWops* ops = SDL_RWFromMem(font_data, font_data_size);
-#ifdef USE_SDLTTF
-	if(display.font != NULL) TTF_CloseFont(display.font);
-	display.font = TTF_OpenFontRW(ops, 1, font_size);
-	if(display.font) display.line_height = TTF_FontLineSkip(display.font);
-#else
 	if(display.font != NULL) STBTTF_CloseFont(display.font);
 	display.font = STBTTF_OpenFontRW(display.renderer, ops, font_size);
 	if(display.font) display.line_height = display.font->baseline;
-#endif
 	free(font_data);
 	if(display.font == NULL) die("cannot load font '%s'", font_path);
 	if(line_height != 0) display.line_height = line_height;
@@ -127,10 +113,8 @@ int td_load_image(int index, const char* filename, int tile_width, int tile_heig
 	char* image_data = fs_load_asset(filename, &image_data_size);
 	if(image_data == NULL) die("cannot load image '%s' from assets", filename);
 	SDL_RWops* ops = SDL_RWFromMem(image_data, image_data_size);
-	//SDL_Surface* surface = IMG_Load_RW(ops, 1);
 	SDL_Surface* surface = STBIMG_Load_RW(ops, 1);
 	free(image_data);
-  //SDL_Surface* surface = IMG_Load(filename);
 	if(surface == NULL) die("cannot decode image data '%s'", filename);
 	image_t image;
 	image.tile_width = tile_width;
@@ -139,12 +123,51 @@ int td_load_image(int index, const char* filename, int tile_width, int tile_heig
 	image.height = surface->h;
 	image.tiles_per_line = image.width / image.tile_width;
 	image.texture = SDL_CreateTextureFromSurface(display.renderer, surface);
+	image.pixels = malloc(sizeof(uint32_t) * surface->w * surface->h);
+	memcpy(image.pixels, surface->pixels, sizeof(uint32_t) * surface->w * surface->h);
 	if(image.texture == NULL) die("cannot create texture for image '%s'", filename);
 	SDL_FreeSurface(surface);
-	if(display.images[index].texture != NULL)
+	if(display.images[index].texture != NULL) {
 		SDL_DestroyTexture(display.images[index].texture);
+		free(display.images[index].pixels);
+	}
 	display.images[index] = image;
 	return 1;
+}
+
+void td_array_to_image(int index, array_t* a, int tile_width, int tile_height) {
+	if(index < 0 || index >= TD_NUM_IMAGES) die("invalid image '%d'", index);
+	image_t* image = &display.images[index];
+	image->tile_width = tile_width;
+	image->tile_height = tile_height;
+	image->width = a->width;
+	image->height = a->height;
+	image->tiles_per_line = image->width / image->tile_width;
+
+	if(image->texture == NULL || a->width != image->width || a->height != image->height) {
+		if(image->texture != NULL) SDL_DestroyTexture(image->texture);
+		image->texture = SDL_CreateTexture(display.renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STATIC, a->width, a->height);
+	}
+	if(image->texture == NULL) die("cannot create texture");
+	SDL_UpdateTexture(image->texture, NULL, a->values, sizeof(uint32_t) * (a->width + a->stride));
+
+	if(image->pixels != NULL) free(image->pixels);
+	image->pixels = malloc(sizeof(uint32_t) * a->width * a->height);
+	if(a->is_view) {
+		for(int i = 0; i < a->height; i++)
+			memcpy(image->pixels + i * a->width, a->values + i * (a->width + a->stride), sizeof(uint32_t) * a->width);
+	} else {
+		memcpy(image->pixels, a->values, sizeof(uint32_t) * a->width * a->height);
+	}
+}
+
+array_t* td_image_to_array(int index) {
+	if(index < 0 || index >= TD_NUM_IMAGES) die("invalid image '%d'", index);
+	image_t* image = &display.images[index];
+	if(image->pixels == NULL) die("invalid image '%d'", index);
+	array_t* a = rl_array_new(image->width, image->height);
+	memcpy(a->values, image->pixels, sizeof(uint32_t) * a->width * a->height);
+	return a;
 }
 
 void td_draw_image(int index, int x, int y) {
@@ -274,25 +297,11 @@ void td_print_text(int orig_x, int orig_y, const char* text, uint32_t color, int
 				char line[length + 1];
 				strncpy(line, text, length);
 				line[length] = '\0';
-#ifdef USE_SDLTTF
-				SDL_Surface* surface = TTF_RenderUTF8_Blended(display.font, line, fg);
-				if(surface == NULL) die("cannot render text '%s' with font '%p'", line, display.font);
-				SDL_Texture* texture = SDL_CreateTextureFromSurface(display.renderer, surface);
-				if(texture == NULL) die("cannot convert surface to texture");
-				if(align == TD_ALIGN_CENTER) x -= surface->w / 2;
-				else if(align == TD_ALIGN_RIGHT) x -= surface->w;
-				SDL_Rect src_rect = {0, 0, surface->w, surface->h};
-				SDL_Rect dst_rect = {x, y, surface->w, surface->h};
-				SDL_RenderCopy(display.renderer, texture, &src_rect, &dst_rect);
-				SDL_FreeSurface(surface);
-				SDL_DestroyTexture(texture);
-#else
 				SDL_SetRenderDrawColor(display.renderer, fg.r, fg.g, fg.b, fg.a);
 				int width = STBTTF_MeasureText(display.font, line);
 				if(align == TD_ALIGN_CENTER) x -= width / 2;
 				else if(align == TD_ALIGN_RIGHT) x -= width;
 				STBTTF_RenderText(display.renderer, display.font, x, y, line);
-#endif
 			}
 			text += length;
 		}
@@ -301,11 +310,7 @@ void td_print_text(int orig_x, int orig_y, const char* text, uint32_t color, int
 
 void td_size_text(const char* text, int* width, int* height) {
 	if(!display.font) die("no font loaded");
-#ifdef USE_SDLTTF
-	TTF_SizeUTF8(display.font, text, width, height);
-#else
 	*width = STBTTF_MeasureText(display.font, text);
-#endif
 	*height = display.line_height;
 };
 
@@ -426,17 +431,65 @@ void td_clear() {
 }
 
 void td_quit() {
+#ifdef __EMSCRIPTEN__
+	emscripten_cancel_main_loop();
+#else
 	display.running = 0;
+#endif
+}
+
+static void process_events(void* arg) {
+	void (*callback)(int key) = (void (*)(int)) arg;
+	int key = TD_PASS;
+	SDL_Event event;
+	while(SDL_PollEvent(&event) != 0) {
+		switch(event.type) {
+			case SDL_QUIT:
+				td_quit();
+				key = TD_QUIT;
+				break;
+			case SDL_WINDOWEVENT:
+				key = TD_REDRAW;
+				break;
+			case SDL_TEXTINPUT:
+				key = event.text.text[0];
+				break;
+			case SDL_KEYDOWN:
+				key = event.key.keysym.sym;
+				if(SDL_GetModState() & KMOD_ALT) {
+					if(key == SDLK_RETURN) {
+						if(display.is_fullscreen) {
+							SDL_SetWindowFullscreen(display.window, 0);
+							display.is_fullscreen = 0;
+						} else {
+							SDL_SetWindowFullscreen(display.window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+							display.is_fullscreen = 1;
+						}
+					} else if(key == SDLK_q) { // TODO: can we do better?
+						exit(1); // force quit
+					}
+					key = TD_REDRAW;
+				}
+				else if(key >= 32 && key < 127) continue;
+				else if(key != SDLK_LALT && key != SDLK_LSHIFT && key != SDLK_LCTRL && key != SDLK_RALT && key != SDLK_RSHIFT && key != SDLK_RCTRL && key != SDLK_LGUI && key != SDLK_RGUI) { }
+				break;
+		}
+	}
+	printf("%d\n", key);
+	if(key != TD_PASS) callback(key);
 }
 
 void td_run(void (*update_callback)(int key)) {
+#ifdef __EMSCRIPTEN__
+	emscripten_set_main_loop_arg(process_events, update_callback, 0, 1);
+#else
 	int key = TD_REDRAW;
 	while(display.running) {
-		td_clear();
-		update_callback(key);
+		//td_clear();
+		process_events(update_callback);
 		td_present();
-		key = td_wait_event(0);
 	}
+#endif
 }
 
 void td_delay(uint32_t ms) {
@@ -444,7 +497,7 @@ void td_delay(uint32_t ms) {
 }
 
 char* td_get_dir(const char* organization, const char* application) {
-  return SDL_GetPrefPath(organization, application);
+	return SDL_GetPrefPath(organization, application);
 }
 
 uint32_t td_color(unsigned char r, unsigned char g, unsigned char b, unsigned char a) {

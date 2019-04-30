@@ -3,7 +3,20 @@ project (pyrogue)
 
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
-find_package(SDL2 REQUIRED)
+if (${CMAKE_SYSTEM_NAME} STREQUAL "Emscripten")
+  # TODO(amitp): I don't know how to set this properly with add_compile_options
+	set(EMSCRIPTEN_FLAGS "-s USE_SDL=2 -s FORCE_FILESYSTEM=1")
+	set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} ${EMSCRIPTEN_FLAGS}")
+	set(SDL2_LIBRARIES "-s USE_SDL=2")
+	# enable SDL2, and synchronous file api
+	add_definitions(${EMSCRIPTEN_FLAGS})
+	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${EMSCRIPTEN_FLAGS}")
+	SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -g4")
+else ()
+	#find_package(SDL2 REQUIRED)
+	include(FindPkgConfig)
+	pkg_search_module(SDL2 REQUIRED sdl2)
+endif ()
 
 include_directories(${SDL2_INCLUDE_DIRS} include deps src)
 
@@ -18,7 +31,7 @@ add_library(rogue STATIC
 	deps/miniz.c 
 )
 target_compile_options(rogue PRIVATE -DMINIZ_NO_STDIO -DMINIZ_NO_ZLIB_COMPATIBLE_NAMES -DMINIZ_NO_ZLIB_APIS)
-target_link_libraries(rogue ${SDL2_LIBRARY} -lm)
+target_link_libraries(rogue ${SDL2_LIBRARIES} -lm)
 
 # micropython module rl
 set(micropython_EXTRA_MODULES ${CMAKE_SOURCE_DIR}/src/modrl.c)

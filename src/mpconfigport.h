@@ -34,6 +34,7 @@
 #define MICROPY_VFS (1)*/
 // options to control how MicroPython is built
 
+#define MICROPY_USE_INTERNAL_PRINTF (0) // disable internal printf
 #define MICROPY_ALLOC_PATH_MAX      (PATH_MAX)
 #define MICROPY_ENABLE_GC           (0)
 #define MICROPY_ENABLE_FINALISER    (0) // TODO: need to enable to retrieve allocated memory

@@ -56,6 +56,30 @@ STATIC mp_obj_t mod_rl_random_int(mp_obj_t a_in, mp_obj_t b_in) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(mod_rl_random_int_obj, mod_rl_random_int);
 
+STATIC mp_obj_t mod_rl_random_3d(mp_obj_t x_in, mp_obj_t y_in, mp_obj_t z_in) {
+	mp_int_t x = mp_obj_get_int(x_in);
+	mp_int_t y = mp_obj_get_int(y_in);
+	mp_int_t z = mp_obj_get_int(z_in);
+	mp_int_t result = rl_random_3d(x, y, z);
+	return mp_obj_new_int(result);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_3(mod_rl_random_3d_obj, mod_rl_random_3d);
+
+STATIC mp_obj_t mod_rl_random_2d(mp_obj_t x_in, mp_obj_t y_in) {
+	mp_int_t x = mp_obj_get_int(x_in);
+	mp_int_t y = mp_obj_get_int(y_in);
+	mp_int_t result = rl_random_2d(x, y);
+	return mp_obj_new_int(result);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_2(mod_rl_random_2d_obj, mod_rl_random_2d);
+
+STATIC mp_obj_t mod_rl_random_1d(mp_obj_t x_in) {
+	mp_int_t x = mp_obj_get_int(x_in);
+	mp_int_t result = rl_random_1d(x);
+	return mp_obj_new_int(result);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_rl_random_1d_obj, mod_rl_random_1d);
+
 STATIC mp_obj_t mod_rl_random() {
 	mp_float_t result = rl_random();
 	return mp_obj_new_float(result);
@@ -280,6 +304,16 @@ STATIC mp_obj_t mod_rl_array_random_int(mp_obj_t self_in, mp_obj_t a_in, mp_obj_
 	return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_3(mod_rl_array_random_int_obj, mod_rl_array_random_int);
+
+STATIC mp_obj_t mod_rl_array_random_2d(mp_obj_t self_in, mp_obj_t x_in, mp_obj_t y_in) {
+	mp_check_self(mp_obj_is_type(self_in, &mp_type_rl_array));
+	mp_obj_rl_array_t *self = MP_OBJ_TO_PTR(self_in);
+	mp_int_t x = mp_obj_get_int(x_in);
+	mp_int_t y = mp_obj_get_int(y_in);
+	rl_array_random_2d(self->array, x, y);
+	return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_3(mod_rl_array_random_2d_obj, mod_rl_array_random_2d);
 
 STATIC mp_obj_t mod_rl_array_random(mp_obj_t self_in) {
 	mp_check_self(mp_obj_is_type(self_in, &mp_type_rl_array));
@@ -557,6 +591,7 @@ STATIC const mp_rom_map_elem_t mod_rl_array_locals_dict_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR_fill), MP_ROM_PTR(&mod_rl_array_fill_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_replace), MP_ROM_PTR(&mod_rl_array_replace_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_random_int), MP_ROM_PTR(&mod_rl_array_random_int_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_random_2d), MP_ROM_PTR(&mod_rl_array_random_2d_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_random), MP_ROM_PTR(&mod_rl_array_random_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_line), MP_ROM_PTR(&mod_rl_array_line_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_rect), MP_ROM_PTR(&mod_rl_array_rect_obj) },
@@ -638,6 +673,29 @@ STATIC mp_obj_t mod_td_load_image(size_t n_args, const mp_obj_t *args) {
 	return mp_obj_new_bool(result);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_td_load_image_obj, 2, 4, mod_td_load_image);
+
+STATIC mp_obj_t mod_td_array_to_image(size_t n_args, const mp_obj_t *args) {
+	mp_check_self(mp_obj_is_type(args[0], &mp_type_rl_array));
+	mp_obj_rl_array_t *array = MP_OBJ_TO_PTR(args[0]);
+	mp_int_t image = mp_obj_get_int(args[1]);
+	mp_int_t tile_width = 8;
+	if(n_args > 2) tile_width = mp_obj_get_int(args[2]);
+	mp_int_t tile_height = 8;
+	if(n_args > 3) tile_height = mp_obj_get_int(args[3]);
+	td_array_to_image(image, array->array, tile_width, tile_height);
+	return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_td_array_to_image_obj, 2, 4, mod_td_array_to_image);
+
+STATIC mp_obj_t mod_td_image_to_array(mp_obj_t image_in) {
+	mp_int_t image = mp_obj_get_int(image_in);
+	mp_obj_rl_array_t* output = m_new_obj(mp_obj_rl_array_t);
+	output->base.type = &mp_type_rl_array;
+	output->array = td_image_to_array(image);
+	return MP_OBJ_FROM_PTR(output);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_td_image_to_array_obj, mod_td_image_to_array);
+
 
 STATIC mp_obj_t mod_td_draw_image(mp_obj_t image_in, mp_obj_t x_in, mp_obj_t y_in) {
 	mp_int_t image = mp_obj_get_int(image_in);
@@ -914,6 +972,20 @@ STATIC mp_obj_t mod_td_mouse_button() {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_td_mouse_button_obj, mod_td_mouse_button);
 
+static mp_obj_t event_callback;
+static void run_callback(int key) {
+	mp_call_function_1(event_callback, mp_obj_new_int(key));
+}
+
+STATIC mp_obj_t mod_td_run(mp_obj_t callback) {
+	event_callback = callback;
+	td_run(run_callback);
+	return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_td_run_obj, mod_td_run);
+
+/* utils */
+
 STATIC mp_obj_t mod_rl_walk_line_start(size_t n_args, const mp_obj_t *args) {
 	mp_int_t x1 = mp_obj_get_int(args[0]);
 	mp_int_t y1 = mp_obj_get_int(args[1]);
@@ -943,6 +1015,9 @@ STATIC const mp_rom_map_elem_t mp_module_rl_globals_table[] = {
 	/************* rogue_random *******************/
 	{ MP_ROM_QSTR(MP_QSTR_random_next), MP_ROM_PTR(&mod_rl_random_next_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_random_int), MP_ROM_PTR(&mod_rl_random_int_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_random_3d), MP_ROM_PTR(&mod_rl_random_3d_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_random_2d), MP_ROM_PTR(&mod_rl_random_2d_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_random_1d), MP_ROM_PTR(&mod_rl_random_1d_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_random), MP_ROM_PTR(&mod_rl_random_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_roll), MP_ROM_PTR(&mod_rl_roll_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_get_seed), MP_ROM_PTR(&mod_rl_get_seed_obj) },
@@ -960,6 +1035,8 @@ STATIC const mp_rom_map_elem_t mp_module_rl_globals_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR_init), MP_ROM_PTR(&mod_td_init_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_load_font), MP_ROM_PTR(&mod_td_load_font_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_load_image), MP_ROM_PTR(&mod_td_load_image_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_array_to_image), MP_ROM_PTR(&mod_td_array_to_image_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_image_to_array), MP_ROM_PTR(&mod_td_image_to_array_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_draw_image), MP_ROM_PTR(&mod_td_draw_image_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_draw_tile), MP_ROM_PTR(&mod_td_draw_tile_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_colorize_tile), MP_ROM_PTR(&mod_td_colorize_tile_obj) },
@@ -983,6 +1060,7 @@ STATIC const mp_rom_map_elem_t mp_module_rl_globals_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR_mouse_x), MP_ROM_PTR(&mod_td_mouse_x_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_mouse_y), MP_ROM_PTR(&mod_td_mouse_y_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_mouse_button), MP_ROM_PTR(&mod_td_mouse_button_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_run), MP_ROM_PTR(&mod_td_run_obj) },
 	/************** utils ******************/
 	{ MP_ROM_QSTR(MP_QSTR_walk_line_start), MP_ROM_PTR(&mod_rl_walk_line_start_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_walk_line_next), MP_ROM_PTR(&mod_rl_walk_line_next_obj) },
