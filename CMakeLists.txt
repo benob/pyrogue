@@ -18,7 +18,7 @@ else ()
 	pkg_search_module(SDL2 REQUIRED sdl2)
 endif ()
 
-include_directories(${SDL2_INCLUDE_DIRS} include deps src)
+include_directories(${SDL2_INCLUDE_DIRS} lib deps src)
 
 # librogue.a
 add_library(rogue STATIC 
