@@ -68,7 +68,6 @@ static void (*rander_callback)(void*) = NULL;
 static void* render_callback_data = NULL;
 
 int td_init(const char* title, int width, int height) {
-	//if(display.running) return 0;
 	if(!display.was_init) {
 		if(SDL_Init(SDL_INIT_VIDEO) < 0) die("count not initialize SDL");
 		SDL_StartTextInput();
@@ -485,7 +484,6 @@ void td_run(void (*update_callback)(int key)) {
 #else
 	int key = TD_REDRAW;
 	while(display.running) {
-		//td_clear();
 		process_events(update_callback);
 		td_present();
 	}
