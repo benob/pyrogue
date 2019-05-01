@@ -48,7 +48,7 @@ set(micropython_CFLAGS
 	-I. 
 	-I${GENHDR}/.. 
 	-I${CMAKE_SOURCE_DIR}/src 
-	-I${CMAKE_SOURCE_DIR}/include 
+	-I${CMAKE_SOURCE_DIR}/lib 
 	${micropython_platform_CFLAGS}
 	-I${MP}/ 
 	-Wall

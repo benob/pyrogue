@@ -393,7 +393,6 @@ def redraw():
             mapping=[tile.num for tile in Tile.mapping],
             fg=[tile.fg for tile in Tile.mapping],
             bg=[tile.bg for tile in Tile.mapping])
-    to_draw.free()
 
     # draw actors
     actors.sort(key=lambda x: x.z)

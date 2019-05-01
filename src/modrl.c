@@ -211,13 +211,14 @@ STATIC mp_obj_t mod_rl_array_set(size_t n_args, const mp_obj_t *args) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_rl_array_set_obj, 4, 4, mod_rl_array_set);
 
-STATIC mp_obj_t mod_rl_array_free(mp_obj_t self_in) {
+/*STATIC mp_obj_t mod_rl_array_free(mp_obj_t self_in) {
 	mp_check_self(mp_obj_is_type(self_in, &mp_type_rl_array));
 	mp_obj_rl_array_t *self = MP_OBJ_TO_PTR(self_in);
 	rl_array_free(self->array);
+	fprintf(stderr, "__del__ called\n");
 	return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_rl_array_free_obj, mod_rl_array_free);
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_rl_array_free_obj, mod_rl_array_free);*/
 
 STATIC void mod_rl_array_print(const mp_print_t *print, mp_obj_t o_in, mp_print_kind_t kind) {
 	mp_obj_rl_array_t *o = MP_OBJ_TO_PTR(o_in);
@@ -580,8 +581,8 @@ STATIC mp_obj_t mod_rl_array_equals(mp_obj_t self_in, mp_obj_t value_in) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(mod_rl_array_equals_obj, mod_rl_array_equals);
 
 STATIC const mp_rom_map_elem_t mod_rl_array_locals_dict_table[] = {
-	{ MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&mod_rl_array_free_obj) },
-	{ MP_ROM_QSTR(MP_QSTR_free), MP_ROM_PTR(&mod_rl_array_free_obj) },
+	//{ MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&mod_rl_array_free_obj) },
+	//{ MP_ROM_QSTR(MP_QSTR_free), MP_ROM_PTR(&mod_rl_array_free_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_to_string), MP_ROM_PTR(&mod_rl_array_to_string_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_get), MP_ROM_PTR(&mod_rl_array_get_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_set), MP_ROM_PTR(&mod_rl_array_set_obj) },

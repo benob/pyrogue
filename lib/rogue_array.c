@@ -16,8 +16,9 @@ static int hex2int(char ch) {
 #define array_value(a, x, y) ((a)->values[((a)->stride + (a)->width) * (y) + (x)])
 
 array_t* rl_array_new(uint32_t width, uint32_t height) {
-  array_t *a = malloc(sizeof(array_t));
-	a->values = calloc(sizeof(VALUE), width * height);
+  array_t *a = rl_malloc(sizeof(array_t));
+	a->values = rl_malloc(sizeof(VALUE) * width * height);
+	memset(a->values, 0, sizeof(VALUE) * width * height);
 	a->stride = 0;
 	a->is_view = 0;
   a->width = width;
@@ -61,7 +62,7 @@ array_t* rl_array_view(array_t* b, int x, int y, uint32_t width, uint32_t height
 	if(y < 0) { height -= -y; y = 0; }
 	if(x + width > b->width) width = b->width - x;
 	if(y + height > b->height) height = b->height - y;
-  array_t *a = malloc(sizeof(array_t));
+  array_t *a = rl_malloc(sizeof(array_t));
 	a->values = &array_value(b, x, y);
 	a->stride = b->width - width;
 	a->is_view = 1;
@@ -71,8 +72,8 @@ array_t* rl_array_view(array_t* b, int x, int y, uint32_t width, uint32_t height
 }
 
 void rl_array_free(array_t* a) {
-	if(!a->is_view) free(a->values); // if stride is not 0, then it's a view
-	free(a);
+	if(!a->is_view) rl_free(a->values, sizeof(VALUE) * a->width * a->height);
+	rl_free(a, sizeof(array_t));
 }
 uint32_t rl_array_width(array_t* a) {
 	return a->width;

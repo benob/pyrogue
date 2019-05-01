@@ -89,7 +89,7 @@ int td_init(const char* title, int width, int height) {
 	display.running = 1;
 	display.was_init = 1;
 	td_use_backbuffer(1);
-	td_set_integral_scale(1);
+	//td_set_integral_scale(1);
 	return 1;
 }
 

@@ -35,6 +35,7 @@
 #include "py/runtime.h"
 #include "py/gc.h"
 #include "py/stackctrl.h"
+#include "py/misc.h"
 #include "extmod/misc.h"
 
 #include "rogue.h"
@@ -178,13 +179,25 @@ void usage(char* arg0) {
 	exit(1);
 }
 
+MP_NOINLINE int _main(int argc, char** argv);
+
+// from mp unix port, capture stack asap
 int main(int argc, char** argv) {
+    #if MICROPY_PY_THREAD
+    mp_thread_init();
+    #endif
+    mp_stack_ctrl_init();
+    return _main(argc, argv);
+}
+
+MP_NOINLINE int _main(int argc, char** argv) {
 
 	// Initialized stack limit
 	mp_stack_set_limit(40000 * (BYTES_PER_WORD / 4));
 	// Initialize heap
 #if MICROPY_ENABLE_GC
-#define HEAP_SIZE (2 * 1024 * 1024)
+	// allocate 50M to python (used for python memory and rl arrays)
+#define HEAP_SIZE (50 * 1024 * 1024)
 	char* heap = malloc(HEAP_SIZE);
 
 	gc_init(heap, heap + HEAP_SIZE);
@@ -202,6 +215,7 @@ int main(int argc, char** argv) {
 	mp_obj_list_init(MP_OBJ_TO_PTR(mp_sys_argv), 0);
 
 	rl_set_error_handler(error_handler);
+	rl_set_allocator(m_malloc, m_realloc, m_free);
 
 	uint32_t content_size;
 	char* content = NULL;
@@ -269,6 +283,7 @@ int main(int argc, char** argv) {
 #if MICROPY_ENABLE_GC
 	free(heap);
 #endif
+	return 0;
 }
 
 uint mp_import_stat(const char *path) {

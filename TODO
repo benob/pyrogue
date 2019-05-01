@@ -1,11 +1,8 @@
 Needed for release:
-- memory problems
 - full game example
 - 2d indexing functions
 
 ** General **
-free memory
-port to osx
 port to web
 write doc and examples
 write tests
@@ -38,3 +35,7 @@ add compression
 
 DONE rework embedding format
 DONE embed / extract from command line
+DONE segmantation fault with GC
+DONE exception in excetion with stack check
+DONE free memory
+DONE port to osx
