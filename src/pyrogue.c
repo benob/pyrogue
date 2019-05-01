@@ -164,6 +164,10 @@ STATIC int do_str(const char *str, uint32_t size, const char* name) {
     return execute_from_lexer(LEX_SRC_STR, str, size, MP_PARSE_FILE_INPUT, false, name);
 }
 
+void error_handler(const char* message) {
+		mp_raise_msg(&mp_type_OSError, message);
+}
+
 void usage(char* arg0) {
 	printf("usage: %s [options]\n", arg0);
 	printf("  without arguments             run game.py from embedded zip if any\n");
@@ -196,6 +200,8 @@ int main(int argc, char** argv) {
 
 	mp_obj_list_init(MP_OBJ_TO_PTR(mp_sys_path), 0);
 	mp_obj_list_init(MP_OBJ_TO_PTR(mp_sys_argv), 0);
+
+	rl_set_error_handler(error_handler);
 
 	uint32_t content_size;
 	char* content = NULL;

@@ -1,4 +1,7 @@
 #include <SDL.h>
+#include <string.h>
+#include <errno.h>
+
 #define STB_RECT_PACK_IMPLEMENTATION
 #define STB_TRUETYPE_IMPLEMENTATION
 #define STBTTF_IMPLEMENTATION
@@ -14,10 +17,10 @@
 #include <emscripten.h>
 #endif
 
+#include "rogue_util.h"
 #include "rogue_display.h"
 #include "rogue_filesystem.h"
 
-#define die(format, ...) { fprintf(stderr, "ERROR: " format "\n", ## __VA_ARGS__); exit(1); }
 #define TD_BACK_BUFFER TD_NUM_BUFFERS
 
 typedef struct {
@@ -69,15 +72,15 @@ static void* render_callback_data = NULL;
 
 int td_init(const char* title, int width, int height) {
 	if(!display.was_init) {
-		if(SDL_Init(SDL_INIT_VIDEO) < 0) die("count not initialize SDL");
+		if(SDL_Init(SDL_INIT_VIDEO) < 0) rl_error("count not initialize SDL");
 		SDL_StartTextInput();
 	}
 	if(display.renderer != NULL) SDL_DestroyRenderer(display.renderer);
 	if(display.window != NULL) SDL_DestroyWindow(display.window);
 	display.window = SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, SDL_WINDOW_SHOWN | SDL_WINDOW_MAXIMIZED | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_OPENGL);
-	if(display.window == NULL) die("cannot create window");
+	if(display.window == NULL) rl_error("cannot create window");
 	display.renderer = SDL_CreateRenderer(display.window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_TARGETTEXTURE);
-	if(display.renderer == NULL) die("cannot create renderer");
+	if(display.renderer == NULL) rl_error("cannot create renderer");
 	SDL_RenderSetLogicalSize(display.renderer, width, height);
 	SDL_SetRenderDrawBlendMode(display.renderer, SDL_BLENDMODE_BLEND);
 
@@ -93,13 +96,13 @@ int td_init(const char* title, int width, int height) {
 void td_load_font(const char* font_path, int font_size, int line_height) {
 	uint32_t font_data_size;
 	char* font_data = fs_load_asset(font_path, &font_data_size);
-	if(font_data == NULL) die("cannot load font '%s'", font_path);
+	if(font_data == NULL) rl_error("[Errno %d] %s: '%s'", errno, strerror(errno), font_path);
 	SDL_RWops* ops = SDL_RWFromMem(font_data, font_data_size);
 	if(display.font != NULL) STBTTF_CloseFont(display.font);
 	display.font = STBTTF_OpenFontRW(display.renderer, ops, font_size);
 	if(display.font) display.line_height = display.font->baseline;
 	free(font_data);
-	if(display.font == NULL) die("cannot load font '%s'", font_path);
+	if(display.font == NULL) rl_error("cannot load font '%s'", font_path);
 	if(line_height != 0) display.line_height = line_height;
 }
 
@@ -110,11 +113,11 @@ void td_set_integral_scale(int value) {
 int td_load_image(int index, const char* filename, int tile_width, int tile_height) {
 	uint32_t image_data_size;
 	char* image_data = fs_load_asset(filename, &image_data_size);
-	if(image_data == NULL) die("cannot load image '%s' from assets", filename);
+	if(image_data == NULL) rl_error("cannot load image '%s' from assets", filename);
 	SDL_RWops* ops = SDL_RWFromMem(image_data, image_data_size);
 	SDL_Surface* surface = STBIMG_Load_RW(ops, 1);
 	free(image_data);
-	if(surface == NULL) die("cannot decode image data '%s'", filename);
+	if(surface == NULL) rl_error("cannot decode image data '%s'", filename);
 	image_t image;
 	image.tile_width = tile_width;
 	image.tile_height = tile_height;
@@ -124,7 +127,7 @@ int td_load_image(int index, const char* filename, int tile_width, int tile_heig
 	image.texture = SDL_CreateTextureFromSurface(display.renderer, surface);
 	image.pixels = malloc(sizeof(uint32_t) * surface->w * surface->h);
 	memcpy(image.pixels, surface->pixels, sizeof(uint32_t) * surface->w * surface->h);
-	if(image.texture == NULL) die("cannot create texture for image '%s'", filename);
+	if(image.texture == NULL) rl_error("cannot create texture for image '%s'", filename);
 	SDL_FreeSurface(surface);
 	if(display.images[index].texture != NULL) {
 		SDL_DestroyTexture(display.images[index].texture);
@@ -135,7 +138,7 @@ int td_load_image(int index, const char* filename, int tile_width, int tile_heig
 }
 
 void td_array_to_image(int index, array_t* a, int tile_width, int tile_height) {
-	if(index < 0 || index >= TD_NUM_IMAGES) die("invalid image '%d'", index);
+	if(index < 0 || index >= TD_NUM_IMAGES) rl_error("invalid image '%d'", index);
 	image_t* image = &display.images[index];
 	image->tile_width = tile_width;
 	image->tile_height = tile_height;
@@ -147,7 +150,7 @@ void td_array_to_image(int index, array_t* a, int tile_width, int tile_height) {
 		if(image->texture != NULL) SDL_DestroyTexture(image->texture);
 		image->texture = SDL_CreateTexture(display.renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STATIC, a->width, a->height);
 	}
-	if(image->texture == NULL) die("cannot create texture");
+	if(image->texture == NULL) rl_error("cannot create texture");
 	SDL_UpdateTexture(image->texture, NULL, a->values, sizeof(uint32_t) * (a->width + a->stride));
 
 	if(image->pixels != NULL) free(image->pixels);
@@ -161,26 +164,26 @@ void td_array_to_image(int index, array_t* a, int tile_width, int tile_height) {
 }
 
 array_t* td_image_to_array(int index) {
-	if(index < 0 || index >= TD_NUM_IMAGES) die("invalid image '%d'", index);
+	if(index < 0 || index >= TD_NUM_IMAGES) rl_error("invalid image '%d'", index);
 	image_t* image = &display.images[index];
-	if(image->pixels == NULL) die("invalid image '%d'", index);
+	if(image->pixels == NULL) rl_error("invalid image '%d'", index);
 	array_t* a = rl_array_new(image->width, image->height);
 	memcpy(a->values, image->pixels, sizeof(uint32_t) * a->width * a->height);
 	return a;
 }
 
 void td_draw_image(int index, int x, int y) {
-	if(index < 0 || index >= TD_NUM_IMAGES) die("invalid image '%d'", index);
+	if(index < 0 || index >= TD_NUM_IMAGES) rl_error("invalid image '%d'", index);
 	image_t* image = &display.images[index];
-	if(image->texture == NULL) die("invalid image '%d'", index);
+	if(image->texture == NULL) rl_error("invalid image '%d'", index);
 	SDL_Rect rect = {x, y, image->width, image->height};
 	SDL_RenderCopy(display.renderer, image->texture, NULL, &rect);
 }
 
 void td_draw_tile(int index, int x, int y, int tile) {
-	if(index < 0 || index >= TD_NUM_IMAGES) die("invalid image '%d'", index);
+	if(index < 0 || index >= TD_NUM_IMAGES) rl_error("invalid image '%d'", index);
 	image_t* image = &display.images[index];
-	if(image->texture == NULL) die("invalid image '%d'", index);
+	if(image->texture == NULL) rl_error("invalid image '%d'", index);
 	int tile_x = (tile % image->tiles_per_line) * image->tile_width;
 	int tile_y = (tile / image->tiles_per_line) * image->tile_height;
 	SDL_Rect src_rect = {tile_x, tile_y, image->tile_width, image->tile_height};
@@ -189,9 +192,9 @@ void td_draw_tile(int index, int x, int y, int tile) {
 }
 
 void td_colorize_tile(int index, int x, int y, int tile, uint32_t fg, uint32_t bg) {
-	if(index < 0 || index >= TD_NUM_IMAGES) die("invalid image '%d'", index);
+	if(index < 0 || index >= TD_NUM_IMAGES) rl_error("invalid image '%d'", index);
 	image_t* image = &display.images[index];
-	if(image->texture == NULL) die("invalid image '%d'", index);
+	if(image->texture == NULL) rl_error("invalid image '%d'", index);
 	int tile_x = (tile % image->tiles_per_line) * image->tile_width;
 	int tile_y = (tile / image->tiles_per_line) * image->tile_height;
 	SDL_Rect src_rect = {tile_x, tile_y, image->tile_width, image->tile_height};
@@ -210,9 +213,9 @@ void td_colorize_tile(int index, int x, int y, int tile, uint32_t fg, uint32_t b
 }
 
 void td_draw_array(int index, array_t* a, int x, int y, int x_shift, int y_shift, int info_size, int* info_mapping, uint32_t* info_fg, uint32_t* info_bg) {
-	if(index < 0 || index >= TD_NUM_IMAGES) die("invalid image '%d'", index);
+	if(index < 0 || index >= TD_NUM_IMAGES) rl_error("invalid image '%d'", index);
 	image_t* image = &display.images[index];
-	if(image->texture == NULL) die("invalid image '%d'", index);
+	if(image->texture == NULL) rl_error("invalid image '%d'", index);
 	if(x_shift == 0) x_shift = image->tile_width;
 	if(y_shift == 0) y_shift = image->tile_height;
 	/* split background and foreground drawing to prevent slow switch of gl primitive type */
@@ -279,7 +282,7 @@ void td_blit_buffer(int index) {
 }
 
 void td_print_text(int orig_x, int orig_y, const char* text, uint32_t color, int align) {
-	if(!display.font) die("no font loaded")
+	if(!display.font) rl_error("no font loaded");
 	int x = orig_x, y = orig_y + display.font->baseline;
 	SDL_Color fg = {td_color_r(color), td_color_g(color), td_color_b(color), td_color_a(color)};
 	while(text && *text != '\0') {
@@ -308,7 +311,7 @@ void td_print_text(int orig_x, int orig_y, const char* text, uint32_t color, int
 }
 
 void td_size_text(const char* text, int* width, int* height) {
-	if(!display.font) die("no font loaded");
+	if(!display.font) rl_error("no font loaded");
 	*width = STBTTF_MeasureText(display.font, text);
 	*height = display.line_height;
 };
@@ -366,6 +369,7 @@ int td_wait_event(int include_mouse) {
 								display.is_fullscreen = 1;
 							}
 						} else if(key == SDLK_q) {
+							// TODO: use customizable exit handler
 							exit(1); // force quit
 						} else if(key == SDLK_i) {
 							// TODO: investgate why it doesn't update immediately.
@@ -464,7 +468,8 @@ static void process_events(void* arg) {
 							SDL_SetWindowFullscreen(display.window, SDL_WINDOW_FULLSCREEN_DESKTOP);
 							display.is_fullscreen = 1;
 						}
-					} else if(key == SDLK_q) { // TODO: can we do better?
+					} else if(key == SDLK_q) {
+						// TODO: use customizable exit handler
 						exit(1); // force quit
 					}
 					key = TD_REDRAW;

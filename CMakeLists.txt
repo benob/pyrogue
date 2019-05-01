@@ -22,6 +22,7 @@ include_directories(${SDL2_INCLUDE_DIRS} lib deps src)
 
 # librogue.a
 add_library(rogue STATIC 
+	lib/rogue_util.c 
 	lib/rogue_array.c 
 	lib/rogue_display.c 
 	lib/rogue_filesystem.c 

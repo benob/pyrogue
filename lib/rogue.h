@@ -1,3 +1,4 @@
+#include "rogue_util.h"
 #include "rogue_array.h"
 #include "rogue_display.h"
 #include "rogue_filesystem.h"

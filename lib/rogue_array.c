@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "rogue_array.h"
+#include "rogue_util.h"
 #include "rogue_random.h"
 
 static int hex2int(char ch) {
