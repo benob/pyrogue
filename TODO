@@ -11,6 +11,7 @@ write tests
 finish minimal example game
 
 ** pyrogue **
+investigate bug with loading py file on windows build
 load directory modules from assets 
 cleanup available modules 
 remove filesystem access (only assets shall be allowed)

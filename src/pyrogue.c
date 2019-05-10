@@ -303,7 +303,12 @@ uint mp_import_stat(const char *path) {
 		}
 	}
 	return MP_IMPORT_STAT_NO_EXIST;*/
-	return MP_IMPORT_STAT_FILE; // only file import supported at this time
+	if(fs_asset_is_file(path)) {
+		return MP_IMPORT_STAT_FILE; // only file import supported at this time
+	} else if(fs_asset_is_directory(path)) {
+		return MP_IMPORT_STAT_DIR;
+	}
+	return MP_IMPORT_STAT_NO_EXIST;
 }
 
 void nlr_jump_fail(void *val) {

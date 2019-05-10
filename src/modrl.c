@@ -812,19 +812,36 @@ STATIC mp_obj_t mod_td_set_buffer(mp_obj_t buffer_in) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_td_set_buffer_obj, mod_td_set_buffer);
 
-STATIC mp_obj_t mod_td_print_text(size_t n_args, const mp_obj_t *args) {
-	mp_int_t x = mp_obj_get_int(args[0]);
-	mp_int_t y = mp_obj_get_int(args[1]);
+mp_obj_t mod_td_print_text(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+	static const mp_arg_t allowed_args[] = {
+		/*{ MP_QSTR_x, MP_ARG_INT | MP_ARG_REQUIRED, {.u_int = 0} },
+		{ MP_QSTR_y, MP_ARG_INT | MP_ARG_REQUIRED, {.u_int = 0} },
+		{ MP_QSTR_text, MP_ARG_OBJ, {.u_rom_obj = MP_ROM_PTR(&mp_const_none_obj)} },*/
+		{ MP_QSTR_color, MP_ARG_INT, {.u_int = 0xffffffff} },
+		{ MP_QSTR_align, MP_ARG_INT, {.u_int = TD_ALIGN_LEFT} },
+		{ MP_QSTR_image, MP_ARG_INT, {.u_int = -1} },
+	};
+
+	// parse args
+	struct {
+		mp_arg_val_t /*x, y, text*/ color, align, image;
+	} args;
+
+	mp_arg_parse_all(0, pos_args + 3, kw_args,
+			MP_ARRAY_SIZE(allowed_args), allowed_args, (mp_arg_val_t*)&args);
+
+	mp_int_t x = mp_obj_get_int(pos_args[0]);
+	mp_int_t y = mp_obj_get_int(pos_args[1]);
 	size_t len;
-	const char *text = mp_obj_str_get_data(args[2], &len);
-	mp_uint_t color = 0xffffffff;
-	if(n_args > 3) color = mp_obj_get_int(args[3]);
-	mp_int_t align = TD_ALIGN_LEFT;
-	if(n_args > 4) align = mp_obj_get_int(args[4]);
-	td_print_text(x, y, text, color, align);
+	const char *text = mp_obj_str_get_data(pos_args[2], &len);
+
+	if(args.image.u_int < 0)
+		td_print_text(x, y, text, args.color.u_int, args.align.u_int);
+	else
+		td_print_text_from_tiles(args.image.u_int, x, y, text, args.color.u_int, args.align.u_int);
 	return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_td_print_text_obj, 3, 5, mod_td_print_text);
+STATIC MP_DEFINE_CONST_FUN_OBJ_KW(mod_td_print_text_obj, 3, mod_td_print_text);
 
 STATIC mp_obj_t mod_td_size_text(mp_obj_t text_in) {
 	int width, height;
@@ -862,6 +879,18 @@ STATIC mp_obj_t mod_td_draw_rect(size_t n_args, const mp_obj_t *args) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_td_draw_rect_obj, 4, 5, mod_td_draw_rect);
 
+STATIC mp_obj_t mod_td_draw_line(size_t n_args, const mp_obj_t *args) {
+	mp_int_t x1 = mp_obj_get_int(args[0]);
+	mp_int_t y1 = mp_obj_get_int(args[1]);
+	mp_int_t x2 = mp_obj_get_int(args[2]);
+	mp_int_t y2 = mp_obj_get_int(args[3]);
+	mp_uint_t color = 0xffffffff;
+	if(n_args > 4) color = mp_obj_get_int(args[4]);
+	td_draw_line(x1, y1, x2, y2, color);
+	return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_td_draw_line_obj, 4, 5, mod_td_draw_line);
+
 void td_draw_points(td_point_t* points, int num, uint32_t color);
 STATIC mp_obj_t mod_td_draw_points(mp_obj_t points_in, mp_obj_t color_in) {
 	mp_int_t size = mp_obj_get_int(mp_obj_len(points_in));
@@ -882,7 +911,7 @@ STATIC mp_obj_t mod_td_draw_points(mp_obj_t points_in, mp_obj_t color_in) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(mod_td_draw_points_obj, mod_td_draw_points);
 
-STATIC mp_obj_t mod_td_still_running() {
+/*STATIC mp_obj_t mod_td_still_running() {
 	mp_int_t result = td_still_running();
 	return mp_obj_new_bool(result);
 }
@@ -920,6 +949,7 @@ STATIC mp_obj_t mod_td_delay(mp_obj_t ms_in) {
 	return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_td_delay_obj, mod_td_delay);
+*/
 
 STATIC mp_obj_t mod_td_clear() {
 	td_clear();
@@ -955,7 +985,35 @@ STATIC mp_obj_t mod_td_hsv_color(size_t n_args, const mp_obj_t *args) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_td_hsv_color_obj, 3, 4, mod_td_hsv_color);
 
-STATIC mp_obj_t mod_td_mouse_x() {
+STATIC mp_obj_t mod_td_color_r(mp_obj_t color_in) {
+	uint32_t color = (uint32_t) mp_obj_get_int(color_in);
+	uint8_t result = td_color_r(color);
+	return mp_obj_new_int(result);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_td_color_r_obj, mod_td_color_r);
+
+STATIC mp_obj_t mod_td_color_g(mp_obj_t color_in) {
+	uint32_t color = (uint32_t) mp_obj_get_int(color_in);
+	uint8_t result = td_color_g(color);
+	return mp_obj_new_int(result);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_td_color_g_obj, mod_td_color_g);
+
+STATIC mp_obj_t mod_td_color_b(mp_obj_t color_in) {
+	uint32_t color = (uint32_t) mp_obj_get_int(color_in);
+	uint8_t result = td_color_b(color);
+	return mp_obj_new_int(result);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_td_color_b_obj, mod_td_color_b);
+
+STATIC mp_obj_t mod_td_color_a(mp_obj_t color_in) {
+	uint32_t color = (uint32_t) mp_obj_get_int(color_in);
+	uint8_t result = td_color_a(color);
+	return mp_obj_new_int(result);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_td_color_a_obj, mod_td_color_a);
+
+/*STATIC mp_obj_t mod_td_mouse_x() {
 	mp_int_t result = td_mouse_x();
 	return mp_obj_new_int(result);
 }
@@ -971,19 +1029,33 @@ STATIC mp_obj_t mod_td_mouse_button() {
 	mp_int_t result = td_mouse_button();
 	return mp_obj_new_int(result);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_td_mouse_button_obj, mod_td_mouse_button);
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_td_mouse_button_obj, mod_td_mouse_button);*/
+
+STATIC mp_obj_t mod_td_mouse() {
+	mp_int_t x = td_mouse_x();
+	mp_int_t y = td_mouse_y();
+	mp_int_t button = td_mouse_button();
+	mp_obj_tuple_t *result = MP_OBJ_TO_PTR(mp_obj_new_tuple(3, NULL));
+	result->items[0] = mp_obj_new_int(x);
+	result->items[1] = mp_obj_new_int(y);
+	result->items[2] = mp_obj_new_int(button);
+	return result;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_td_mouse_obj, mod_td_mouse);
 
 static mp_obj_t event_callback;
 static void run_callback(int key) {
 	mp_call_function_1(event_callback, mp_obj_new_int(key));
 }
 
-STATIC mp_obj_t mod_td_run(mp_obj_t callback) {
-	event_callback = callback;
-	td_run(run_callback);
+STATIC mp_obj_t mod_td_run(size_t n_args, const mp_obj_t *args) {
+	event_callback = args[0];
+	mp_int_t update_filter = TD_UPDATE_LOOP;
+	if(n_args > 1) update_filter = mp_obj_get_int(args[1]);
+	td_run(run_callback, update_filter);
 	return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_td_run_obj, mod_td_run);
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_td_run_obj, 1, 2, mod_td_run);
 
 /* utils */
 
@@ -1047,20 +1119,26 @@ STATIC const mp_rom_map_elem_t mp_module_rl_globals_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR_size_text), MP_ROM_PTR(&mod_td_size_text_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_fill_rect), MP_ROM_PTR(&mod_td_fill_rect_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_draw_rect), MP_ROM_PTR(&mod_td_draw_rect_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_draw_line), MP_ROM_PTR(&mod_td_draw_line_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_draw_points), MP_ROM_PTR(&mod_td_draw_points_obj) },
-	{ MP_ROM_QSTR(MP_QSTR_still_running), MP_ROM_PTR(&mod_td_still_running_obj) },
+	/*{ MP_ROM_QSTR(MP_QSTR_still_running), MP_ROM_PTR(&mod_td_still_running_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_wait_key), MP_ROM_PTR(&mod_td_wait_key_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_wait_event), MP_ROM_PTR(&mod_td_wait_event_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_poll_event), MP_ROM_PTR(&mod_td_poll_event_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_present), MP_ROM_PTR(&mod_td_present_obj) },
-	{ MP_ROM_QSTR(MP_QSTR_delay), MP_ROM_PTR(&mod_td_delay_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_delay), MP_ROM_PTR(&mod_td_delay_obj) },*/
 	{ MP_ROM_QSTR(MP_QSTR_clear), MP_ROM_PTR(&mod_td_clear_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_quit), MP_ROM_PTR(&mod_td_quit_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_color), MP_ROM_PTR(&mod_td_color_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_hsv_color), MP_ROM_PTR(&mod_td_hsv_color_obj) },
-	{ MP_ROM_QSTR(MP_QSTR_mouse_x), MP_ROM_PTR(&mod_td_mouse_x_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_color_r), MP_ROM_PTR(&mod_td_color_r_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_color_g), MP_ROM_PTR(&mod_td_color_g_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_color_b), MP_ROM_PTR(&mod_td_color_b_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_color_a), MP_ROM_PTR(&mod_td_color_a_obj) },
+	/*{ MP_ROM_QSTR(MP_QSTR_mouse_x), MP_ROM_PTR(&mod_td_mouse_x_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_mouse_y), MP_ROM_PTR(&mod_td_mouse_y_obj) },
-	{ MP_ROM_QSTR(MP_QSTR_mouse_button), MP_ROM_PTR(&mod_td_mouse_button_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_mouse_button), MP_ROM_PTR(&mod_td_mouse_button_obj) },*/
+	{ MP_ROM_QSTR(MP_QSTR_mouse), MP_ROM_PTR(&mod_td_mouse_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_run), MP_ROM_PTR(&mod_td_run_obj) },
 	/************** utils ******************/
 	{ MP_ROM_QSTR(MP_QSTR_walk_line_start), MP_ROM_PTR(&mod_rl_walk_line_start_obj) },
@@ -1075,11 +1153,10 @@ STATIC const mp_rom_map_elem_t mp_module_rl_globals_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR_QUIT), MP_ROM_INT(TD_QUIT) },
 	{ MP_ROM_QSTR(MP_QSTR_MOUSE), MP_ROM_INT(TD_MOUSE) },
 	{ MP_ROM_QSTR(MP_QSTR_REDRAW), MP_ROM_INT(TD_REDRAW) },
-	{ MP_ROM_QSTR(MP_QSTR_ESCAPE), MP_ROM_INT(TD_ESCAPE) },
-	{ MP_ROM_QSTR(MP_QSTR_LEFT), MP_ROM_INT(TD_LEFT) },
-	{ MP_ROM_QSTR(MP_QSTR_RIGHT), MP_ROM_INT(TD_RIGHT) },
-	{ MP_ROM_QSTR(MP_QSTR_UP), MP_ROM_INT(TD_UP) },
-	{ MP_ROM_QSTR(MP_QSTR_DOWN), MP_ROM_INT(TD_DOWN) },
+	// update filters
+	{ MP_ROM_QSTR(MP_QSTR_UPDATE_KEY), MP_ROM_INT(TD_UPDATE_KEY) },
+	{ MP_ROM_QSTR(MP_QSTR_UPDATE_MOUSE), MP_ROM_INT(TD_UPDATE_MOUSE) },
+	{ MP_ROM_QSTR(MP_QSTR_UPDATE_LOOP), MP_ROM_INT(TD_UPDATE_LOOP) },
 
 	// pico8 colors
   { MP_ROM_QSTR(MP_QSTR_BLACK), MP_ROM_INT(td_color_rgba(0, 0, 0, 0)) },

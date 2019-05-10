@@ -14,9 +14,8 @@ colors = [rl.hsv_color(i, 255, 255, 255) for i in range(256)]
 
 array = rl.array(WIDTH, HEIGHT)
 
-while rl.still_running():
-    rl.poll_event()
-    rl.clear()
+def redraw(event):
+    global shift
     for y in range(HEIGHT):
         for x in range(WIDTH):
             value = math.sin(shift / 100 + x / 4.0)
@@ -25,7 +24,8 @@ while rl.still_running():
             value += math.sin(math.sqrt(shift / 100 + x * x + y * y) / 16.0)
             array[x, y] = int(128 + 128 * value / 4)
 
+    rl.clear()
     rl.draw_array(array, 0, 0, fg=colors)
     shift += 10
-    rl.present()
-    rl.delay(1000 // 60)
+
+rl.run(redraw, rl.UPDATE_LOOP)

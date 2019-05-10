@@ -10,6 +10,12 @@
 #define STBI_NO_STDIO
 #define STBI_NO_LINEAR
 #define STBI_NO_HDR
+#define STBI_NO_BMP
+#define STBI_NO_PSD
+#define STBI_NO_TGA
+#define STBI_NO_GIF
+#define STBI_NO_PIC
+#define STBI_NO_PNM 
 #define SDL_STBIMAGE_IMPLEMENTATION
 #include "SDL_stbimage.h"
 
@@ -42,6 +48,8 @@ typedef struct {
 	image_t images[TD_NUM_IMAGES];
 	SDL_Texture* buffers[TD_NUM_BUFFERS + 1];
 	int use_backbuffer, is_fullscreen, is_maximized, use_integral_scale;
+	int update_filter;
+	void (*update_callback)(int);
 } display_t;
 
 static display_t display;
@@ -72,7 +80,7 @@ static void* render_callback_data = NULL;
 
 int td_init(const char* title, int width, int height) {
 	if(!display.was_init) {
-		if(SDL_Init(SDL_INIT_VIDEO) < 0) rl_error("count not initialize SDL");
+		if(SDL_Init(SDL_INIT_VIDEO) < 0) rl_error("could not initialize SDL");
 		SDL_StartTextInput();
 	}
 	if(display.renderer != NULL) SDL_DestroyRenderer(display.renderer);
@@ -281,6 +289,32 @@ void td_blit_buffer(int index) {
 	SDL_RenderCopy(display.renderer, display.buffers[index], NULL, NULL);
 }
 
+// TODO: align is not implemented
+void td_print_text_from_tiles(int index, int orig_x, int orig_y, const char* text, uint32_t color, int align) {
+	if(index < 0 || index >= TD_NUM_IMAGES) rl_error("invalid image '%d'", index);
+	image_t* image = &display.images[index];
+	if(image->texture == NULL) rl_error("invalid image '%d'", index);
+	int x = orig_x, y = orig_y + image->tile_height;
+	SDL_SetTextureColorMod(image->texture, td_color_r(color), td_color_g(color), td_color_b(color));
+	SDL_SetTextureAlphaMod(image->texture, td_color_a(color));
+	while(text && *text != '\0') {
+		if(*text == '\n') {
+			x = orig_x;
+			y += image->tile_height;
+		} else {
+			int tile_x = (*text % image->tiles_per_line) * image->tile_width;
+			int tile_y = (*text / image->tiles_per_line) * image->tile_height;
+			SDL_Rect src_rect = {tile_x, tile_y, image->tile_width, image->tile_height};
+			SDL_Rect dst_rect = {x, y, image->tile_width, image->tile_height};
+			SDL_RenderCopy(display.renderer, image->texture, &src_rect, &dst_rect);
+			x += image->tile_width;
+		}
+		text++;
+	}
+	SDL_SetTextureColorMod(image->texture, 255, 255, 255);
+	SDL_SetTextureAlphaMod(image->texture, 255);
+}
+
 void td_print_text(int orig_x, int orig_y, const char* text, uint32_t color, int align) {
 	if(!display.font) rl_error("no font loaded");
 	int x = orig_x, y = orig_y + display.font->baseline;
@@ -301,6 +335,7 @@ void td_print_text(int orig_x, int orig_y, const char* text, uint32_t color, int
 				line[length] = '\0';
 				SDL_SetRenderDrawColor(display.renderer, fg.r, fg.g, fg.b, fg.a);
 				int width = STBTTF_MeasureText(display.font, line);
+				// TODO: does not work with multiline text
 				if(align == TD_ALIGN_CENTER) x -= width / 2;
 				else if(align == TD_ALIGN_RIGHT) x -= width;
 				STBTTF_RenderText(display.renderer, display.font, x, y, line);
@@ -326,6 +361,11 @@ void td_draw_rect(int x, int y, int w, int h, uint32_t color) {
 	SDL_Rect rect = {x, y, w, h};
 	SDL_SetRenderDrawColor(display.renderer, td_color_r(color), td_color_g(color), td_color_b(color), td_color_a(color));
 	SDL_RenderDrawRect(display.renderer, &rect);
+}
+
+void td_draw_line(int x1, int y1, int x2, int y2, uint32_t color) {
+	SDL_SetRenderDrawColor(display.renderer, td_color_r(color), td_color_g(color), td_color_b(color), td_color_a(color));
+	SDL_RenderDrawLine(display.renderer, x1, y1, x2, y2);
 }
 
 int td_still_running() {
@@ -441,21 +481,34 @@ void td_quit() {
 #endif
 }
 
-static void process_events(void* arg) {
-	void (*callback)(int key) = (void (*)(int)) arg;
+static void process_events() {
 	int key = TD_PASS;
 	SDL_Event event;
 	while(SDL_PollEvent(&event) != 0) {
 		switch(event.type) {
 			case SDL_QUIT:
 				td_quit();
-				key = TD_QUIT;
+				return;
 				break;
 			case SDL_WINDOWEVENT:
-				key = TD_REDRAW;
+				key = TD_PASS;
+				td_present();
 				break;
 			case SDL_TEXTINPUT:
 				key = event.text.text[0];
+				break;
+			case SDL_MOUSEMOTION:
+				display.mouse_x = event.motion.x;
+				display.mouse_y = event.motion.y;
+				key = TD_MOUSE;
+				break;
+			case SDL_MOUSEBUTTONUP:
+				display.mouse_button = 0;
+				key = TD_MOUSE;
+				break;
+			case SDL_MOUSEBUTTONDOWN:
+				display.mouse_button = event.button.button;
+				key = TD_MOUSE;
 				break;
 			case SDL_KEYDOWN:
 				key = event.key.keysym.sym;
@@ -472,25 +525,34 @@ static void process_events(void* arg) {
 						// TODO: use customizable exit handler
 						exit(1); // force quit
 					}
-					key = TD_REDRAW;
+					//key = TD_REDRAW;
+					return;
+				} else if(key >= 32 && key < 127) continue;
+				else if(key != SDLK_LALT && key != SDLK_LSHIFT && key != SDLK_LCTRL && key != SDLK_RALT && key != SDLK_RSHIFT && key != SDLK_RCTRL && key != SDLK_LGUI && key != SDLK_RGUI) { 
+				} else {
+					key = TD_PASS;
 				}
-				else if(key >= 32 && key < 127) continue;
-				else if(key != SDLK_LALT && key != SDLK_LSHIFT && key != SDLK_LCTRL && key != SDLK_RALT && key != SDLK_RSHIFT && key != SDLK_RCTRL && key != SDLK_LGUI && key != SDLK_RGUI) { }
 				break;
 		}
 	}
-	printf("%d\n", key);
-	if(key != TD_PASS) callback(key);
+	if((key == TD_MOUSE && (display.update_filter & TD_UPDATE_MOUSE)) 
+			|| (key != TD_PASS && key != TD_MOUSE && (display.update_filter & TD_UPDATE_KEY)) 
+			|| (display.update_filter & TD_UPDATE_LOOP)) {
+		display.update_callback(key);
+		td_present();
+	}
 }
 
-void td_run(void (*update_callback)(int key)) {
+void td_run(void (*update_callback)(int key), int update_filter) {
+	display.update_callback = update_callback;
+	display.update_filter = update_filter;
+	update_callback(TD_REDRAW);
+	td_present();
 #ifdef __EMSCRIPTEN__
-	emscripten_set_main_loop_arg(process_events, update_callback, 0, 1);
+	emscripten_set_main_loop(process_events, 0, 1);
 #else
-	int key = TD_REDRAW;
 	while(display.running) {
-		process_events(update_callback);
-		td_present();
+		process_events();
 	}
 #endif
 }

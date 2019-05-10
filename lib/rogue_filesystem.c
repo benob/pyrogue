@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <sys/stat.h>
 #include <SDL.h>
+
 #include "miniz.h"
 #ifdef __EMSCRIPTEN__
 #include <emscripten/fetch.h>
@@ -27,17 +28,6 @@ enum { RESOURCE_DIR, RESOURCE_ZIP };
 static char* resource_path = NULL;
 static int resource_type = RESOURCE_DIR;
 mz_zip_archive* resource_zip = NULL;
-
-// may need to change path separator if developed on a different platform
-static const char* normalize_path(const char* path) {
-	return path;
-	/*static char copy[MAX_PATH_SIZE];
-	strncpy(copy, path, MAX_PATH_SIZE);
-	for(int i = 0; copy[i]; i++) {
-		if(copy[i] == PATH_SEPARATOR_OTHER) copy[i] = PATH_SEPARATOR;
-	}
-	return copy;*/
-}
 
 static char* load_file(const char* filename, uint32_t* size) {
 //#ifdef __EMSCRIPTEN__
@@ -109,8 +99,7 @@ static char* load_file_zip(mz_zip_archive* archive, const char* filename, uint32
 	return data;
 }
 
-int fs_open_resources(const char* _path) {
-	const char* path = normalize_path(_path);
+int fs_open_resources(const char* path) {
 	if(resource_path != NULL) free(resource_path);
 	resource_path = strdup(path);
 	if(!strcmp(path + strlen(path) - 4, ".zip")) {
@@ -263,8 +252,7 @@ void fs_set_app_name(const char* app_name) {
   pref_dir = SDL_GetPrefPath("pyrogue", app_name);
 }
 
-char* fs_load_asset(const char* _path, uint32_t* size) {
-	const char* path = normalize_path(_path);
+char* fs_load_asset(const char* path, uint32_t* size) {
 	if(resource_type == RESOURCE_DIR) {
 		char filename[MAX_PATH_SIZE];
 		if(resource_path == NULL) snprintf(filename, MAX_PATH_SIZE, "%s", path);
@@ -278,8 +266,58 @@ char* fs_load_asset(const char* _path, uint32_t* size) {
 	}
 }
 
-char* fs_load_pref(const char* _path, uint32_t* size) {
-	const char* path = normalize_path(_path);
+int fs_asset_is_file(const char* path) {
+	if(resource_type == RESOURCE_DIR) {
+		char filename[MAX_PATH_SIZE];
+		if(resource_path == NULL) snprintf(filename, MAX_PATH_SIZE, "%s", path);
+		else snprintf(filename, MAX_PATH_SIZE, "%s%c%s", resource_path, PATH_SEPARATOR, path);
+		struct stat info;
+    if(stat(filename, &info) < 0) return 0;
+		return S_ISREG(info.st_mode);
+	} else if (resource_type == RESOURCE_ZIP) {
+		mz_uint32 file_index = mz_zip_reader_locate_file(resource_zip, path, NULL, 0);
+		if(file_index < 0) return 0;
+		mz_zip_archive_file_stat info;
+		if(!mz_zip_reader_file_stat(resource_zip, file_index, &info)) return 0;
+		return !info.m_is_directory;
+	} else {
+		fprintf(stderr, "unsupported resource type\n");
+		return 0;
+	}
+}
+int fs_asset_is_directory(const char* _path) {
+	static char* path = NULL;
+	int path_length = strlen(_path);
+	// TODO: might not work on windows (path separator is zip creator-dependent)
+	if(_path[path_length - 1] != '/') {
+		path = realloc(path, path_length + 2);
+		memcpy(path, _path, path_length);
+		path[path_length] = '/';
+		path[path_length + 1] = '\0';
+	} else {
+		path = realloc(path, path_length + 1);
+		memcpy(path, _path, path_length + 1);
+	}
+	if(resource_type == RESOURCE_DIR) {
+		char filename[MAX_PATH_SIZE];
+		if(resource_path == NULL) snprintf(filename, MAX_PATH_SIZE, "%s", path);
+		else snprintf(filename, MAX_PATH_SIZE, "%s%c%s", resource_path, PATH_SEPARATOR, path);
+		struct stat info;
+    if(stat(filename, &info) < 0) return 0;
+    return S_ISDIR(info.st_mode);
+	} else if (resource_type == RESOURCE_ZIP) {
+		mz_uint32 file_index = mz_zip_reader_locate_file(resource_zip, path, NULL, 0);
+		if(file_index < 0) return 0;
+		mz_zip_archive_file_stat info;
+		if(!mz_zip_reader_file_stat(resource_zip, file_index, &info)) return 0;
+		return info.m_is_directory;
+	} else {
+		fprintf(stderr, "unsupported resource type\n");
+		return 0;
+	}
+}
+
+char* fs_load_pref(const char* path, uint32_t* size) {
 	char filename[MAX_PATH_SIZE];
 	if(pref_dir == NULL) snprintf(filename, MAX_PATH_SIZE, "%s", path);
 	else snprintf(filename, MAX_PATH_SIZE, "%s%c%s", pref_dir, PATH_SEPARATOR, path);

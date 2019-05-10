@@ -6,6 +6,8 @@
 int fs_open_resources(const char* path);
 void fs_set_app_name(const char* app_name);
 char* fs_load_asset(const char* path, uint32_t* size);
+int fs_asset_is_file(const char* path);
+int fs_asset_is_directory(const char* _path);
 char* fs_load_pref(const char* path, uint32_t* size);
 int fs_save_pref(const char* path, const char* data, uint32_t size);
 int fs_has_embed(const char* exe);

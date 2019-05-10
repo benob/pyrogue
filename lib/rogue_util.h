@@ -3,6 +3,7 @@
 
 #include <stdarg.h>
 #include <stdio.h>
+#include <string.h>
 
 typedef void (*error_handler_t)(const char* message);
 

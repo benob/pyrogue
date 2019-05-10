@@ -9,6 +9,8 @@
 enum {TD_ALIGN_LEFT, TD_ALIGN_RIGHT, TD_ALIGN_CENTER};
 // events
 enum {TD_QUIT = -3, TD_MOUSE = -2, TD_REDRAW = -1, TD_PASS = 0};
+// event types
+enum {TD_UPDATE_KEY=1, TD_UPDATE_MOUSE=2, TD_UPDATE_LOOP=4};
 
 typedef struct {
 	int x, y;
@@ -40,9 +42,11 @@ void td_draw_array(int index, array_t* a, int x, int y, int x_shift, int y_shift
 void td_set_buffer(int buffer);
 // print utf8 characters
 void td_print_text(int orig_x, int orig_y, const char* text, uint32_t color, int align);
+void td_print_text_from_tiles(int index, int orig_x, int orig_y, const char* text, uint32_t color, int align);
 void td_size_text(const char* text, int* width, int* height);
 void td_fill_rect(int x, int y, int w, int h, uint32_t color);
 void td_draw_rect(int x, int y, int w, int h, uint32_t color);
+void td_draw_line(int x1, int y1, int x2, int y2, uint32_t color);
 void td_draw_points(td_point_t* points, int num, uint32_t color);
 int td_still_running();
 int td_wait_key();
@@ -52,7 +56,7 @@ void td_present();
 void td_delay(uint32_t ms);
 void td_clear();
 void td_quit();
-void td_run(void (*update_callback)(int key));
+void td_run(void (*update_callback)(int key), int update_filter);
 uint32_t td_color(unsigned char r, unsigned char g, unsigned char b, unsigned char a);
 uint32_t td_hsv_color(unsigned int h, unsigned char s, unsigned char v, unsigned char a);
 int td_mouse_x();

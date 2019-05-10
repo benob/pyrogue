@@ -5,7 +5,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
 if (${CMAKE_SYSTEM_NAME} STREQUAL "Emscripten")
   # TODO(amitp): I don't know how to set this properly with add_compile_options
-	set(EMSCRIPTEN_FLAGS "-s USE_SDL=2 -s FORCE_FILESYSTEM=1")
+	set(EMSCRIPTEN_FLAGS "-s USE_SDL=2 -s FORCE_FILESYSTEM=1 -s TOTAL_MEMORY=100MB")
 	set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} ${EMSCRIPTEN_FLAGS}")
 	set(SDL2_LIBRARIES "-s USE_SDL=2")
 	# enable SDL2, and synchronous file api
@@ -31,7 +31,14 @@ add_library(rogue STATIC
 	lib/rogue_tty.c 
 	deps/miniz.c 
 )
-target_compile_options(rogue PRIVATE -DMINIZ_NO_STDIO -DMINIZ_NO_ZLIB_COMPATIBLE_NAMES -DMINIZ_NO_ZLIB_APIS)
+target_compile_options(rogue PRIVATE 
+-DMINIZ_NO_ARCHIVE_WRITING_APIS
+-DMINIZ_NO_STDIO
+-DMINIZ_NO_TIME
+-DMINIZ_NO_ZLIB_APIS
+-DMINIZ_NO_ZLIB_COMPATIBLE_NAME
+-DMINIZ_NO_ZLIB_COMPATIBLE_NAMES)
+
 target_link_libraries(rogue ${SDL2_LIBRARIES} -lm)
 
 # micropython module rl
@@ -47,4 +54,6 @@ target_link_libraries(pyrogue micropython)
 # c examples
 add_executable(plasma examples/plasma.c)
 target_link_libraries(plasma rogue)
+add_executable(test_filesystem examples/test_filesystem.c)
+target_link_libraries(test_filesystem rogue)
 

@@ -88,14 +88,15 @@ Tile.ascii = [
     ]
 
 def load_theme():
+    global font_source
     tilesets = [
-            ['data/ascii_8x8.png', 8, 8, Tile.ascii, 8],
-            ['data/minirogue-c64-all.png', 8, 8, Tile.minirogue, 8],
-            ['data/cp437.png', 9, 16, Tile.ascii, 16],
-            ['data/polyducks_12x12.png', 12, 12, Tile.ascii, 8],
-            ['data/dcss.png', 32, 32, Tile.dcss, 32],
+            ['data/ascii_8x8.png', 8, 8, Tile.ascii, 8, 0],
+            ['data/minirogue-c64-all.png', 8, 8, Tile.minirogue, 8, -1],
+            ['data/cp437.png', 9, 16, Tile.ascii, 16, 0],
+            ['data/polyducks_12x12.png', 12, 12, Tile.ascii, 8, 0],
+            ['data/dcss.png', 32, 32, Tile.dcss, 32, -1],
         ]
-    filename, Tile.WIDTH, Tile.HEIGHT, Tile.mapping, font_size = tilesets[game.theme % len(tilesets)]
+    filename, Tile.WIDTH, Tile.HEIGHT, Tile.mapping, font_size, font_source = tilesets[game.theme % len(tilesets)]
 
     rl.init('Example roguelike [' + filename + ']', WIDTH * Tile.WIDTH, (HEIGHT + 4) * Tile.HEIGHT)
     rl.load_image(0, filename, Tile.WIDTH, Tile.HEIGHT)
@@ -330,11 +331,10 @@ except Exception as e:
 
 load_theme()
 
-def handle_input():
+def handle_input(key):
     global fov
-    key = rl.wait_key()
     dx = dy = 0
-    if key == rl.ESCAPE or key == rl.QUIT:
+    if key == rl.ESCAPE:
         game.save()
         rl.quit()
     elif key == ord('t'):
@@ -404,14 +404,16 @@ def redraw():
             rl.colorize_tile(0, actor.x * Tile.WIDTH, actor.y * Tile.HEIGHT, tile.num, tile.fg, tile.bg)
     #rl.draw_image(0, Tile.WIDTH * WIDTH - 128, 0)
 
-    rl.print_text(Tile.WIDTH // 8, Tile.HEIGHT // 8, 'hp: %d  damage: %d' % (player.hp, player.damage), rl.color(0, 0, 0, 192))
-    rl.print_text(0, 0, 'hp: %d  damage: %d' % (player.hp, player.damage))
+    rl.print_text(Tile.WIDTH // 8, Tile.HEIGHT // 8, 'hp: %d  damage: %d' % (player.hp, player.damage), color=rl.color(0, 0, 0, 192), image=font_source)
+    rl.print_text(0, 0, 'hp: %d  damage: %d' % (player.hp, player.damage), image=font_source)
 
-    rl.print_text(0, Tile.HEIGHT * HEIGHT, '\n'.join(messages[-4:]))
-    rl.present()
+    rl.print_text(0, Tile.HEIGHT * HEIGHT, '\n'.join(messages[-4:]), image=font_source)
 
-while rl.still_running():
-    redraw()
-    if handle_input() != rl.REDRAW:
+def handler(event):
+    print('handler')
+    if handle_input(event) != rl.REDRAW:
         update()
+    redraw()
 
+rl.run(handler, rl.UPDATE_KEY)
+game.save()
