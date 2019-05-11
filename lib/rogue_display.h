@@ -29,9 +29,6 @@ typedef struct {
 // TODO: set images as render targets
 int td_init(const char* title, int width, int height);
 void td_load_font(const char* font_path, int font_size, int line_height);
-// TODO: associate to keypress and internalize
-void td_set_integral_scale(int value);
-void td_use_backbuffer(int value);
 int td_load_image(int image, const char* filename, int tile_width, int tile_height);
 void td_array_to_image(int index, array_t* a, int tile_width, int tile_height);
 array_t* td_image_to_array(int index);
@@ -39,7 +36,6 @@ void td_draw_image(int image, int x, int y);
 void td_draw_tile(int image, int x, int y, int tile);
 void td_colorize_tile(int image, int x, int y, int tile, uint32_t fg, uint32_t bg);
 void td_draw_array(int index, array_t* a, int x, int y, int x_shift, int y_shift, int info_size, int* info_mapping, uint32_t* info_fg, uint32_t* info_bg);
-void td_set_buffer(int buffer);
 // print utf8 characters
 void td_print_text(int orig_x, int orig_y, const char* text, uint32_t color, int align);
 void td_print_text_from_tiles(int index, int orig_x, int orig_y, const char* text, uint32_t color, int align);

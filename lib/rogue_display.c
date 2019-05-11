@@ -46,8 +46,8 @@ typedef struct {
 	STBTTF_Font* font;
 	int line_height;
 	image_t images[TD_NUM_IMAGES];
-	SDL_Texture* buffers[TD_NUM_BUFFERS + 1];
-	int use_backbuffer, is_fullscreen, is_maximized, use_integral_scale;
+	SDL_Texture* screen;
+	int is_fullscreen, is_maximized, use_integral_scale;
 	int update_filter;
 	void (*update_callback)(int);
 } display_t;
@@ -65,8 +65,7 @@ static void __attribute__((destructor)) _td_fini() {
 			if(display.images[i].texture != NULL) SDL_DestroyTexture(display.images[i].texture);
 			if(display.images[i].pixels != NULL) free(display.images[i].pixels);
 		}
-		for(int i = 0; i < TD_NUM_BUFFERS + 1; i++)
-			if(display.buffers[i] != NULL) SDL_DestroyTexture(display.buffers[i]);
+		SDL_DestroyTexture(display.screen);
 
 		if(display.font != NULL) {
 			STBTTF_CloseFont(display.font);
@@ -78,26 +77,30 @@ static void __attribute__((destructor)) _td_fini() {
 static void (*rander_callback)(void*) = NULL;
 static void* render_callback_data = NULL;
 
+static void null_main_loop() {
+}
+
 int td_init(const char* title, int width, int height) {
 	if(!display.was_init) {
 		if(SDL_Init(SDL_INIT_VIDEO) < 0) rl_error("could not initialize SDL");
 		SDL_StartTextInput();
+		display.window = SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, SDL_WINDOW_SHOWN | SDL_WINDOW_MAXIMIZED | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_OPENGL);
+		if(display.window == NULL) rl_error("cannot create window");
+		display.renderer = SDL_CreateRenderer(display.window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_TARGETTEXTURE | SDL_RENDERER_PRESENTVSYNC);
+		if(display.renderer == NULL) rl_error("cannot create renderer");
+		SDL_SetRenderDrawBlendMode(display.renderer, SDL_BLENDMODE_BLEND);
 	}
-	if(display.renderer != NULL) SDL_DestroyRenderer(display.renderer);
-	if(display.window != NULL) SDL_DestroyWindow(display.window);
-	display.window = SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, SDL_WINDOW_SHOWN | SDL_WINDOW_MAXIMIZED | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_OPENGL);
-	if(display.window == NULL) rl_error("cannot create window");
-	display.renderer = SDL_CreateRenderer(display.window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_TARGETTEXTURE);
-	if(display.renderer == NULL) rl_error("cannot create renderer");
-	SDL_RenderSetLogicalSize(display.renderer, width, height);
-	SDL_SetRenderDrawBlendMode(display.renderer, SDL_BLENDMODE_BLEND);
+	SDL_SetWindowTitle(display.window, title);
+	if(display.screen != NULL && (display.width != width || display.height != height))
+		SDL_DestroyTexture(display.screen);
+	if(display.screen == NULL || display.width != width || display.height != height)
+		display.screen = SDL_CreateTexture(display.renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET, width, height);
+	
+	SDL_SetRenderTarget(display.renderer, display.screen);
 
 	display.width = width;
 	display.height = height;
-	display.running = 1;
 	display.was_init = 1;
-	td_use_backbuffer(1);
-	//td_set_integral_scale(1);
 	return 1;
 }
 
@@ -262,32 +265,6 @@ void td_draw_array(int index, array_t* a, int x, int y, int x_shift, int y_shift
 	SDL_SetTextureAlphaMod(image->texture, 255);
 }
 
-
-void td_use_backbuffer(int value) {
-	display.use_backbuffer = value;
-	if(display.buffers[TD_BACK_BUFFER] != NULL) SDL_DestroyTexture(display.buffers[TD_BACK_BUFFER]);
-	if(value) {
-		display.buffers[TD_BACK_BUFFER] = SDL_CreateTexture(display.renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET, display.width, display.height);
-	} else {
-		display.buffers[TD_BACK_BUFFER] = NULL;
-	}
-	SDL_SetRenderTarget(display.renderer, display.buffers[TD_BACK_BUFFER]);
-}
-
-void td_set_buffer(int index) {
-	if(index < 0 || index >= TD_NUM_BUFFERS) {
-		SDL_SetRenderTarget(display.renderer, display.buffers[TD_BACK_BUFFER]);
-	} else {
-		if(display.buffers[index] == NULL)
-      display.buffers[index] = SDL_CreateTexture(display.renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET, display.width, display.height);
-
-		SDL_SetRenderTarget(display.renderer, display.buffers[index]);
-	}
-}
-
-void td_blit_buffer(int index) {
-	SDL_RenderCopy(display.renderer, display.buffers[index], NULL, NULL);
-}
 
 // TODO: align is not implemented
 void td_print_text_from_tiles(int index, int orig_x, int orig_y, const char* text, uint32_t color, int align) {
@@ -455,17 +432,25 @@ int td_poll_event() {
 }
 
 void td_present() {
-	if(display.use_backbuffer) {
-		SDL_SetRenderTarget(display.renderer, NULL);
-		td_clear();
-		SDL_RenderCopy(display.renderer, display.buffers[TD_BACK_BUFFER], NULL, NULL);
-		SDL_RenderPresent(display.renderer);
-		SDL_Delay(1000 / 60);
-		SDL_SetRenderTarget(display.renderer, display.buffers[TD_BACK_BUFFER]);
+	SDL_SetRenderTarget(display.renderer, NULL);
+	int width, height, x = 0, y = 0;
+	td_clear();
+	SDL_GetRendererOutputSize(display.renderer, &width, &height);
+	if(width * display.height / height < display.width) {
+		int new_height = display.height * width / display.width;
+		y = (height - new_height) / 2;
+		height = new_height;
 	} else {
-		SDL_RenderPresent(display.renderer);
-		SDL_Delay(1000 / 60);
+		int new_width = display.width * height / display.height;
+		x = (width - new_width) / 2;
+		width = new_width;
 	}
+	SDL_Rect dest = {x, y, width, height};
+	SDL_RenderCopy(display.renderer, display.screen, NULL, &dest);
+	SDL_RenderPresent(display.renderer);
+	// TODO: wait only the time needed to achieve fps
+	SDL_Delay(1000 / 60);
+	SDL_SetRenderTarget(display.renderer, display.screen);
 }
 
 void td_clear() {
@@ -546,6 +531,7 @@ static void process_events() {
 void td_run(void (*update_callback)(int key), int update_filter) {
 	display.update_callback = update_callback;
 	display.update_filter = update_filter;
+	display.running = 1;
 	update_callback(TD_REDRAW);
 	td_present();
 #ifdef __EMSCRIPTEN__

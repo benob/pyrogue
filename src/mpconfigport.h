@@ -38,8 +38,13 @@
 #define MICROPY_ALLOC_PATH_MAX      (PATH_MAX)
 #define MICROPY_ENABLE_GC           (1)
 #define MICROPY_ENABLE_FINALISER    (1) // TODO: need to enable to retrieve allocated memory
+#ifdef __EMSCRIPTEN__
+#define MICROPY_STACK_CHECK         (0)
+#define MICROPY_MEM_STATS           (0)
+#else
 #define MICROPY_STACK_CHECK         (1)
 #define MICROPY_MEM_STATS           (1)
+#endif
 #define MICROPY_MALLOC_USES_ALLOCATED_SIZE (1)
 #define MICROPY_DEBUG_PRINTERS      (1)
 #define MICROPY_READER_POSIX        (1)
@@ -111,6 +116,30 @@
 #define MICROPY_PY_UBINASCII        (0)
 #define MICROPY_PY_COLLECTIONS_DEQUE (1)
 #define MICROPY_PY_COLLECTIONS_ORDEREDDICT (1)
+
+#ifdef __EMSCRIPTEN__
+#define MICROPY_EMIT_X64            (0) //BROKEN
+#define MICROPY_EMIT_THUMB          (0) //BROKEN
+#define MP_SSIZE_MAX (0x7fffffff)
+#define MICROPY_EVENT_POLL_HOOK \
+    do { \
+        extern void mp_handle_pending(void); \
+        mp_handle_pending(); \
+    } while (0);
+
+#define MICROPY_THREAD_YIELD()
+/*#define MICROPY_VM_HOOK_COUNT (10)
+#define MICROPY_VM_HOOK_INIT static uint vm_hook_divisor = MICROPY_VM_HOOK_COUNT;
+#define MICROPY_VM_HOOK_POLL if (--vm_hook_divisor == 0) { \
+        vm_hook_divisor = MICROPY_VM_HOOK_COUNT; \
+        extern void mp_js_hook(void); \
+        mp_js_hook(); \
+    }
+#define MICROPY_VM_HOOK_LOOP MICROPY_VM_HOOK_POLL
+#define MICROPY_VM_HOOK_RETURN MICROPY_VM_HOOK_POLL*/
+#define MP_STATE_PORT MP_STATE_VM
+
+#endif
 
 extern const struct _mp_obj_module_t mp_module_os;
 extern const struct _mp_obj_module_t mp_module_rl;
@@ -199,7 +228,13 @@ void mp_hal_dupterm_tx_strn(const char *str, size_t len);
 
 #else // not __MINGW32__
 
-#ifdef __LP64__
+#if defined( __EMSCRIPTEN__ )
+#include <stdint.h>
+#define UINT_FMT "%u"
+#define INT_FMT "%d"
+typedef int mp_int_t; // must be pointer size
+typedef unsigned mp_uint_t; // must be pointer size
+#elif defined( __LP64__ )
 typedef long mp_int_t; // must be pointer size
 typedef unsigned long mp_uint_t; // must be pointer size
 #else

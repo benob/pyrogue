@@ -44,7 +44,7 @@
 
 STATIC mp_obj_t mod_rl_random_next() {
 	mp_uint_t result = rl_random_next();
-	return mp_obj_new_int_from_uint(result);
+	return mp_obj_new_int(result);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_rl_random_next_obj, mod_rl_random_next);
 
@@ -103,7 +103,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_rl_set_seed_obj, mod_rl_set_seed);
 
 STATIC mp_obj_t mod_rl_get_seed() {
 	mp_uint_t result = rl_get_seed();
-	return mp_obj_new_int_from_uint(result);
+	return mp_obj_new_int(result);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_rl_get_seed_obj, mod_rl_get_seed);
 
@@ -805,13 +805,6 @@ mp_obj_t mod_td_draw_array(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_KW(mod_td_draw_array_obj, 3, mod_td_draw_array);
 
-STATIC mp_obj_t mod_td_set_buffer(mp_obj_t buffer_in) {
-	mp_int_t buffer = mp_obj_get_int(buffer_in);
-	td_set_buffer(buffer);
-	return mp_const_none;
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_td_set_buffer_obj, mod_td_set_buffer);
-
 mp_obj_t mod_td_print_text(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
 	static const mp_arg_t allowed_args[] = {
 		/*{ MP_QSTR_x, MP_ARG_INT | MP_ARG_REQUIRED, {.u_int = 0} },
@@ -970,7 +963,7 @@ STATIC mp_obj_t mod_td_color(size_t n_args, const mp_obj_t *args) {
 	unsigned char a = 0xff;
 	if(n_args > 3) a = (unsigned char) mp_obj_get_int(args[3]);
 	uint32_t result = td_color_rgba(r, g, b, a);
-	return mp_obj_new_int_from_uint(result);
+	return mp_obj_new_int(result);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_td_color_obj, 3, 4, mod_td_color);
 
@@ -981,7 +974,7 @@ STATIC mp_obj_t mod_td_hsv_color(size_t n_args, const mp_obj_t *args) {
 	unsigned char a = 0xff;
 	if(n_args > 3) a = (unsigned char) mp_obj_get_int(args[3]);
 	uint32_t result = td_hsv_color(h, s, v, a);
-	return mp_obj_new_int_from_uint(result);
+	return mp_obj_new_int(result);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_td_hsv_color_obj, 3, 4, mod_td_hsv_color);
 
@@ -1114,7 +1107,6 @@ STATIC const mp_rom_map_elem_t mp_module_rl_globals_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR_draw_tile), MP_ROM_PTR(&mod_td_draw_tile_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_colorize_tile), MP_ROM_PTR(&mod_td_colorize_tile_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_draw_array), MP_ROM_PTR(&mod_td_draw_array_obj) },
-	{ MP_ROM_QSTR(MP_QSTR_set_buffer), MP_ROM_PTR(&mod_td_set_buffer_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_print_text), MP_ROM_PTR(&mod_td_print_text_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_size_text), MP_ROM_PTR(&mod_td_size_text_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_fill_rect), MP_ROM_PTR(&mod_td_fill_rect_obj) },
