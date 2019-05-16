@@ -15,7 +15,6 @@ uint32_t colors[256];
 array_t* array = NULL;
 
 void render() {
-	td_poll_event();
 	td_clear();
 	for(int y = 0; y < HEIGHT; y++)
 		for(int x = 0; x < WIDTH; x++) {
@@ -28,7 +27,6 @@ void render() {
 
 	td_draw_array(0, array, 0, 0, TILE_WIDTH, TILE_HEIGHT, 256, NULL, colors, NULL) ;
 	shift += 10;
-	td_present();
 }
 
 int main(int argc, char** argv) {
@@ -42,13 +40,6 @@ int main(int argc, char** argv) {
 
 	array = rl_array_new(WIDTH, HEIGHT);
 
-#ifdef __EMSCRIPTEN__
-	emscripten_set_main_loop(render, 60, 1);
-#else
-	while(td_still_running()) {
-		render();
-		td_delay(1000 / 60);
-	}
-#endif
+	td_run(render, TD_UPDATE_LOOP);
 	return 0;
 }

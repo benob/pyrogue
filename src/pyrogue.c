@@ -186,6 +186,7 @@ static char *stack_top;
 void gc_collect(void) {
     // WARNING: This gc_collect implementation doesn't try to get root
     // pointers from CPU registers, and thus may function incorrectly.
+	printf("gc_collect\n"); // TODO
     jmp_buf dummy;
     if (setjmp(dummy) == 0) {
         longjmp(dummy, 1);
@@ -241,10 +242,14 @@ MP_NOINLINE int _main(int argc, char** argv) {
 	char* content = NULL;
 	const char* filename = NULL;
 	if(argc == 1) {
+#ifdef __EMSCRIPTEN__
+		usage(argv[0]);
+#else
 		fs_open_resources(argv[0]);
 		content = fs_load_asset("game.py", &content_size);
 		if(content == NULL) usage(argv[0]);
 		filename = "game.py";
+#endif
 	} else if(argc == 2 && !strcmp(argv[1] + strlen(argv[1]) - 4, ".zip")) {
 		fs_open_resources(argv[1]);
 		content = fs_load_asset("game.py", &content_size);

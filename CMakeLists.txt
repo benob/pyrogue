@@ -5,19 +5,29 @@ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
 if (${CMAKE_SYSTEM_NAME} STREQUAL "Emscripten")
   # TODO(amitp): I don't know how to set this properly with add_compile_options
-	set(EMSCRIPTEN_FLAGS "-s USE_SDL=2 -s FORCE_FILESYSTEM=1 -s TOTAL_MEMORY=100MB")
+	set(EMSCRIPTEN_FLAGS "-s USE_SDL=2 -s FORCE_FILESYSTEM=1 -s TOTAL_MEMORY=100MB -s USE_WEBGL2=1")
 	set(CMAKE_C_FLAGS "-m32 ${CMAKE_CXX_FLAGS} ${EMSCRIPTEN_FLAGS}")
 	set(SDL2_LIBRARIES "-s USE_SDL=2")
 	add_definitions(${EMSCRIPTEN_FLAGS})
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${EMSCRIPTEN_FLAGS}")
-	SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -g4")
+	SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -g4 --emrun")
 else ()
 	include(FindPkgConfig)
 	pkg_search_module(SDL2 REQUIRED sdl2)
 endif ()
 
-include_directories(${SDL2_INCLUDE_DIRS} lib deps src)
+#set(SDLGPU_DIR "${CMAKE_SOURCE_DIR}/deps/sdl-gpu/build/SDL_gpu-0.11.0")
+#set(SDLGPU_LIBRARIES ${SDLGPU_DIR}/lib/libSDL2_gpu.a -lGL -lGLX)
+set(SDLGPU_INCLUDE_DIRS 
+	${CMAKE_SOURCE_DIR}/deps/sdl-gpu/include 
+	${CMAKE_SOURCE_DIR}/deps/sdl-gpu/src/externals/stb_image_write
+	${CMAKE_SOURCE_DIR}/deps/sdl-gpu/src/externals/glew/GL
+)
+set(SDLGPU_LIBRARIES -lGL)
 
+include_directories(${SDL2_INCLUDE_DIRS} ${SDLGPU_INCLUDE_DIRS} lib deps src)
+
+set(SDLGPU ${CMAKE_SOURCE_DIR}/deps/sdl-gpu/src)
 # librogue.a
 add_library(rogue STATIC 
 	lib/rogue_util.c 
@@ -27,17 +37,39 @@ add_library(rogue STATIC
 	lib/rogue_index.c 
 	lib/rogue_random.c 
 	lib/rogue_tty.c 
-	deps/miniz.c 
-)
-target_compile_options(rogue PRIVATE 
--DMINIZ_NO_ARCHIVE_WRITING_APIS
--DMINIZ_NO_STDIO
--DMINIZ_NO_TIME
--DMINIZ_NO_ZLIB_APIS
--DMINIZ_NO_ZLIB_COMPATIBLE_NAME
--DMINIZ_NO_ZLIB_COMPATIBLE_NAMES)
 
-target_link_libraries(rogue ${SDL2_LIBRARIES} -lm)
+	deps/miniz.c 
+	${SDLGPU}/SDL_gpu.c
+	${SDLGPU}/SDL_gpu_matrix.c
+	${SDLGPU}/SDL_gpu_renderer.c
+	${SDLGPU}/SDL_gpu_shapes.c
+	${SDLGPU}/renderer_OpenGL_1_BASE.c
+	${SDLGPU}/renderer_OpenGL_1.c
+	${SDLGPU}/renderer_OpenGL_2.c
+	${SDLGPU}/renderer_OpenGL_3.c
+	${SDLGPU}/renderer_OpenGL_4.c
+	${SDLGPU}/renderer_GLES_1.c
+	${SDLGPU}/renderer_GLES_2.c
+	${SDLGPU}/renderer_GLES_3.c
+	${SDLGPU}/externals/glew/glew.c
+	${SDLGPU}/externals/stb_image/stb_image.c
+	${SDLGPU}/externals/stb_image_write/stb_image_write.c
+)
+
+target_compile_definitions(rogue PRIVATE 
+	MINIZ_NO_ARCHIVE_WRITING_APIS
+	MINIZ_NO_STDIO
+	MINIZ_NO_TIME
+	MINIZ_NO_ZLIB_APIS
+	MINIZ_NO_ZLIB_COMPATIBLE_NAME
+	MINIZ_NO_ZLIB_COMPATIBLE_NAMES
+	GL_GLEXT_PROTOTYPES
+	SDL_GPU_DISABLE_OPENGL
+	SDL_GPU_DISABLE_GLES_1
+	SDL_GPU_DISABLE_GLES_2
+)
+
+target_link_libraries(rogue ${SDL2_LIBRARIES} ${SDLGPU_LIBRARIES} -lm)
 
 # micropython module rl
 set(micropython_EXTRA_MODULES ${CMAKE_SOURCE_DIR}/src/modrl.c)

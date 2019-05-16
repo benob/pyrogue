@@ -1,3 +1,6 @@
 [submodule "micropython"]
 	path = micropython
 	url = https://github.com/micropython/micropython.git
+[submodule "deps/sdl-gpu"]
+	path = deps/sdl-gpu
+	url = https://github.com/grimfang4/sdl-gpu.git

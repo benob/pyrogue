@@ -44,12 +44,12 @@ void td_fill_rect(int x, int y, int w, int h, uint32_t color);
 void td_draw_rect(int x, int y, int w, int h, uint32_t color);
 void td_draw_line(int x1, int y1, int x2, int y2, uint32_t color);
 void td_draw_points(td_point_t* points, int num, uint32_t color);
-int td_still_running();
+/*int td_still_running();
 int td_wait_key();
 int td_wait_event(int include_mouse);
 int td_poll_event();
 void td_present();
-void td_delay(uint32_t ms);
+void td_delay(uint32_t ms);*/
 void td_clear();
 void td_quit();
 void td_run(void (*update_callback)(int key), int update_filter);
