@@ -734,9 +734,9 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_td_colorize_tile_obj, 4, 6, mod_t
 //void td_draw_array(int index, array_t* a, int x, int y, int x_shift, int y_shift, int info_size, int* info_mapping, uint32_t* info_fg, uint32_t* info_bg);
 mp_obj_t mod_td_draw_array(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
 	static const mp_arg_t allowed_args[] = {
-		/*{ MP_QSTR_array, MP_ARG_OBJ | MP_ARG_REQUIRED, {.u_obj = MP_OBJ_NULL}},
+		{ MP_QSTR_array, MP_ARG_OBJ | MP_ARG_REQUIRED, {.u_obj = MP_OBJ_NULL}},
 		{ MP_QSTR_x, MP_ARG_INT | MP_ARG_REQUIRED, {.u_int = 0} },
-		{ MP_QSTR_y, MP_ARG_INT | MP_ARG_REQUIRED, {.u_int = 0} },*/
+		{ MP_QSTR_y, MP_ARG_INT | MP_ARG_REQUIRED, {.u_int = 0} },
 		{ MP_QSTR_image, MP_ARG_INT, {.u_int = 0} },
 		{ MP_QSTR_x_shift, MP_ARG_INT, {.u_int = 0} },
 		{ MP_QSTR_y_shift, MP_ARG_INT, {.u_int = 0} },
@@ -747,17 +747,16 @@ mp_obj_t mod_td_draw_array(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw
 
 	// parse args
 	struct {
-		mp_arg_val_t /*array, x, y,*/ image, x_shift, y_shift, mapping, fg, bg;
+		mp_arg_val_t array, x, y, image, x_shift, y_shift, mapping, fg, bg;
 	} args;
 
-	mp_arg_parse_all(0, pos_args + 3, kw_args,
-			MP_ARRAY_SIZE(allowed_args), allowed_args, (mp_arg_val_t*)&args);
+	mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, (mp_arg_val_t*)&args);
 
-	mp_check_self(mp_obj_is_type(pos_args[0], &mp_type_rl_array));
-	mp_obj_rl_array_t *array = MP_OBJ_TO_PTR(pos_args[0]);
+	mp_check_self(mp_obj_is_type(args.array.u_obj, &mp_type_rl_array));
+	mp_obj_rl_array_t *array = MP_OBJ_TO_PTR(args.array.u_obj);
 	//mp_obj_rl_array_t* array = mp_instance_cast_to_native_base(pos_args[0], &mp_type_rl_array);
-	mp_int_t x = mp_obj_get_int(pos_args[1]);
-	mp_int_t y = mp_obj_get_int(pos_args[2]);
+	mp_int_t x = args.x.u_int;
+	mp_int_t y = args.y.u_int;
 
 	int* mapping = NULL;
 	uint32_t* fg = NULL;
@@ -807,9 +806,9 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_KW(mod_td_draw_array_obj, 3, mod_td_draw_array);
 
 mp_obj_t mod_td_print_text(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
 	static const mp_arg_t allowed_args[] = {
-		/*{ MP_QSTR_x, MP_ARG_INT | MP_ARG_REQUIRED, {.u_int = 0} },
+		{ MP_QSTR_x, MP_ARG_INT | MP_ARG_REQUIRED, {.u_int = 0} },
 		{ MP_QSTR_y, MP_ARG_INT | MP_ARG_REQUIRED, {.u_int = 0} },
-		{ MP_QSTR_text, MP_ARG_OBJ, {.u_rom_obj = MP_ROM_PTR(&mp_const_none_obj)} },*/
+		{ MP_QSTR_text, MP_ARG_OBJ, {.u_rom_obj = MP_ROM_PTR(&mp_const_none_obj)} },
 		{ MP_QSTR_color, MP_ARG_INT, {.u_int = 0xffffffff} },
 		{ MP_QSTR_align, MP_ARG_INT, {.u_int = TD_ALIGN_LEFT} },
 		{ MP_QSTR_image, MP_ARG_INT, {.u_int = -1} },
@@ -817,16 +816,15 @@ mp_obj_t mod_td_print_text(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw
 
 	// parse args
 	struct {
-		mp_arg_val_t /*x, y, text*/ color, align, image;
+		mp_arg_val_t x, y, text, color, align, image;
 	} args;
 
-	mp_arg_parse_all(0, pos_args + 3, kw_args,
-			MP_ARRAY_SIZE(allowed_args), allowed_args, (mp_arg_val_t*)&args);
+	mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, (mp_arg_val_t*)&args);
 
-	mp_int_t x = mp_obj_get_int(pos_args[0]);
-	mp_int_t y = mp_obj_get_int(pos_args[1]);
+	mp_int_t x = args.x.u_int;
+	mp_int_t y = args.y.u_int;
 	size_t len;
-	const char *text = mp_obj_str_get_data(pos_args[2], &len);
+	const char *text = mp_obj_str_get_data(args.text.u_obj, &len);
 
 	if(args.image.u_int < 0)
 		td_print_text(x, y, text, args.color.u_int, args.align.u_int);
