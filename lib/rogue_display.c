@@ -1,7 +1,6 @@
 #include <string.h>
 #include <errno.h>
 #include <SDL.h>
-#define USE_SDLGPU
 
 #ifdef USE_SDLGPU
 #include <SDL_gpu.h>
@@ -153,7 +152,11 @@ void td_load_font(const char* font_path, int font_size, int line_height) {
 	if(font_data == NULL) rl_error("[Errno %d] %s: '%s'", errno, strerror(errno), font_path);
 	SDL_RWops* ops = SDL_RWFromMem(font_data, font_data_size);
 	if(display.font != NULL) STBTTF_CloseFont(display.font);
+#ifdef USE_SDLGPU
+	display.font = STBTTF_OpenFontRW(ops, font_size);
+#else
 	display.font = STBTTF_OpenFontRW(display.renderer, ops, font_size);
+#endif
 	if(display.font) display.line_height = display.font->baseline;
 	free(font_data);
 	if(display.font == NULL) rl_error("cannot load font '%s'", font_path);
@@ -177,6 +180,7 @@ int td_load_image(int index, const char* filename, int tile_width, int tile_heig
 	GPU_SetSnapMode(image.texture, GPU_SNAP_POSITION_AND_DIMENSIONS);
 	image.width = image.texture->w;
 	image.height = image.texture->h;
+	image.pixels = NULL;
 #else
 	SDL_Surface* surface = STBIMG_Load_RW(ops, 1);
 	free(image_data);
@@ -266,7 +270,8 @@ void td_draw_tile(int index, int x, int y, int tile) {
 	int tile_y = (tile / image->tiles_per_line) * image->tile_height;
 #ifdef USE_SDLGPU
 	GPU_Rect src_rect = {tile_x, tile_y, image->tile_width, image->tile_height};
-	GPU_Blit(image->texture, &src_rect, display.screen, x, y);
+	GPU_Rect dst_rect = {x, y, image->tile_width, image->tile_height};
+	GPU_BlitRect(image->texture, &src_rect, display.screen, &dst_rect);
 #else
 	SDL_Rect src_rect = {tile_x, tile_y, image->tile_width, image->tile_height};
 	SDL_Rect dst_rect = {x, y, image->tile_width, image->tile_height};
@@ -284,9 +289,10 @@ void td_colorize_tile(int index, int x, int y, int tile, uint32_t fg, uint32_t b
 	SDL_Color fg_color = {td_color_r(fg), td_color_g(fg), td_color_b(fg), td_color_a(fg)};
 	SDL_Color bg_color = {td_color_r(bg), td_color_g(bg), td_color_b(bg), td_color_a(bg)};
 	GPU_Rect src_rect = {tile_x, tile_y, image->tile_width, image->tile_height};
+	GPU_Rect dst_rect = {x, y, image->tile_width, image->tile_height};
 	if(bg != 0) GPU_RectangleFilled(display.screen, x, y, x + image->tile_width, y + image->tile_height, bg_color);
 	if(fg != 0) GPU_SetColor(image->texture, fg_color);
-	GPU_Blit(image->texture, &src_rect, display.screen, x, y);
+	GPU_BlitRect(image->texture, &src_rect, display.screen, &dst_rect);
 	GPU_UnsetColor(image->texture);
 #else
 	SDL_Rect src_rect = {tile_x, tile_y, image->tile_width, image->tile_height};
@@ -320,8 +326,8 @@ void td_draw_array(int index, array_t* a, int x, int y, int x_shift, int y_shift
 			uint32_t bg = info_bg ? info_bg[num] : 0;
 			if(bg != 0) {
 #ifdef USE_SDLGPU
-				//SDL_Color bg_color = {td_color_r(bg), td_color_g(bg), td_color_b(bg), td_color_a(bg)};
-				//GPU_RectangleFilled(display.screen, x + x_shift * i, y + y_shift * j, x + x_shift * i + image->tile_width, y + y_shift * j + image->tile_height, bg_color);
+				SDL_Color bg_color = {td_color_r(bg), td_color_g(bg), td_color_b(bg), td_color_a(bg)};
+				GPU_RectangleFilled(display.screen, x + x_shift * i, y + y_shift * j, x + x_shift * i + image->tile_width, y + y_shift * j + image->tile_height, bg_color);
 #else
 				SDL_Rect dst_rect = {x + x_shift * i, y + y_shift * j, image->tile_width, image->tile_height};
 				SDL_SetRenderDrawColor(display.renderer, td_color_r(bg), td_color_g(bg), td_color_b(bg), td_color_a(bg));
@@ -372,15 +378,17 @@ void td_draw_array(int index, array_t* a, int x, int y, int x_shift, int y_shift
 
 // TODO: align is not implemented
 void td_print_text_from_tiles(int index, int orig_x, int orig_y, const char* text, uint32_t color, int align) {
-#ifdef USE_SDLGPU
-	rl_error("unimplemented");
-#else
 	if(index < 0 || index >= TD_NUM_IMAGES) rl_error("invalid image '%d'", index);
 	image_t* image = &display.images[index];
 	if(image->texture == NULL) rl_error("invalid image '%d'", index);
 	int x = orig_x, y = orig_y + image->tile_height;
+#ifdef USE_SDLGPU
+	SDL_Color fg = {td_color_r(color), td_color_g(color), td_color_b(color), td_color_a(color)};
+	GPU_SetColor(image->texture, fg);
+#else
 	SDL_SetTextureColorMod(image->texture, td_color_r(color), td_color_g(color), td_color_b(color));
 	SDL_SetTextureAlphaMod(image->texture, td_color_a(color));
+#endif
 	while(text && *text != '\0') {
 		if(*text == '\n') {
 			x = orig_x;
@@ -388,22 +396,28 @@ void td_print_text_from_tiles(int index, int orig_x, int orig_y, const char* tex
 		} else {
 			int tile_x = (*text % image->tiles_per_line) * image->tile_width;
 			int tile_y = (*text / image->tiles_per_line) * image->tile_height;
+#ifdef USE_SDLGPU
+			GPU_Rect src_rect = {tile_x, tile_y, image->tile_width, image->tile_height};
+			GPU_Rect dst_rect = {x, y, image->tile_width, image->tile_height};
+			GPU_BlitRect(image->texture, &src_rect, display.screen, &dst_rect);
+#else
 			SDL_Rect src_rect = {tile_x, tile_y, image->tile_width, image->tile_height};
 			SDL_Rect dst_rect = {x, y, image->tile_width, image->tile_height};
 			SDL_RenderCopy(display.renderer, image->texture, &src_rect, &dst_rect);
+#endif
 			x += image->tile_width;
 		}
 		text++;
 	}
+#ifdef USE_SDLGPU
+	GPU_UnsetColor(image->texture);
+#else
 	SDL_SetTextureColorMod(image->texture, 255, 255, 255);
 	SDL_SetTextureAlphaMod(image->texture, 255);
 #endif
 }
 
 void td_print_text(int orig_x, int orig_y, const char* text, uint32_t color, int align) {
-#ifdef USE_SDLGPU
-	rl_error("unimplemented");
-#else
 	if(!display.font) rl_error("no font loaded");
 	int x = orig_x, y = orig_y + display.font->baseline;
 	SDL_Color fg = {td_color_r(color), td_color_g(color), td_color_b(color), td_color_a(color)};
@@ -421,17 +435,20 @@ void td_print_text(int orig_x, int orig_y, const char* text, uint32_t color, int
 				char line[length + 1];
 				strncpy(line, text, length);
 				line[length] = '\0';
-				SDL_SetRenderDrawColor(display.renderer, fg.r, fg.g, fg.b, fg.a);
 				int width = STBTTF_MeasureText(display.font, line);
 				// TODO: does not work with multiline text
 				if(align == TD_ALIGN_CENTER) x -= width / 2;
 				else if(align == TD_ALIGN_RIGHT) x -= width;
-				STBTTF_RenderText(display.renderer, display.font, x, y, line);
+#ifdef USE_SDLGPU
+				STBTTF_RenderText(display.screen, display.font, x, y, line, fg);
+#else
+				SDL_SetRenderDrawColor(display.renderer, fg.r, fg.g, fg.b, fg.a);
+				STBTTF_RenderText(display.renderer, display.font, x, y, line, fg);
+#endif
 			}
 			text += length;
 		}
 	}
-#endif
 }
 
 void td_size_text(const char* text, int* width, int* height) {
@@ -442,7 +459,8 @@ void td_size_text(const char* text, int* width, int* height) {
 
 void td_fill_rect(int x, int y, int w, int h, uint32_t color) {
 #ifdef USE_SDLGPU
-	rl_error("unimplemented");
+	SDL_Color fg = {td_color_r(color), td_color_g(color), td_color_b(color), td_color_a(color)};
+	GPU_RectangleFilled(display.screen, x, y, x + w, y + h, fg);
 #else
 	SDL_Rect rect = {x, y, w, h};
 	SDL_SetRenderDrawColor(display.renderer, td_color_r(color), td_color_g(color), td_color_b(color), td_color_a(color));
@@ -452,7 +470,8 @@ void td_fill_rect(int x, int y, int w, int h, uint32_t color) {
 
 void td_draw_rect(int x, int y, int w, int h, uint32_t color) {
 #ifdef USE_SDLGPU
-	rl_error("unimplemented");
+	SDL_Color fg = {td_color_r(color), td_color_g(color), td_color_b(color), td_color_a(color)};
+	GPU_Rectangle(display.screen, x, y, x + w, y + h, fg);
 #else
 	SDL_Rect rect = {x, y, w, h};
 	SDL_SetRenderDrawColor(display.renderer, td_color_r(color), td_color_g(color), td_color_b(color), td_color_a(color));
@@ -462,7 +481,8 @@ void td_draw_rect(int x, int y, int w, int h, uint32_t color) {
 
 void td_draw_line(int x1, int y1, int x2, int y2, uint32_t color) {
 #ifdef USE_SDLGPU
-	rl_error("unimplemented");
+	SDL_Color fg = {td_color_r(color), td_color_g(color), td_color_b(color), td_color_a(color)};
+	GPU_Line(display.screen, x1, y1, x2, y2, fg);
 #else
 	SDL_SetRenderDrawColor(display.renderer, td_color_r(color), td_color_g(color), td_color_b(color), td_color_a(color));
 	SDL_RenderDrawLine(display.renderer, x1, y1, x2, y2);

@@ -23,13 +23,16 @@ set(SDLGPU_INCLUDE_DIRS
 	${CMAKE_SOURCE_DIR}/deps/sdl-gpu/src/externals/stb_image_write
 	${CMAKE_SOURCE_DIR}/deps/sdl-gpu/src/externals/glew/GL
 )
-set(SDLGPU_LIBRARIES -lGL)
+find_package(OpenGL REQUIRED)
+find_package(GLEW REQUIRED)
+set(SDLGPU_LIBRARIES ${OPENGL_gl_LIBRARY} ${GLEW_LIBRARY})
 
 include_directories(${SDL2_INCLUDE_DIRS} ${SDLGPU_INCLUDE_DIRS} lib deps src)
 
 set(SDLGPU ${CMAKE_SOURCE_DIR}/deps/sdl-gpu/src)
 # librogue.a
-add_library(rogue STATIC 
+
+set(rogue_SOURCE
 	lib/rogue_util.c 
 	lib/rogue_array.c 
 	lib/rogue_display.c 
@@ -51,10 +54,29 @@ add_library(rogue STATIC
 	${SDLGPU}/renderer_GLES_1.c
 	${SDLGPU}/renderer_GLES_2.c
 	${SDLGPU}/renderer_GLES_3.c
-	${SDLGPU}/externals/glew/glew.c
 	${SDLGPU}/externals/stb_image/stb_image.c
 	${SDLGPU}/externals/stb_image_write/stb_image_write.c
 )
+
+#if(!WIN32)
+	set(rogue_SOURCE ${rogue_SOURCE} ${SDLGPU}/externals/glew/glew.c)
+#endif()
+
+add_library(rogue STATIC ${rogue_SOURCE})
+
+if (EMSCRIPTEN)
+set(SDLGPU_DEFINITIONS
+	GL_GLEXT_PROTOTYPES
+	SDL_GPU_DISABLE_OPENGL
+	SDL_GPU_DISABLE_GLES_1
+	SDL_GPU_DISABLE_GLES_2
+)
+else()
+set(SDLGPU_DEFINITIONS
+	GL_GLEXT_PROTOTYPES
+	SDL_GPU_DISABLE_GLES
+)
+endif()
 
 target_compile_definitions(rogue PRIVATE 
 	MINIZ_NO_ARCHIVE_WRITING_APIS
@@ -63,10 +85,8 @@ target_compile_definitions(rogue PRIVATE
 	MINIZ_NO_ZLIB_APIS
 	MINIZ_NO_ZLIB_COMPATIBLE_NAME
 	MINIZ_NO_ZLIB_COMPATIBLE_NAMES
-	GL_GLEXT_PROTOTYPES
-	SDL_GPU_DISABLE_OPENGL
-	SDL_GPU_DISABLE_GLES_1
-	SDL_GPU_DISABLE_GLES_2
+	USE_SDLGPU
+	${SDLGPU_DEFINITIONS}
 )
 
 target_link_libraries(rogue ${SDL2_LIBRARIES} ${SDLGPU_LIBRARIES} -lm)

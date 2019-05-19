@@ -2,6 +2,9 @@
 #define __STBTTF_H__
 
 #include <SDL.h>
+#ifdef USE_SDLGPU
+#include <SDL_gpu.h>
+#endif
 
 #include "stb_rect_pack.h"
 #include "stb_truetype.h"
@@ -20,7 +23,11 @@
 typedef struct {
 	stbtt_fontinfo* info;
 	stbtt_packedchar* chars;
+#ifdef USE_SDLGPU
+	GPU_Image* atlas;
+#else
 	SDL_Texture* atlas;
+#endif
 	int texture_size;
 	float size;
 	float scale;
@@ -35,19 +42,31 @@ void STBTTF_CloseFont(STBTTF_Font* font);
  * Returns NULL on failure. The font must be deallocated with STBTTF_CloseFont when not used anymore.
  * This function creates a texture atlas with prerendered ASCII characters (32-128).
  */ 
+#ifdef USE_SDLGPU
+STBTTF_Font* STBTTF_OpenFontRW(SDL_RWops* rw, float size);
+#else
 STBTTF_Font* STBTTF_OpenFontRW(SDL_Renderer* renderer, SDL_RWops* rw, float size);
+#endif
 
 /* Open a TTF font given a filename, for a given renderer and a given font size.
  * Convinience function which calls STBTTF_OpenFontRW.
  */
+#ifdef USE_SDLGPU
+STBTTF_Font* STBTTF_OpenFont(const char* filename, float size);
+#else
 STBTTF_Font* STBTTF_OpenFont(SDL_Renderer* renderer, const char* filename, float size);
+#endif
 
 /* Draw some text using the renderer draw color at location (x, y).
  * Characters are copied from the texture atlas using the renderer SDL_RenderCopy function.
  * Since that function only supports integral coordinates, the result is not great.
  * Only ASCII characters (32 <= c < 128) are supported. Anything outside this range is ignored.
  */
-void STBTTF_RenderText(SDL_Renderer* renderer, STBTTF_Font* font, float x, float y, const char *text);
+#ifdef USE_SDLGPU
+void STBTTF_RenderText(GPU_Target* screen, STBTTF_Font* font, float x, float y, const char *text, SDL_Color fg);
+#else
+void STBTTF_RenderText(SDL_Renderer* renderer, STBTTF_Font* font, float x, float y, const char *text, SDL_Color fg);
+#endif
 
 /* Return the length in pixels of a text. 
  * You can get the height of a line by using font->baseline.
@@ -57,13 +76,21 @@ float STBTTF_MeasureText(STBTTF_Font* font, const char *text);
 #ifdef STBTTF_IMPLEMENTATION
 
 void STBTTF_CloseFont(STBTTF_Font* font) {
+#ifdef USE_SDLGPU
+	if(font->atlas) GPU_FreeImage(font->atlas);
+#else
 	if(font->atlas) SDL_DestroyTexture(font->atlas);
+#endif
 	if(font->info) free(font->info);
 	if(font->chars) free(font->chars);
 	free(font);
 }
 
+#ifdef USE_SDLGPU
+STBTTF_Font* STBTTF_OpenFontRW(SDL_RWops* rw, float size) {
+#else
 STBTTF_Font* STBTTF_OpenFontRW(SDL_Renderer* renderer, SDL_RWops* rw, float size) {
+#endif
 	Sint64 file_size = SDL_RWsize(rw);
 	unsigned char* buffer = malloc(file_size);
 	if(SDL_RWread(rw, buffer, file_size, 1) != 1) return NULL;
@@ -99,6 +126,19 @@ STBTTF_Font* STBTTF_OpenFontRW(SDL_Renderer* renderer, SDL_RWops* rw, float size
 	}
 
 	// convert bitmap to texture
+#ifdef USE_SDLGPU
+	font->atlas = GPU_CreateImage(font->texture_size, font->texture_size, GPU_FORMAT_RGBA);
+	Uint32* pixels = malloc(font->texture_size * font->texture_size * sizeof(Uint32));
+	for(int i = 0; i < font->texture_size * font->texture_size; i++) {
+		pixels[i] = 0xffffff | (bitmap[i] << 24);
+	}
+	GPU_UpdateImageBytes(font->atlas, NULL, (unsigned char*) pixels, sizeof(Uint32) * font->texture_size);
+	free(pixels);
+	GPU_SetImageFilter(font->atlas, GPU_FILTER_NEAREST);
+	GPU_SetAnchor(font->atlas, 0, 1);
+	GPU_SetBlending(font->atlas, 1);
+	GPU_SetSnapMode(font->atlas, GPU_SNAP_POSITION_AND_DIMENSIONS);
+#else
 	font->atlas = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STATIC, font->texture_size, font->texture_size);
 	SDL_SetTextureBlendMode(font->atlas, SDL_BLENDMODE_BLEND);
 
@@ -111,6 +151,7 @@ STBTTF_Font* STBTTF_OpenFontRW(SDL_Renderer* renderer, SDL_RWops* rw, float size
 	SDL_UpdateTexture(font->atlas, NULL, pixels, font->texture_size * sizeof(Uint32));
 	free(pixels);
 	free(bitmap);
+#endif
 
 	// setup additional info
   font->scale = stbtt_ScaleForPixelHeight(font->info, size);
@@ -122,29 +163,49 @@ STBTTF_Font* STBTTF_OpenFontRW(SDL_Renderer* renderer, SDL_RWops* rw, float size
 	return font;
 }
 
+#ifdef USE_SDLGPU
+STBTTF_Font* STBTTF_OpenFont(const char* filename, float size) {
+#else
 STBTTF_Font* STBTTF_OpenFont(SDL_Renderer* renderer, const char* filename, float size) {
+#endif
 	SDL_RWops *rw = SDL_RWFromFile(filename, "rb");
 	if(rw == NULL) return NULL;
+#ifdef USE_SDLGPU
+	return STBTTF_OpenFontRW(rw, size);
+#else
 	return STBTTF_OpenFontRW(renderer, rw, size);
+#endif
 }
 
-void STBTTF_RenderText(SDL_Renderer* renderer, STBTTF_Font* font, float x, float y, const char *text) {
-	Uint8 r, g, b, a;
-	SDL_GetRenderDrawColor(renderer, &r, &g, &b, &a);
-	SDL_SetTextureColorMod(font->atlas, r, g, b);
-	SDL_SetTextureAlphaMod(font->atlas, a);
+#ifdef USE_SDLGPU
+void STBTTF_RenderText(GPU_Target* screen, STBTTF_Font* font, float x, float y, const char *text, SDL_Color fg) {
+	GPU_SetColor(font->atlas, fg);
+#else
+void STBTTF_RenderText(SDL_Renderer* renderer, STBTTF_Font* font, float x, float y, const char *text, SDL_Color fg) {
+	SDL_SetTextureColorMod(font->atlas, fg.r, fg.g, fg.b);
+	SDL_SetTextureAlphaMod(font->atlas, fg.a);
+#endif
 	for(int i = 0; text[i]; i++) {
 		if (text[i] >= 32 && text[i] < 127) {
 			//if(i > 0) x += stbtt_GetCodepointKernAdvance(font->info, text[i - 1], text[i]) * font->scale;
 
 			stbtt_packedchar* info = &font->chars[text[i] - 32];
+
+#ifdef USE_SDLGPU
+			GPU_Rect src_rect = {info->x0, info->y0, info->x1 - info->x0, info->y1 - info->y0};
+			GPU_Rect dst_rect = {x + info->xoff, y + info->yoff, info->x1 - info->x0, info->y1 - info->y0};
+			GPU_BlitRect(font->atlas, &src_rect, screen, &dst_rect);
+#else
 			SDL_Rect src_rect = {info->x0, info->y0, info->x1 - info->x0, info->y1 - info->y0};
 			SDL_Rect dst_rect = {x + info->xoff, y + info->yoff, info->x1 - info->x0, info->y1 - info->y0};
-
 			SDL_RenderCopy(renderer, font->atlas, &src_rect, &dst_rect);
+#endif
 			x += info->xadvance;
 		}
 	}
+#ifdef USE_SDLGPU
+	//GPU_UnsetColor(font->atlas);
+#endif
 }
 
 float STBTTF_MeasureText(STBTTF_Font* font, const char *text) {
