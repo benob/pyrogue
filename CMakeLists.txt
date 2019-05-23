@@ -10,10 +10,14 @@ if (${CMAKE_SYSTEM_NAME} STREQUAL "Emscripten")
 	set(SDL2_LIBRARIES "-s USE_SDL=2")
 	add_definitions(${EMSCRIPTEN_FLAGS})
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${EMSCRIPTEN_FLAGS}")
-	SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -g4 --emrun")
+	SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -g4")
 else ()
 	include(FindPkgConfig)
 	pkg_search_module(SDL2 REQUIRED sdl2)
+	set(OpenGL_GL_PREFERENCE LEGACY)
+	find_package(OpenGL REQUIRED)
+	find_package(GLEW REQUIRED)
+	set(SDLGPU_LIBRARIES ${OPENGL_gl_LIBRARY} ${GLEW_LIBRARY})
 endif ()
 
 #set(SDLGPU_DIR "${CMAKE_SOURCE_DIR}/deps/sdl-gpu/build/SDL_gpu-0.11.0")
@@ -23,9 +27,6 @@ set(SDLGPU_INCLUDE_DIRS
 	${CMAKE_SOURCE_DIR}/deps/sdl-gpu/src/externals/stb_image_write
 	${CMAKE_SOURCE_DIR}/deps/sdl-gpu/src/externals/glew/GL
 )
-find_package(OpenGL REQUIRED)
-find_package(GLEW REQUIRED)
-set(SDLGPU_LIBRARIES ${OPENGL_gl_LIBRARY} ${GLEW_LIBRARY})
 
 include_directories(${SDL2_INCLUDE_DIRS} ${SDLGPU_INCLUDE_DIRS} lib deps src)
 

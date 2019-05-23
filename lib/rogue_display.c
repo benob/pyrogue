@@ -177,6 +177,7 @@ int td_load_image(int index, const char* filename, int tile_width, int tile_heig
 	GPU_SetImageFilter(image.texture, GPU_FILTER_NEAREST);
 	GPU_SetAnchor(image.texture, 0, 1);
 	GPU_SetBlending(image.texture, 1);
+	GPU_SetBlendMode(image.texture, GPU_BLEND_NORMAL_FACTOR_ALPHA);
 	GPU_SetSnapMode(image.texture, GPU_SNAP_POSITION_AND_DIMENSIONS);
 	image.width = image.texture->w;
 	image.height = image.texture->h;
@@ -355,6 +356,7 @@ void td_draw_array(int index, array_t* a, int x, int y, int x_shift, int y_shift
 			GPU_Rect src_rect = {tile_x, tile_y, image->tile_width, image->tile_height};
 			GPU_Rect dst_rect = {x + x_shift * i, y + y_shift * j, image->tile_width, image->tile_height};
 			if(fg != 0) GPU_SetColor(image->texture, fg_color);
+			else GPU_UnsetColor(image->texture);
 			GPU_BlitRect(image->texture, &src_rect, display.screen, &dst_rect);
 #else
 			SDL_Rect src_rect = {tile_x, tile_y, image->tile_width, image->tile_height};

@@ -45,9 +45,9 @@ else(MINGW) # regular unix
 endif(MINGW)
 
 set(micropython_CFLAGS 
+	-I${CMAKE_SOURCE_DIR}/src 
 	-I. 
 	-I${GENHDR}/.. 
-	-I${CMAKE_SOURCE_DIR}/src 
 	-I${CMAKE_SOURCE_DIR}/lib 
 	${micropython_platform_CFLAGS}
 	-I${MP}/ 
@@ -179,6 +179,7 @@ set(micropython_regular_SOURCE
 	${MP}/py/scheduler.c
 	${MP}/py/objdeque.c
 	${MP}/py/builtinhelp.c
+	#${MP}/py/rootstack.c # ADDED for gc root pointer tracking
 	${MP}/extmod/moductypes.c
 	${MP}/extmod/modujson.c
 	${MP}/extmod/modure.c
@@ -220,6 +221,7 @@ set(micropython_regular_SOURCE
 #TODO: verify that this works
 set_source_files_properties(${MP}/py/gc.c PROPERTIES COMPILE_FLAGS -O3)
 set_source_files_properties(${MP}/py/vm.c PROPERTIES COMPILE_FLAGS -O3)
+set_source_files_properties(${MP}/py/rootstack.c PROPERTIES COMPILE_FLAGS -Wno-format)
 
 set(micropython_SOURCE
 	${micropython_regular_SOURCE}

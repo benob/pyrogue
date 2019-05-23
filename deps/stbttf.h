@@ -137,6 +137,7 @@ STBTTF_Font* STBTTF_OpenFontRW(SDL_Renderer* renderer, SDL_RWops* rw, float size
 	GPU_SetImageFilter(font->atlas, GPU_FILTER_NEAREST);
 	GPU_SetAnchor(font->atlas, 0, 1);
 	GPU_SetBlending(font->atlas, 1);
+	GPU_SetBlendMode(font->atlas, GPU_BLEND_NORMAL_FACTOR_ALPHA);
 	GPU_SetSnapMode(font->atlas, GPU_SNAP_POSITION_AND_DIMENSIONS);
 #else
 	font->atlas = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STATIC, font->texture_size, font->texture_size);

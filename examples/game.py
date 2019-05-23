@@ -385,7 +385,7 @@ def redraw():
     # draw memorized tiles
     rl.draw_array(level.memory, 0, 0, 
             mapping=[tile.num for tile in Tile.mapping],
-            fg=[rl.color(255, 255, 255, 64) for tile in Tile.mapping])
+            fg=[rl.color(255, 255, 255, 96) for tile in Tile.mapping])
     # draw level masked with fov
     to_draw = rl.array(WIDTH, HEIGHT)
     level.array.copy_masked(to_draw, fov)
