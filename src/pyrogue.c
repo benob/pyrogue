@@ -235,7 +235,6 @@ MP_NOINLINE int _main(int argc, char** argv) {
 	mp_obj_list_init(MP_OBJ_TO_PTR(mp_sys_path), 0);
 	mp_obj_list_init(MP_OBJ_TO_PTR(mp_sys_argv), 0);
 
-	rl_set_error_handler(error_handler);
 	rl_set_allocator(m_malloc, m_realloc, m_free);
 
 	uint32_t content_size;
@@ -299,6 +298,7 @@ MP_NOINLINE int _main(int argc, char** argv) {
 
 	//fprintf(stderr, "%s\n", content);
 	if(content != NULL) {
+		rl_set_error_handler(error_handler);
 		do_str(content, content_size, filename);
 		free(content);
 	}

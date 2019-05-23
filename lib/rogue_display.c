@@ -112,6 +112,7 @@ int td_init(const char* title, int width, int height) {
 		display.window_width = width;
 		display.window_height = height;
 #ifdef USE_SDLGPU
+		//GPU_SetRequiredFeatures(GPU_FEATURE_BASIC_SHADERS);
 		display.actual_screen = GPU_Init(width, height, SDL_WINDOW_SHOWN | SDL_WINDOW_MAXIMIZED | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_OPENGL);
 #else
 		if(SDL_Init(SDL_INIT_VIDEO) < 0) rl_error("could not initialize SDL");
@@ -177,7 +178,7 @@ int td_load_image(int index, const char* filename, int tile_width, int tile_heig
 	GPU_SetImageFilter(image.texture, GPU_FILTER_NEAREST);
 	GPU_SetAnchor(image.texture, 0, 1);
 	GPU_SetBlending(image.texture, 1);
-	GPU_SetBlendMode(image.texture, GPU_BLEND_NORMAL_FACTOR_ALPHA);
+	GPU_SetBlendMode(image.texture, GPU_BLEND_NORMAL);
 	GPU_SetSnapMode(image.texture, GPU_SNAP_POSITION_AND_DIMENSIONS);
 	image.width = image.texture->w;
 	image.height = image.texture->h;
@@ -328,7 +329,8 @@ void td_draw_array(int index, array_t* a, int x, int y, int x_shift, int y_shift
 			if(bg != 0) {
 #ifdef USE_SDLGPU
 				SDL_Color bg_color = {td_color_r(bg), td_color_g(bg), td_color_b(bg), td_color_a(bg)};
-				GPU_RectangleFilled(display.screen, x + x_shift * i, y + y_shift * j, x + x_shift * i + image->tile_width, y + y_shift * j + image->tile_height, bg_color);
+				GPU_Rect dst_rect = {x + x_shift * i, y + y_shift * j, image->tile_width, image->tile_height};
+				GPU_RectangleFilled2(display.screen, dst_rect, bg_color);
 #else
 				SDL_Rect dst_rect = {x + x_shift * i, y + y_shift * j, image->tile_width, image->tile_height};
 				SDL_SetRenderDrawColor(display.renderer, td_color_r(bg), td_color_g(bg), td_color_b(bg), td_color_a(bg));

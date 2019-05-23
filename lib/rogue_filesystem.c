@@ -8,6 +8,7 @@
 #endif
 
 #include "rogue_filesystem.h"
+#include "rogue_util.h"
 
 #define MAX_PATH_SIZE 1024
 #ifdef __WIN32__
@@ -54,6 +55,7 @@ static char* load_file(const char* filename, uint32_t* size) {
 	FILE* fp = fopen(filename, "rb");
 	if(!fp) {
 		//printf("cannot open file\n");
+		rl_error("cannot open file '%s'", filename);
 		perror(filename);
 		return NULL;
 	}
@@ -117,7 +119,8 @@ int fs_open_resources(const char* path) {
 			return 0;
 		}
 		//free(zip_data);
-	} else if(!strcmp(path + strlen(path) - 1, STR_PATH_SEPARATOR)) {
+	} else if(path[strlen(path) - 1] == '/' || path[strlen(path) - 1] == '\\') {
+		// TODO: should test for actual existance of directory
 		resource_type = RESOURCE_DIR;
 	} else {
 		resource_type = RESOURCE_ZIP;
@@ -147,13 +150,15 @@ int fs_open_resources(const char* path) {
 int fs_has_embed(const char* exe) {
 	FILE* fp = fopen(exe, "rb");
 	if(!fp) {
-		perror(exe);
+		rl_error("cannot open '%s'", exe);
+		//perror(exe);
 		return 0;
 	}
 	int marker_size = strlen(embed_marker);
 	fseek(fp, marker_size, SEEK_END);
 	char buffer[marker_size];
 	if(marker_size != fread(buffer, 1, marker_size, fp)) {
+		rl_error("cannot read %d bytes from '%s'", marker_size, exe);
 		perror(exe);
 		fclose(fp);
 		return 0;
@@ -330,10 +335,12 @@ int fs_save_pref(const char* path, const char* data, uint32_t size) {
 	else snprintf(filename, MAX_PATH_SIZE, "%s%c%s", pref_dir, PATH_SEPARATOR, path);
 	FILE* fp = fopen(filename, "wb");
 	if(!fp) {
+		rl_error("cannot save pref file '%s'", path);
 		perror(filename);
 		return 0;
 	}
 	if(size != fwrite(data, 1, size, fp)) {
+		rl_error("cannot write %d bytes to '%s'", size, path);
 		perror(filename);
 		return 0;
 	}
