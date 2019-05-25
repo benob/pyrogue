@@ -120,7 +120,7 @@ if(!EMSCRIPTEN)
 # c examples
 add_executable(plasma examples/plasma.c)
 target_link_libraries(plasma rogue)
-add_executable(test_filesystem examples/test_filesystem.c)
-target_link_libraries(test_filesystem rogue)
+#add_executable(test_filesystem examples/test_filesystem.c)
+#target_link_libraries(test_filesystem rogue)
 endif()
 
