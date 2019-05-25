@@ -124,6 +124,14 @@ int td_init(const char* title, int width, int height) {
 #endif
 		SDL_StartTextInput();
 	}
+#ifdef __EMSCRIPTEN__
+	// let canvas handle keyboard events instead of window
+	SDL_SetHint(SDL_HINT_EMSCRIPTEN_KEYBOARD_ELEMENT, "#canvas");
+	EM_ASM(
+			// make sure canvas uses nearest neighbor smoothing
+      document.getElementById('canvas').style.imageRendering = 'pixelated';
+  );
+#endif
 #ifdef USE_SDLGPU
 	//TODO: if(display.screen_image != NULL)
 	display.screen_image = GPU_CreateImage(width, height, GPU_FORMAT_RGBA);

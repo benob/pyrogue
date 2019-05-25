@@ -4,13 +4,13 @@ project (pyrogue)
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
 if (EMSCRIPTEN)
-  # TODO(amitp): I don't know how to set this properly with add_compile_options
-	set(EMSCRIPTEN_FLAGS "-s USE_SDL=2 -s FORCE_FILESYSTEM=1 -s TOTAL_MEMORY=100MB -s USE_WEBGL2=1")
+	set(EMSCRIPTEN_FLAGS "-s USE_SDL=2 -s FORCE_FILESYSTEM=1 -s TOTAL_MEMORY=100MB -s USE_WEBGL2=1 -s EXPORTED_FUNCTIONS=[\"_pyrogue_init\",\"_pyrogue_shutdown\",\"_pyrogue_run_string\",\"_pyrogue_run\",\"_pyrogue_quit\"] -s EXTRA_EXPORTED_RUNTIME_METHODS=[\"ccall\",\"cwrap\"]")
+
 	set(CMAKE_C_FLAGS "-m32 ${CMAKE_CXX_FLAGS} ${EMSCRIPTEN_FLAGS}")
 	set(SDL2_LIBRARIES "-s USE_SDL=2")
 	add_definitions(${EMSCRIPTEN_FLAGS})
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${EMSCRIPTEN_FLAGS}")
-	SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -g4")
+	SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -g4 -s ASSERTIONS=1 ${EMSCRIPTEN_FLAGS}")
 else ()
 	include(FindPkgConfig)
 	pkg_search_module(SDL2 REQUIRED sdl2)
@@ -116,9 +116,11 @@ add_executable(pyrogue src/pyrogue.c)
 target_compile_options(pyrogue PRIVATE -DNO_QSTR ${micropython_CFLAGS})
 target_link_libraries(pyrogue micropython)
 
+if(!EMSCRIPTEN)
 # c examples
 add_executable(plasma examples/plasma.c)
 target_link_libraries(plasma rogue)
 add_executable(test_filesystem examples/test_filesystem.c)
 target_link_libraries(test_filesystem rogue)
+endif()
 

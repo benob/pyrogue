@@ -31,27 +31,6 @@ static int resource_type = RESOURCE_DIR;
 mz_zip_archive* resource_zip = NULL;
 
 static char* load_file(const char* filename, uint32_t* size) {
-//#ifdef __EMSCRIPTEN__
-#if 0
-	emscripten_fetch_attr_t attr;
-  emscripten_fetch_attr_init(&attr);
-  strcpy(attr.requestMethod, "GET");
-  attr.attributes = EMSCRIPTEN_FETCH_LOAD_TO_MEMORY | EMSCRIPTEN_FETCH_SYNCHRONOUS;
-  emscripten_fetch_t *fetch = emscripten_fetch(&attr, filename); // Blocks here until the operation is complete.
-	char* data = NULL;
-  if (fetch->status == 200) {
-    printf("Finished downloading %llu bytes from URL %s.\n", fetch->numBytes, fetch->url);
-    // The data is now available at fetch->data[0] through fetch->data[fetch->numBytes-1];
-		*size = fetch->numBytes;
-		data = malloc(*size + 1);
-		memcpy(data, fetch->data, *size);
-		data[*size] = 0;
-  } else {
-    fprintf(stderr, "ERROR: downloading %s failed, HTTP failure status code: %d; status text: %s.\n", fetch->url, fetch->status, fetch->statusText);
-  }
-  emscripten_fetch_close(fetch);
-	return data;
-#else
 	FILE* fp = fopen(filename, "rb");
 	if(!fp) {
 		//printf("cannot open file\n");
@@ -90,13 +69,15 @@ static char* load_file(const char* filename, uint32_t* size) {
 	data[*size] = 0; // ensure terminal zero
 	fclose(fp);
 	return data;
-#endif
 }
 
 // TODO: print error messages
 static char* load_file_zip(mz_zip_archive* archive, const char* filename, uint32_t* size) {
 	size_t uncompressed_size;
 	char* data = mz_zip_reader_extract_file_to_heap(archive, filename, &uncompressed_size, 0);
+	char* string_data = malloc(uncompressed_size);
+	memcpy(string_data, data, uncompressed_size);
+	string_data[uncompressed_size] = '\0';
 	*size = uncompressed_size;
 	return data;
 }

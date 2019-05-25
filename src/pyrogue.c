@@ -40,6 +40,9 @@
 
 #include "rogue.h"
 
+// memory for micropython
+char* python_heap;
+
 STATIC void stderr_print_strn(void *env, const char *str, size_t len) {
 	(void)env;
 	ssize_t dummy = write(STDERR_FILENO, str, len);
@@ -179,7 +182,8 @@ void usage(char* arg0) {
 	exit(1);
 }
 
-MP_NOINLINE int _main(int argc, char** argv);
+MP_NOINLINE int cmdline_main(int argc, char** argv);
+
 #ifdef __EMSCRIPTEN__
 static char *stack_top;
 
@@ -195,33 +199,35 @@ void gc_collect(void) {
     gc_collect_root((void*)stack_top, ((mp_uint_t)(void*)(&dummy + 1) - (mp_uint_t)stack_top) / sizeof(mp_uint_t));
     gc_collect_end();
 }
-
-#endif
-
+#else // not(__EMSCRIPTEN__)
 // from mp unix port, capture stack asap
 int main(int argc, char** argv) {
-#ifdef __EMSCRIPTEN__
-    int stack_dummy;
-    stack_top = (char*)&stack_dummy;
-#endif
     #if MICROPY_PY_THREAD
     mp_thread_init();
     #endif
     mp_stack_ctrl_init();
-    return _main(argc, argv);
+    return cmdline_main(argc, argv);
 }
+#endif
 
-MP_NOINLINE int _main(int argc, char** argv) {
-
+MP_NOINLINE void pyrogue_init() {
+#ifdef __EMSCRIPTEN__
+	int stack_dummy;
+	stack_top = (char*)&stack_dummy;
+#if MICROPY_PY_THREAD
+	mp_thread_init();
+#endif
+	mp_stack_ctrl_init();
+#endif
 	// Initialized stack limit
 	mp_stack_set_limit(40000 * (BYTES_PER_WORD / 4));
 	// Initialize heap
 #if MICROPY_ENABLE_GC
 	// allocate 50M to python (used for python memory and rl arrays)
 #define HEAP_SIZE (50 * 1024 * 1024)
-	char* heap = malloc(HEAP_SIZE);
+	python_heap = malloc(HEAP_SIZE);
 
-	gc_init(heap, heap + HEAP_SIZE);
+	gc_init(python_heap, python_heap + HEAP_SIZE);
 #endif
 
 #if MICROPY_ENABLE_PYSTACK
@@ -237,18 +243,61 @@ MP_NOINLINE int _main(int argc, char** argv) {
 
 	rl_set_allocator(m_malloc, m_realloc, m_free);
 
+}
+
+MP_NOINLINE void pyrogue_shutdown() {
+	mp_deinit();
+
+#if MICROPY_ENABLE_GC
+	free(python_heap);
+#endif
+}
+
+MP_NOINLINE void pyrogue_run_string(const char* name, const char* code) {
+	rl_set_error_handler(error_handler);
+	do_str(code, strlen(code), name);
+}
+
+MP_NOINLINE void pyrogue_run(const char* filename) {
+	uint32_t content_size;
+	char* content = NULL;
+	if(!strcmp(filename + strlen(filename) - 3, ".py")) {
+		char* path = strdup(filename);
+		char* slash = strrchr(path, '/');
+		if(slash == NULL) slash = strrchr(path, '\\');
+		if(slash != NULL) {
+			*(slash + 1) = '\0';
+			fs_open_resources(path);
+		}
+		free(path);
+		content = fs_load_asset(filename, &content_size);
+	} else {
+		// zip or executable with embedded zip
+		fs_open_resources(filename);
+		content = fs_load_asset("game.py", &content_size);
+	}
+	if(content != NULL) {
+		pyrogue_run_string(filename, content);
+		free(content);
+	}
+}
+
+MP_NOINLINE void pyrogue_quit() {
+	td_quit();
+}
+
+// main for command line invocation
+MP_NOINLINE int cmdline_main(int argc, char** argv) {
+	pyrogue_init();
+
 	uint32_t content_size;
 	char* content = NULL;
 	const char* filename = NULL;
 	if(argc == 1) {
-#ifdef __EMSCRIPTEN__
-		usage(argv[0]);
-#else
 		fs_open_resources(argv[0]);
 		content = fs_load_asset("game.py", &content_size);
 		if(content == NULL) usage(argv[0]);
 		filename = "game.py";
-#endif
 	} else if(argc == 2 && !strcmp(argv[1] + strlen(argv[1]) - 4, ".zip")) {
 		fs_open_resources(argv[1]);
 		content = fs_load_asset("game.py", &content_size);
@@ -303,33 +352,15 @@ MP_NOINLINE int _main(int argc, char** argv) {
 		free(content);
 	}
 
-	mp_deinit();
+	pyrogue_shutdown();
 
-#if MICROPY_ENABLE_GC
-	free(heap);
-#endif
 	return 0;
 }
 
+// support importing from assets
 uint mp_import_stat(const char *path) {
-	/*struct stat st;
-	if (stat(path, &st) == 0) {
-		if (S_ISDIR(st.st_mode)) {
-			return MP_IMPORT_STAT_DIR;
-		} else if (S_ISREG(st.st_mode)) {
-			return MP_IMPORT_STAT_FILE;
-		}
-	} else {
-		uint32_t content_size; // TODO: cleaner check of file/dir existence
-		char* content = fs_load_asset(path, &content_size);
-		if(content != NULL) {
-			free(content);
-			return MP_IMPORT_STAT_FILE;
-		}
-	}
-	return MP_IMPORT_STAT_NO_EXIST;*/
 	if(fs_asset_is_file(path)) {
-		return MP_IMPORT_STAT_FILE; // only file import supported at this time
+		return MP_IMPORT_STAT_FILE; 
 	} else if(fs_asset_is_directory(path)) {
 		return MP_IMPORT_STAT_DIR;
 	}

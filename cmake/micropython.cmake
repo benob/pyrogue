@@ -46,9 +46,9 @@ endif(MINGW)
 
 set(micropython_CFLAGS 
 	-I${CMAKE_SOURCE_DIR}/src 
+	-I${CMAKE_SOURCE_DIR}/lib 
 	-I. 
 	-I${GENHDR}/.. 
-	-I${CMAKE_SOURCE_DIR}/lib 
 	${micropython_platform_CFLAGS}
 	-I${MP}/ 
 	-Wall
@@ -179,7 +179,6 @@ set(micropython_regular_SOURCE
 	${MP}/py/scheduler.c
 	${MP}/py/objdeque.c
 	${MP}/py/builtinhelp.c
-	#${MP}/py/rootstack.c # ADDED for gc root pointer tracking
 	${MP}/extmod/moductypes.c
 	${MP}/extmod/modujson.c
 	${MP}/extmod/modure.c
@@ -218,10 +217,16 @@ set(micropython_regular_SOURCE
 	#${MP}/py/mpconfig.h
 	)
 
+if(EMSCRIPTEN)
+	set(micropython_regular_SOURCE ${micropython_regular_SOURCE}
+		${CMAKE_SOURCE_DIR}/src/py/rootstack.c # ADDED for gc root pointer tracking
+		)
+endif()
+
 #TODO: verify that this works
 set_source_files_properties(${MP}/py/gc.c PROPERTIES COMPILE_FLAGS -O3)
 set_source_files_properties(${MP}/py/vm.c PROPERTIES COMPILE_FLAGS -O3)
-set_source_files_properties(${MP}/py/rootstack.c PROPERTIES COMPILE_FLAGS -Wno-format)
+set_source_files_properties(${CMAKE_SOURCE_DIR}/src/py/rootstack.c PROPERTIES COMPILE_FLAGS -Wno-format)
 
 set(micropython_SOURCE
 	${micropython_regular_SOURCE}
@@ -231,7 +236,11 @@ set(micropython_SOURCE
 
 add_library(micropython ${micropython_SOURCE} ${GENHDR}/qstrdefs.generated.h)
 target_compile_options(micropython PRIVATE ${micropython_CFLAGS})
-target_compile_definitions(micropython PRIVATE FFCONF_H=\"${MP}/lib/oofatfs/ffconf.h\")
+if (EMSCRIPTEN)
+	target_compile_definitions(micropython PRIVATE FFCONF_H=\"${MP}/lib/oofatfs/ffconf.h\" MICROPY_ROOT_STACK=1)
+else()
+	target_compile_definitions(micropython PRIVATE FFCONF_H=\"${MP}/lib/oofatfs/ffconf.h\" MICROPY_ROOT_STACK=0)
+endif()
 
 # hack to get cmake's C_FLAGS
 add_custom_command(OUTPUT ${GENHDR}/qstrdefs.generated.h

@@ -1,0 +1,6 @@
+source code:
+pyrogue, miniz, stb*, stbttf: https://unlicense.org/
+micropython and micropython-derived code: MIT (see micropython/LICENSE)
+
+data for examples:
+kenney 1-bit tileset (CC0 1.0 Universal) https://creativecommons.org/publicdomain/zero/1.0/
