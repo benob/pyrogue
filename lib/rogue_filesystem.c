@@ -43,13 +43,13 @@ static char* load_file(const char* filename, uint32_t* size) {
 		perror(filename);
 		return NULL;
 	}
-	*size = ftell(fp);
-	if(*size < 0) {
+	uint32_t length = ftell(fp);
+	if(length < 0) {
 		//printf("cannot ftell\n");
 		perror(filename);
 		return NULL;
 	}
-	char* data = malloc(*size + 1);
+	char* data = malloc(length + 1);
 	if(data == NULL) {
 		perror("malloc");
 		return NULL;
@@ -60,26 +60,28 @@ static char* load_file(const char* filename, uint32_t* size) {
 		perror(filename);
 		return NULL;
 	}
-	if(*size != fread(data, 1, *size, fp)) {
+	if(length != fread(data, 1, length, fp)) {
 		//printf("cannot read\n");
 		free(data);
 		perror(filename);
 		return NULL;
 	}
-	data[*size] = 0; // ensure terminal zero
+	data[length] = 0; // ensure terminal zero
 	fclose(fp);
+	if(size != NULL) *size = length;
 	return data;
 }
 
 // TODO: print error messages
 static char* load_file_zip(mz_zip_archive* archive, const char* filename, uint32_t* size) {
 	size_t uncompressed_size;
-	char* data = mz_zip_reader_extract_file_to_heap(archive, filename, &uncompressed_size, 0);
-	char* string_data = malloc(uncompressed_size);
+	const char* data = mz_zip_reader_extract_file_to_heap(archive, filename, &uncompressed_size, 0);
+	if(data == NULL) return NULL;
+	char* string_data = malloc(uncompressed_size + 1);
 	memcpy(string_data, data, uncompressed_size);
 	string_data[uncompressed_size] = '\0';
-	*size = uncompressed_size;
-	return data;
+	if(size != NULL) *size = uncompressed_size;
+	return string_data;
 }
 
 int fs_open_resources(const char* path) {

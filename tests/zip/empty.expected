@@ -1,0 +1,6 @@
+usage: ../../build/pyrogue [options]
+  without arguments             run game.py from embedded zip if any
+  <file.py>                     run script with resource path set to its directory
+  <zip>                         run game.py from root of zip
+  -embed <zip> <target-exe>     create exe embedding zip for standalone execution
+  -extract <zip>                extract embedd zip from executable

@@ -120,7 +120,7 @@ rl.run(update)</textarea></div>
 				Module.ccall('pyrogue_run_string', null, ['string', 'string'], ['code', script]);
 			}
 			function pyrogue_run(filename) {
-				Module.ccall('pyrogue_run', null, ['string'], [filename]);
+				return Module.ccall('pyrogue_run', 'integer', ['string'], [filename]);
 			}
 			function pyrogue_quit() {
 				Module.ccall('pyrogue_quit', null, []);

@@ -172,6 +172,35 @@ void error_handler(const char* message) {
 		mp_raise_msg(&mp_type_OSError, message);
 }
 
+const char* get_manifest_value(const char* data, const char* key) {
+	static char value[1024];
+	if(data == NULL) return NULL;
+	if(key == NULL) return NULL;
+	const char* start = data;
+	for(const char* end = strchr(data, '\n'); start; start = end) {
+		while(*start == '\n' || *start == '\r' || *start == ' ' || *start == '\t') start++;
+		const char* equals = strchr(start, '=');
+		if(equals != NULL) {
+			equals--;
+			while(equals > start && (*equals == ' ' || *equals == '\t')) equals--;
+			if(!strncmp(key, start, equals - start)) {
+				equals++;
+				while(*equals == ' ' || *equals == '\t' || *equals == '=') equals++;
+				if(end == NULL) end = start + strlen(start) - 1;
+				while(end > start && (*end == ' ' || *end == '\t' || *end == '\n' || *end == '\r')) end--;
+				int length = end - equals + 1;
+				if(length > 0) {
+					memcpy(value, equals, length);
+					value[length] = '\0';
+					return value;
+				}
+			}
+		}
+		if(end && *end) end = strchr(end + 1, '\n');
+	}
+	return NULL;
+}
+
 void usage(char* arg0) {
 	printf("usage: %s [options]\n", arg0);
 	printf("  without arguments             run game.py from embedded zip if any\n");
@@ -258,28 +287,43 @@ MP_NOINLINE void pyrogue_run_string(const char* name, const char* code) {
 	do_str(code, strlen(code), name);
 }
 
-MP_NOINLINE void pyrogue_run(const char* filename) {
-	uint32_t content_size;
+MP_NOINLINE int pyrogue_run(const char* filename) {
 	char* content = NULL;
+	const char* script = "game.py";
 	if(!strcmp(filename + strlen(filename) - 3, ".py")) {
 		char* path = strdup(filename);
+		char* basename = strdup(filename);
 		char* slash = strrchr(path, '/');
 		if(slash == NULL) slash = strrchr(path, '\\');
 		if(slash != NULL) {
+			free(basename);
+			basename = strdup(slash + 1);
 			*(slash + 1) = '\0';
 			fs_open_resources(path);
 		}
+		content = fs_load_asset(basename, NULL);
 		free(path);
-		content = fs_load_asset(filename, &content_size);
+		free(basename);
 	} else {
 		// zip or executable with embedded zip
 		fs_open_resources(filename);
-		content = fs_load_asset("game.py", &content_size);
+		char* manifest = fs_load_asset("MANIFEST", NULL);
+		if(manifest) {
+			const char* value = get_manifest_value(manifest, "script");
+			if(value) script = value;
+			free(manifest);
+		}
+		content = fs_load_asset(script, NULL);
+		if(!content && !strcmp(filename + strlen(filename) - 4, ".zip")) 
+			rl_error("cannot load script '%s' from '%s'", script, filename);
+		filename = script;
 	}
 	if(content != NULL) {
 		pyrogue_run_string(filename, content);
 		free(content);
+		return 1;
 	}
+	return 0;
 }
 
 MP_NOINLINE void pyrogue_quit() {
@@ -290,51 +334,10 @@ MP_NOINLINE void pyrogue_quit() {
 MP_NOINLINE int cmdline_main(int argc, char** argv) {
 	pyrogue_init();
 
-	uint32_t content_size;
-	char* content = NULL;
-	const char* filename = NULL;
 	if(argc == 1) {
-		fs_open_resources(argv[0]);
-		content = fs_load_asset("game.py", &content_size);
-		if(content == NULL) usage(argv[0]);
-		filename = "game.py";
-	} else if(argc == 2 && !strcmp(argv[1] + strlen(argv[1]) - 4, ".zip")) {
-		fs_open_resources(argv[1]);
-		content = fs_load_asset("game.py", &content_size);
-		if(content == NULL) {
-			fprintf(stderr, "cannot load 'game.py' from '%s'\n", argv[1]);
-			exit(1);
-		}
-		filename = "game.py";
+		if(!pyrogue_run(argv[0])) usage(argv[0]);
 	} else if(argc == 2) {
-		FILE* fp = fopen(argv[1], "r");
-		if(!fp) {
-			perror(argv[1]);
-			exit(1);
-		}
-		if(fseek(fp, 0, SEEK_END) < 0) {
-			perror(argv[1]);
-			exit(1);
-		}
-		long position = ftell(fp);
-		if((int) position < 0) {
-			fprintf(stderr, "%s: Not a valid python file\n", argv[1]);
-			exit(1);
-		}
-		content_size = position;
-		content = malloc(content_size + 1);
-		fseek(fp, 0, SEEK_SET);
-		fread(content, content_size, 1, fp);
-		content[content_size] = '\0';
-		fclose(fp);
-		filename = argv[1];
-		char* path = strdup(argv[1]);
-		char* slash = strrchr(path, '/');
-		if(slash != NULL) {
-			*(slash + 1) = '\0';
-			fs_open_resources(path);
-		}
-		free(path);
+		pyrogue_run(argv[1]);
 	} else if (argc == 3 && !strcmp(argv[1], "-extract")) {
 		fs_extract_embed(argv[0], argv[2]);
 		return 0;
@@ -343,13 +346,6 @@ MP_NOINLINE int cmdline_main(int argc, char** argv) {
 		return 0;
 	} else {
 		usage(argv[0]);
-	}
-
-	//fprintf(stderr, "%s\n", content);
-	if(content != NULL) {
-		rl_set_error_handler(error_handler);
-		do_str(content, content_size, filename);
-		free(content);
 	}
 
 	pyrogue_shutdown();
