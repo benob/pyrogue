@@ -103,6 +103,7 @@ static void __attribute__((destructor)) _td_fini() {
 
 static void (*rander_callback)(void*) = NULL;
 static void* render_callback_data = NULL;
+void td_present();
 
 static void null_main_loop() {
 }
@@ -152,6 +153,8 @@ int td_init(const char* title, int width, int height) {
 	display.width = width;
 	display.height = height;
 	display.was_init = 1;
+	td_clear();
+	td_present();
 	return 1;
 }
 
