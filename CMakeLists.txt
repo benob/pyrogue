@@ -4,7 +4,7 @@ project (pyrogue)
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
 if (EMSCRIPTEN)
-	set(EMSCRIPTEN_FLAGS "-s USE_SDL=2 -s FORCE_FILESYSTEM=1 -s TOTAL_MEMORY=100MB -s USE_WEBGL2=1 -s EXPORTED_FUNCTIONS=[\"_pyrogue_init\",\"_pyrogue_shutdown\",\"_pyrogue_run_string\",\"_pyrogue_run\",\"_pyrogue_quit\"] -s EXTRA_EXPORTED_RUNTIME_METHODS=[\"ccall\",\"cwrap\"]")
+	set(EMSCRIPTEN_FLAGS "-s USE_SDL=2 -s FORCE_FILESYSTEM=1 -s TOTAL_MEMORY=100MB -s USE_WEBGL2=1 -s EXPORTED_FUNCTIONS=[\"_pyrogue_init\",\"_pyrogue_shutdown\",\"_pyrogue_run_string\",\"_pyrogue_run\",\"_pyrogue_quit\",\"_rl_force_redraw\"] -s EXTRA_EXPORTED_RUNTIME_METHODS=[\"ccall\",\"cwrap\"]")
 
 	set(CMAKE_C_FLAGS "-m32 ${CMAKE_CXX_FLAGS} ${EMSCRIPTEN_FLAGS}")
 	set(SDL2_LIBRARIES "-s USE_SDL=2")

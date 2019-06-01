@@ -18,8 +18,8 @@ Module.expectedDataFileDownloads++;
     } else {
       throw 'using preloaded data can only be done on a web page or in a web worker';
     }
-    var PACKAGE_NAME = 'game.zip';
-    var REMOTE_PACKAGE_BASE = 'game.zip';
+    var PACKAGE_NAME = '@@game_name@@.zip';
+    var REMOTE_PACKAGE_BASE = '@@game_name@@.zip';
     if (typeof Module['locateFilePackage'] === 'function' && !Module['locateFile']) {
       Module['locateFile'] = Module['locateFilePackage'];
       err('warning: you defined Module.locateFilePackage, that has been renamed to Module.locateFile (using your locateFilePackage for now)');
@@ -149,10 +149,10 @@ Module.expectedDataFileDownloads++;
           for (var i = 0; i < files.length; ++i) {
             DataRequest.prototype.requests[files[i].filename].onload();
           }
-              Module['removeRunDependency']('datafile_game.zip');
+              Module['removeRunDependency']('@@game_name@@.zip');
 
     };
-    Module['addRunDependency']('datafile_game.zip');
+    Module['addRunDependency']('@@game_name@@.zip');
   
     if (!Module.preloadResults) Module.preloadResults = {};
   
@@ -173,6 +173,6 @@ Module.expectedDataFileDownloads++;
   }
 
  }
- loadPackage({"files": [{"filename": "/game.zip", "start": 0, "end": undefined, "audio": 0}], "remote_package_size": 80866, "package_uuid": "a2774c5f-ce49-4f09-8b56-d819b932b7ca"});
+ loadPackage({"files": [{"filename": "/@@game_name@@.zip", "start": 0, "end": undefined, "audio": 0}], "remote_package_size": @@game_size@@, "package_uuid": "a2774c5f-ce49-4f09-8b56-d819b932b7ca"});
 
 })();

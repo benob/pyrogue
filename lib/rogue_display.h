@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include "rogue_array.h"
+#include "rogue_random.h"
 #include "rogue_keys.h"
 
 // text alignment
@@ -54,9 +55,11 @@ void td_clear();
 void td_quit();
 void td_run(void (*update_callback)(int key), int update_filter);
 uint32_t td_color(unsigned char r, unsigned char g, unsigned char b, unsigned char a);
+uint32_t td_random_color();
 uint32_t td_hsv_color(unsigned int h, unsigned char s, unsigned char v, unsigned char a);
 int td_mouse_x();
 int td_mouse_y();
 int td_mouse_button();
+void rl_force_redraw();
 
 #endif

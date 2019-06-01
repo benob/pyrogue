@@ -9,5 +9,8 @@ mkdir -p build-js
 cd build-js
 emcmake cmake .. -DCMAKE_BUILD_TYPE=Release
 make -j 4
-cp ../platform/js/* .
-echo "run 'emrun index.html' to start pyrogue in a browser"
+
+mkdir dist
+for example in fire.zip plasma.zip blob.zip game.zip tileset.zip; do
+../platform/js/export-game.sh ../examples/$example dist/
+done

@@ -1,0 +1,106 @@
+<!doctype HTML>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <title>Pyrogue</title>
+    <style>
+			html {
+				width: 100%;
+				height: 100%;
+			}
+			body {
+				display: -webkit-flex;
+				display: flex;
+				-webkit-flex-direction: column;
+				flex-direction: column;
+				width: 100%;
+				height: 100%;
+				font-family: sans-serif;
+				margin: 0;
+				padding: 0;
+				overflow: hidden;
+				background: black;
+			}
+			#canvas-container {
+				width: 100%;
+				height: 100%;
+				-webkit-flex: 1;
+				flex: 1;
+				text-align: center;
+				display: inline-block;
+				overflow: hidden;
+			}
+			#canvas {
+				background: black;
+			}
+			.extend-horizontal {
+				background: black;
+				width: 100%;
+				height: auto;
+			}
+			.extend-vertical {
+				background: black;
+				width: auto;
+				height: 100%;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="canvas-container">
+			<canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas>
+		</div>
+
+    <script type='text/javascript'>
+			let was_init = false;
+			function pyrogue_init() {
+				Module.ccall('pyrogue_init', null, []);
+				was_init = true;
+			}
+			function pyrogue_shutdown() {
+				Module.ccall('pyrogue_shutdown', null, []);
+			}
+			function pyrogue_run_string(script) {
+				pyrogue_quit();
+				if(was_init) pyrogue_shutdown();
+				pyrogue_init();
+				Module.ccall('pyrogue_run_string', null, ['string', 'string'], ['code', script]);
+			}
+			function pyrogue_run(filename) {
+				pyrogue_quit();
+				if(was_init) pyrogue_shutdown();
+				pyrogue_init();
+				return Module.ccall('pyrogue_run', 'integer', ['string'], [filename]);
+			}
+			function pyrogue_quit() {
+				Module.ccall('pyrogue_quit', null, []);
+			}
+      var Module = {
+        canvas: document.getElementById('canvas'),
+				onRuntimeInitialized: function() {
+					window.addEventListener("resize", function() {
+						console.log('event: resize');
+						Module.ccall('rl_force_redraw', null, []);
+					}, true);
+					pyrogue_run('@@game_name@@.zip');
+				},
+      };
+			var container = document.getElementById('canvas-container');
+			var canvas = document.getElementById('canvas');
+			/*function resize_canvas() {
+				//Module.setCanvasSize(container.clientWidth, container.clientHeight, true);
+				//Browser.updateCanvasDimensions(canvas, container.clientWidth, container.clientHeigh);
+				//Browser.updateResizeListeners();
+				console.log('resize', canvas.width, canvas.height);
+				canvas.style.removeProperty('width');
+				canvas.style.removeProperty('height');
+				if(container.clientWidth > container.clientHeight) {
+					canvas.classList.add('extend-vertical');
+				} else {
+					canvas.classList.add('extend-horizontal');
+				}
+			}*/
+    </script>
+    <script async type="text/javascript" src="pyrogue.preload.@@game_name@@.js"></script>
+    <script async type="text/javascript" src="pyrogue.js"></script>
+  </body>
+</html>

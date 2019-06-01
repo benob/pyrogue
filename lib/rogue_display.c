@@ -590,12 +590,34 @@ int td_poll_event() {
 	return 1;
 }*/
 
+// emscripten hack for redrawing when canvas was resized
+void rl_force_redraw() {
+	SDL_Event event = {.type = SDL_WINDOWEVENT};
+	event.window.event = SDL_WINDOWEVENT_EXPOSED;
+	SDL_PushEvent(&event);
+}
+
 void td_present() {
 #ifndef USE_SDLGPU
 	SDL_SetRenderTarget(display.renderer, NULL);
 	td_clear();
 #endif
-#ifndef __EMSCRIPTEN__
+#ifdef __EMSCRIPTEN__
+	// canvas size is based on canvas container
+	display.window_width = EM_ASM_INT({ 
+			let container = Module.canvas.parentNode;
+			return container.clientWidth;
+	});
+	display.window_height = EM_ASM_INT({ 
+			let container = Module.canvas.parentNode;
+			return container.clientHeight;
+	});
+	GPU_SetWindowResolution(display.window_width, display.window_height);
+	double devicePixelRatio = emscripten_get_device_pixel_ratio();
+	// fix handling of HiDPI by emscripten
+	display.window_width = (int) (display.window_width * devicePixelRatio);
+	display.window_height = (int) (display.window_height * devicePixelRatio);
+#endif
 	int width = display.window_width, height = display.window_height, x = 0, y = 0;
 	if(width * display.height / height < display.width) {
 		int new_height = (int) display.height * width / display.width;
@@ -606,25 +628,14 @@ void td_present() {
 		x = (width - new_width) / 2;
 		width = new_width;
 	}
-#endif
 #ifdef USE_SDLGPU
 	GPU_Clear(display.actual_screen);
-	/*SDL_Color red = {255, 0, 0, 255};
-	GPU_Line(display.screen, 0, 0, 80 * 9, 25 * 16, red);*/
-#ifdef __EMSCRIPTEN__
-	GPU_BlitRect(display.screen_image, NULL, display.actual_screen, NULL);
-#else
 	GPU_Rect dest = {x, y, width, height};
 	GPU_BlitRect(display.screen_image, NULL, display.actual_screen, &dest);
-#endif
 	GPU_Flip(display.actual_screen);
-#else
-#ifdef __EMSCRIPTEN__
-	SDL_RenderCopy(display.renderer, display.screen, NULL, NULL);
 #else
 	SDL_Rect dest = {x, y, width, height};
 	SDL_RenderCopy(display.renderer, display.screen, NULL, &dest);
-#endif
 	SDL_RenderPresent(display.renderer);
 #endif
 	// TODO: wait only the time needed to achieve fps
@@ -661,15 +672,19 @@ static void process_events() {
 				return;
 				break;
 			case SDL_WINDOWEVENT:
-				if(event.window.event == SDL_WINDOWEVENT_RESIZED) {
+				if(event.window.event == SDL_WINDOWEVENT_RESIZED || event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
+					printf("window resized %d %d\n", event.window.data1, event.window.data2);
 #ifdef USE_SDLGPU
 					GPU_SetWindowResolution(event.window.data1, event.window.data2);
 #endif
 					display.window_width = event.window.data1;
 					display.window_height = event.window.data2;
+					key = TD_PASS;
+					td_present();
+				} else if(event.window.event == SDL_WINDOWEVENT_EXPOSED) {
+					key = TD_PASS;
+					td_present();
 				}
-				key = TD_PASS;
-				td_present();
 				break;
 			case SDL_TEXTINPUT:
 				key = event.text.text[0];
@@ -791,4 +806,8 @@ void td_draw_points(td_point_t* points, int num, uint32_t color) {
 	SDL_DestroyTexture(texture);
 	SDL_FreeSurface(surface);
 #endif
+}
+
+uint32_t td_random_color() {
+	return td_color_rgb(rl_random_int(0, 255), rl_random_int(0, 255), rl_random_int(0, 255));
 }

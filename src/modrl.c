@@ -954,6 +954,12 @@ STATIC mp_obj_t mod_td_quit() {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_td_quit_obj, mod_td_quit);
 
+STATIC mp_obj_t mod_td_random_color() {
+	uint32_t result = td_random_color();
+	return mp_obj_new_int(result);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_td_random_color_obj, mod_td_random_color);
+
 STATIC mp_obj_t mod_td_color(size_t n_args, const mp_obj_t *args) {
 	unsigned char r = (unsigned char) mp_obj_get_int(args[0]);
 	unsigned char g = (unsigned char) mp_obj_get_int(args[1]);
@@ -1074,6 +1080,268 @@ STATIC mp_obj_t mod_rl_walk_line_next() {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_rl_walk_line_next_obj, mod_rl_walk_line_next);
 
+// WARNING: declaring const long intenger requires to use of MICROPY_LONGINT_IMPL_LONGLONG
+// pico8 colors
+const mp_obj_int_t mod_rl_BLACK = {{&mp_type_int}, (td_color_rgba(0, 0, 0, 0)) };
+const mp_obj_int_t mod_rl_DARKBLUE = {{&mp_type_int}, (td_color_rgba(29, 43, 83, 255)) };
+const mp_obj_int_t mod_rl_DARKPURPLE = {{&mp_type_int}, (td_color_rgba(126, 37, 83, 255)) };
+const mp_obj_int_t mod_rl_DARKGREEN = {{&mp_type_int}, (td_color_rgba(0, 135, 81, 255)) };
+const mp_obj_int_t mod_rl_BROWN = {{&mp_type_int}, (td_color_rgba(171, 82, 54, 255)) };
+const mp_obj_int_t mod_rl_DARKGRAY = {{&mp_type_int}, (td_color_rgba(95, 87, 79, 255)) };
+const mp_obj_int_t mod_rl_LIGHTGRAY = {{&mp_type_int}, (td_color_rgba(194, 195, 199, 255)) };
+const mp_obj_int_t mod_rl_WHITE = {{&mp_type_int}, (td_color_rgba(255, 241, 232, 255)) };
+const mp_obj_int_t mod_rl_RED = {{&mp_type_int}, (td_color_rgba(255, 0, 77, 255)) };
+const mp_obj_int_t mod_rl_ORANGE = {{&mp_type_int}, (td_color_rgba(255, 163, 0, 255)) };
+const mp_obj_int_t mod_rl_YELLOW = {{&mp_type_int}, (td_color_rgba(255, 236, 39, 255)) };
+const mp_obj_int_t mod_rl_GREEN = {{&mp_type_int}, (td_color_rgba(0, 228, 54, 255)) };
+const mp_obj_int_t mod_rl_BLUE = {{&mp_type_int}, (td_color_rgba(41, 173, 255, 255)) };
+const mp_obj_int_t mod_rl_INDIGO = {{&mp_type_int}, (td_color_rgba(131, 118, 156, 255)) };
+const mp_obj_int_t mod_rl_PINK = {{&mp_type_int}, (td_color_rgba(255, 119, 168, 255)) };
+const mp_obj_int_t mod_rl_PEACH = {{&mp_type_int}, (td_color_rgba(255, 204, 170, 255)) };
+
+// keys
+const mp_obj_int_t mod_rl_TD_0 = {{&mp_type_int}, (TD_0)};
+const mp_obj_int_t mod_rl_TD_1 = {{&mp_type_int}, (TD_1)};
+const mp_obj_int_t mod_rl_TD_2 = {{&mp_type_int}, (TD_2)};
+const mp_obj_int_t mod_rl_TD_3 = {{&mp_type_int}, (TD_3)};
+const mp_obj_int_t mod_rl_TD_4 = {{&mp_type_int}, (TD_4)};
+const mp_obj_int_t mod_rl_TD_5 = {{&mp_type_int}, (TD_5)};
+const mp_obj_int_t mod_rl_TD_6 = {{&mp_type_int}, (TD_6)};
+const mp_obj_int_t mod_rl_TD_7 = {{&mp_type_int}, (TD_7)};
+const mp_obj_int_t mod_rl_TD_8 = {{&mp_type_int}, (TD_8)};
+const mp_obj_int_t mod_rl_TD_9 = {{&mp_type_int}, (TD_9)};
+const mp_obj_int_t mod_rl_TD_AC_BACK = {{&mp_type_int}, (TD_AC_BACK)};
+const mp_obj_int_t mod_rl_TD_AC_BOOKMARKS = {{&mp_type_int}, (TD_AC_BOOKMARKS)};
+const mp_obj_int_t mod_rl_TD_AC_FORWARD = {{&mp_type_int}, (TD_AC_FORWARD)};
+const mp_obj_int_t mod_rl_TD_AC_HOME = {{&mp_type_int}, (TD_AC_HOME)};
+const mp_obj_int_t mod_rl_TD_AC_REFRESH = {{&mp_type_int}, (TD_AC_REFRESH)};
+const mp_obj_int_t mod_rl_TD_AC_SEARCH = {{&mp_type_int}, (TD_AC_SEARCH)};
+const mp_obj_int_t mod_rl_TD_AC_STOP = {{&mp_type_int}, (TD_AC_STOP)};
+const mp_obj_int_t mod_rl_TD_AGAIN = {{&mp_type_int}, (TD_AGAIN)};
+const mp_obj_int_t mod_rl_TD_ALTERASE = {{&mp_type_int}, (TD_ALTERASE)};
+const mp_obj_int_t mod_rl_TD_AMPERSAND = {{&mp_type_int}, (TD_AMPERSAND)};
+const mp_obj_int_t mod_rl_TD_APP1 = {{&mp_type_int}, (TD_APP1)};
+const mp_obj_int_t mod_rl_TD_APP2 = {{&mp_type_int}, (TD_APP2)};
+const mp_obj_int_t mod_rl_TD_APPLICATION = {{&mp_type_int}, (TD_APPLICATION)};
+const mp_obj_int_t mod_rl_TD_ASTERISK = {{&mp_type_int}, (TD_ASTERISK)};
+const mp_obj_int_t mod_rl_TD_AT = {{&mp_type_int}, (TD_AT)};
+const mp_obj_int_t mod_rl_TD_AUDIOFASTFORWARD = {{&mp_type_int}, (TD_AUDIOFASTFORWARD)};
+const mp_obj_int_t mod_rl_TD_AUDIOMUTE = {{&mp_type_int}, (TD_AUDIOMUTE)};
+const mp_obj_int_t mod_rl_TD_AUDIONEXT = {{&mp_type_int}, (TD_AUDIONEXT)};
+const mp_obj_int_t mod_rl_TD_AUDIOPLAY = {{&mp_type_int}, (TD_AUDIOPLAY)};
+const mp_obj_int_t mod_rl_TD_AUDIOPREV = {{&mp_type_int}, (TD_AUDIOPREV)};
+const mp_obj_int_t mod_rl_TD_AUDIOREWIND = {{&mp_type_int}, (TD_AUDIOREWIND)};
+const mp_obj_int_t mod_rl_TD_AUDIOSTOP = {{&mp_type_int}, (TD_AUDIOSTOP)};
+const mp_obj_int_t mod_rl_TD_BACKQUOTE = {{&mp_type_int}, (TD_BACKQUOTE)};
+const mp_obj_int_t mod_rl_TD_BACKSLASH = {{&mp_type_int}, (TD_BACKSLASH)};
+const mp_obj_int_t mod_rl_TD_BACKSPACE = {{&mp_type_int}, (TD_BACKSPACE)};
+const mp_obj_int_t mod_rl_TD_BRIGHTNESSDOWN = {{&mp_type_int}, (TD_BRIGHTNESSDOWN)};
+const mp_obj_int_t mod_rl_TD_BRIGHTNESSUP = {{&mp_type_int}, (TD_BRIGHTNESSUP)};
+const mp_obj_int_t mod_rl_TD_CALCULATOR = {{&mp_type_int}, (TD_CALCULATOR)};
+const mp_obj_int_t mod_rl_TD_CANCEL = {{&mp_type_int}, (TD_CANCEL)};
+const mp_obj_int_t mod_rl_TD_CAPSLOCK = {{&mp_type_int}, (TD_CAPSLOCK)};
+const mp_obj_int_t mod_rl_TD_CARET = {{&mp_type_int}, (TD_CARET)};
+const mp_obj_int_t mod_rl_TD_CLEAR = {{&mp_type_int}, (TD_CLEAR)};
+const mp_obj_int_t mod_rl_TD_CLEARAGAIN = {{&mp_type_int}, (TD_CLEARAGAIN)};
+const mp_obj_int_t mod_rl_TD_COLON = {{&mp_type_int}, (TD_COLON)};
+const mp_obj_int_t mod_rl_TD_COMMA = {{&mp_type_int}, (TD_COMMA)};
+const mp_obj_int_t mod_rl_TD_COMPUTER = {{&mp_type_int}, (TD_COMPUTER)};
+const mp_obj_int_t mod_rl_TD_COPY = {{&mp_type_int}, (TD_COPY)};
+const mp_obj_int_t mod_rl_TD_CRSEL = {{&mp_type_int}, (TD_CRSEL)};
+const mp_obj_int_t mod_rl_TD_CURRENCYSUBUNIT = {{&mp_type_int}, (TD_CURRENCYSUBUNIT)};
+const mp_obj_int_t mod_rl_TD_CURRENCYUNIT = {{&mp_type_int}, (TD_CURRENCYUNIT)};
+const mp_obj_int_t mod_rl_TD_CUT = {{&mp_type_int}, (TD_CUT)};
+const mp_obj_int_t mod_rl_TD_DECIMALSEPARATOR = {{&mp_type_int}, (TD_DECIMALSEPARATOR)};
+const mp_obj_int_t mod_rl_TD_DELETE = {{&mp_type_int}, (TD_DELETE)};
+const mp_obj_int_t mod_rl_TD_DISPLAYSWITCH = {{&mp_type_int}, (TD_DISPLAYSWITCH)};
+const mp_obj_int_t mod_rl_TD_DOLLAR = {{&mp_type_int}, (TD_DOLLAR)};
+const mp_obj_int_t mod_rl_TD_DOWN = {{&mp_type_int}, (TD_DOWN)};
+const mp_obj_int_t mod_rl_TD_EJECT = {{&mp_type_int}, (TD_EJECT)};
+const mp_obj_int_t mod_rl_TD_END = {{&mp_type_int}, (TD_END)};
+const mp_obj_int_t mod_rl_TD_EQUALS = {{&mp_type_int}, (TD_EQUALS)};
+const mp_obj_int_t mod_rl_TD_ESCAPE = {{&mp_type_int}, (TD_ESCAPE)};
+const mp_obj_int_t mod_rl_TD_EXCLAIM = {{&mp_type_int}, (TD_EXCLAIM)};
+const mp_obj_int_t mod_rl_TD_EXECUTE = {{&mp_type_int}, (TD_EXECUTE)};
+const mp_obj_int_t mod_rl_TD_EXSEL = {{&mp_type_int}, (TD_EXSEL)};
+const mp_obj_int_t mod_rl_TD_F1 = {{&mp_type_int}, (TD_F1)};
+const mp_obj_int_t mod_rl_TD_F10 = {{&mp_type_int}, (TD_F10)};
+const mp_obj_int_t mod_rl_TD_F11 = {{&mp_type_int}, (TD_F11)};
+const mp_obj_int_t mod_rl_TD_F12 = {{&mp_type_int}, (TD_F12)};
+const mp_obj_int_t mod_rl_TD_F13 = {{&mp_type_int}, (TD_F13)};
+const mp_obj_int_t mod_rl_TD_F14 = {{&mp_type_int}, (TD_F14)};
+const mp_obj_int_t mod_rl_TD_F15 = {{&mp_type_int}, (TD_F15)};
+const mp_obj_int_t mod_rl_TD_F16 = {{&mp_type_int}, (TD_F16)};
+const mp_obj_int_t mod_rl_TD_F17 = {{&mp_type_int}, (TD_F17)};
+const mp_obj_int_t mod_rl_TD_F18 = {{&mp_type_int}, (TD_F18)};
+const mp_obj_int_t mod_rl_TD_F19 = {{&mp_type_int}, (TD_F19)};
+const mp_obj_int_t mod_rl_TD_F2 = {{&mp_type_int}, (TD_F2)};
+const mp_obj_int_t mod_rl_TD_F20 = {{&mp_type_int}, (TD_F20)};
+const mp_obj_int_t mod_rl_TD_F21 = {{&mp_type_int}, (TD_F21)};
+const mp_obj_int_t mod_rl_TD_F22 = {{&mp_type_int}, (TD_F22)};
+const mp_obj_int_t mod_rl_TD_F23 = {{&mp_type_int}, (TD_F23)};
+const mp_obj_int_t mod_rl_TD_F24 = {{&mp_type_int}, (TD_F24)};
+const mp_obj_int_t mod_rl_TD_F3 = {{&mp_type_int}, (TD_F3)};
+const mp_obj_int_t mod_rl_TD_F4 = {{&mp_type_int}, (TD_F4)};
+const mp_obj_int_t mod_rl_TD_F5 = {{&mp_type_int}, (TD_F5)};
+const mp_obj_int_t mod_rl_TD_F6 = {{&mp_type_int}, (TD_F6)};
+const mp_obj_int_t mod_rl_TD_F7 = {{&mp_type_int}, (TD_F7)};
+const mp_obj_int_t mod_rl_TD_F8 = {{&mp_type_int}, (TD_F8)};
+const mp_obj_int_t mod_rl_TD_F9 = {{&mp_type_int}, (TD_F9)};
+const mp_obj_int_t mod_rl_TD_FIND = {{&mp_type_int}, (TD_FIND)};
+const mp_obj_int_t mod_rl_TD_GREATER = {{&mp_type_int}, (TD_GREATER)};
+const mp_obj_int_t mod_rl_TD_HASH = {{&mp_type_int}, (TD_HASH)};
+const mp_obj_int_t mod_rl_TD_HELP = {{&mp_type_int}, (TD_HELP)};
+const mp_obj_int_t mod_rl_TD_HOME = {{&mp_type_int}, (TD_HOME)};
+const mp_obj_int_t mod_rl_TD_INSERT = {{&mp_type_int}, (TD_INSERT)};
+const mp_obj_int_t mod_rl_TD_KBDILLUMDOWN = {{&mp_type_int}, (TD_KBDILLUMDOWN)};
+const mp_obj_int_t mod_rl_TD_KBDILLUMTOGGLE = {{&mp_type_int}, (TD_KBDILLUMTOGGLE)};
+const mp_obj_int_t mod_rl_TD_KBDILLUMUP = {{&mp_type_int}, (TD_KBDILLUMUP)};
+const mp_obj_int_t mod_rl_TD_KP_0 = {{&mp_type_int}, (TD_KP_0)};
+const mp_obj_int_t mod_rl_TD_KP_00 = {{&mp_type_int}, (TD_KP_00)};
+const mp_obj_int_t mod_rl_TD_KP_000 = {{&mp_type_int}, (TD_KP_000)};
+const mp_obj_int_t mod_rl_TD_KP_1 = {{&mp_type_int}, (TD_KP_1)};
+const mp_obj_int_t mod_rl_TD_KP_2 = {{&mp_type_int}, (TD_KP_2)};
+const mp_obj_int_t mod_rl_TD_KP_3 = {{&mp_type_int}, (TD_KP_3)};
+const mp_obj_int_t mod_rl_TD_KP_4 = {{&mp_type_int}, (TD_KP_4)};
+const mp_obj_int_t mod_rl_TD_KP_5 = {{&mp_type_int}, (TD_KP_5)};
+const mp_obj_int_t mod_rl_TD_KP_6 = {{&mp_type_int}, (TD_KP_6)};
+const mp_obj_int_t mod_rl_TD_KP_7 = {{&mp_type_int}, (TD_KP_7)};
+const mp_obj_int_t mod_rl_TD_KP_8 = {{&mp_type_int}, (TD_KP_8)};
+const mp_obj_int_t mod_rl_TD_KP_9 = {{&mp_type_int}, (TD_KP_9)};
+const mp_obj_int_t mod_rl_TD_KP_A = {{&mp_type_int}, (TD_KP_A)};
+const mp_obj_int_t mod_rl_TD_KP_AMPERSAND = {{&mp_type_int}, (TD_KP_AMPERSAND)};
+const mp_obj_int_t mod_rl_TD_KP_AT = {{&mp_type_int}, (TD_KP_AT)};
+const mp_obj_int_t mod_rl_TD_KP_B = {{&mp_type_int}, (TD_KP_B)};
+const mp_obj_int_t mod_rl_TD_KP_BACKSPACE = {{&mp_type_int}, (TD_KP_BACKSPACE)};
+const mp_obj_int_t mod_rl_TD_KP_BINARY = {{&mp_type_int}, (TD_KP_BINARY)};
+const mp_obj_int_t mod_rl_TD_KP_C = {{&mp_type_int}, (TD_KP_C)};
+const mp_obj_int_t mod_rl_TD_KP_CLEAR = {{&mp_type_int}, (TD_KP_CLEAR)};
+const mp_obj_int_t mod_rl_TD_KP_CLEARENTRY = {{&mp_type_int}, (TD_KP_CLEARENTRY)};
+const mp_obj_int_t mod_rl_TD_KP_COLON = {{&mp_type_int}, (TD_KP_COLON)};
+const mp_obj_int_t mod_rl_TD_KP_COMMA = {{&mp_type_int}, (TD_KP_COMMA)};
+const mp_obj_int_t mod_rl_TD_KP_D = {{&mp_type_int}, (TD_KP_D)};
+const mp_obj_int_t mod_rl_TD_KP_DBLAMPERSAND = {{&mp_type_int}, (TD_KP_DBLAMPERSAND)};
+const mp_obj_int_t mod_rl_TD_KP_DBLVERTICALBAR = {{&mp_type_int}, (TD_KP_DBLVERTICALBAR)};
+const mp_obj_int_t mod_rl_TD_KP_DECIMAL = {{&mp_type_int}, (TD_KP_DECIMAL)};
+const mp_obj_int_t mod_rl_TD_KP_DIVIDE = {{&mp_type_int}, (TD_KP_DIVIDE)};
+const mp_obj_int_t mod_rl_TD_KP_E = {{&mp_type_int}, (TD_KP_E)};
+const mp_obj_int_t mod_rl_TD_KP_ENTER = {{&mp_type_int}, (TD_KP_ENTER)};
+const mp_obj_int_t mod_rl_TD_KP_EQUALS = {{&mp_type_int}, (TD_KP_EQUALS)};
+const mp_obj_int_t mod_rl_TD_KP_EQUALSAS400 = {{&mp_type_int}, (TD_KP_EQUALSAS400)};
+const mp_obj_int_t mod_rl_TD_KP_EXCLAM = {{&mp_type_int}, (TD_KP_EXCLAM)};
+const mp_obj_int_t mod_rl_TD_KP_F = {{&mp_type_int}, (TD_KP_F)};
+const mp_obj_int_t mod_rl_TD_KP_GREATER = {{&mp_type_int}, (TD_KP_GREATER)};
+const mp_obj_int_t mod_rl_TD_KP_HASH = {{&mp_type_int}, (TD_KP_HASH)};
+const mp_obj_int_t mod_rl_TD_KP_HEXADECIMAL = {{&mp_type_int}, (TD_KP_HEXADECIMAL)};
+const mp_obj_int_t mod_rl_TD_KP_LEFTBRACE = {{&mp_type_int}, (TD_KP_LEFTBRACE)};
+const mp_obj_int_t mod_rl_TD_KP_LEFTPAREN = {{&mp_type_int}, (TD_KP_LEFTPAREN)};
+const mp_obj_int_t mod_rl_TD_KP_LESS = {{&mp_type_int}, (TD_KP_LESS)};
+const mp_obj_int_t mod_rl_TD_KP_MEMADD = {{&mp_type_int}, (TD_KP_MEMADD)};
+const mp_obj_int_t mod_rl_TD_KP_MEMCLEAR = {{&mp_type_int}, (TD_KP_MEMCLEAR)};
+const mp_obj_int_t mod_rl_TD_KP_MEMDIVIDE = {{&mp_type_int}, (TD_KP_MEMDIVIDE)};
+const mp_obj_int_t mod_rl_TD_KP_MEMMULTIPLY = {{&mp_type_int}, (TD_KP_MEMMULTIPLY)};
+const mp_obj_int_t mod_rl_TD_KP_MEMRECALL = {{&mp_type_int}, (TD_KP_MEMRECALL)};
+const mp_obj_int_t mod_rl_TD_KP_MEMSTORE = {{&mp_type_int}, (TD_KP_MEMSTORE)};
+const mp_obj_int_t mod_rl_TD_KP_MEMSUBTRACT = {{&mp_type_int}, (TD_KP_MEMSUBTRACT)};
+const mp_obj_int_t mod_rl_TD_KP_MINUS = {{&mp_type_int}, (TD_KP_MINUS)};
+const mp_obj_int_t mod_rl_TD_KP_MULTIPLY = {{&mp_type_int}, (TD_KP_MULTIPLY)};
+const mp_obj_int_t mod_rl_TD_KP_OCTAL = {{&mp_type_int}, (TD_KP_OCTAL)};
+const mp_obj_int_t mod_rl_TD_KP_PERCENT = {{&mp_type_int}, (TD_KP_PERCENT)};
+const mp_obj_int_t mod_rl_TD_KP_PERIOD = {{&mp_type_int}, (TD_KP_PERIOD)};
+const mp_obj_int_t mod_rl_TD_KP_PLUS = {{&mp_type_int}, (TD_KP_PLUS)};
+const mp_obj_int_t mod_rl_TD_KP_PLUSMINUS = {{&mp_type_int}, (TD_KP_PLUSMINUS)};
+const mp_obj_int_t mod_rl_TD_KP_POWER = {{&mp_type_int}, (TD_KP_POWER)};
+const mp_obj_int_t mod_rl_TD_KP_RIGHTBRACE = {{&mp_type_int}, (TD_KP_RIGHTBRACE)};
+const mp_obj_int_t mod_rl_TD_KP_RIGHTPAREN = {{&mp_type_int}, (TD_KP_RIGHTPAREN)};
+const mp_obj_int_t mod_rl_TD_KP_SPACE = {{&mp_type_int}, (TD_KP_SPACE)};
+const mp_obj_int_t mod_rl_TD_KP_TAB = {{&mp_type_int}, (TD_KP_TAB)};
+const mp_obj_int_t mod_rl_TD_KP_VERTICALBAR = {{&mp_type_int}, (TD_KP_VERTICALBAR)};
+const mp_obj_int_t mod_rl_TD_KP_XOR = {{&mp_type_int}, (TD_KP_XOR)};
+const mp_obj_int_t mod_rl_TD_LALT = {{&mp_type_int}, (TD_LALT)};
+const mp_obj_int_t mod_rl_TD_LCTRL = {{&mp_type_int}, (TD_LCTRL)};
+const mp_obj_int_t mod_rl_TD_LEFT = {{&mp_type_int}, (TD_LEFT)};
+const mp_obj_int_t mod_rl_TD_LEFTBRACKET = {{&mp_type_int}, (TD_LEFTBRACKET)};
+const mp_obj_int_t mod_rl_TD_LEFTPAREN = {{&mp_type_int}, (TD_LEFTPAREN)};
+const mp_obj_int_t mod_rl_TD_LESS = {{&mp_type_int}, (TD_LESS)};
+const mp_obj_int_t mod_rl_TD_LGUI = {{&mp_type_int}, (TD_LGUI)};
+const mp_obj_int_t mod_rl_TD_LSHIFT = {{&mp_type_int}, (TD_LSHIFT)};
+const mp_obj_int_t mod_rl_TD_MAIL = {{&mp_type_int}, (TD_MAIL)};
+const mp_obj_int_t mod_rl_TD_MEDIASELECT = {{&mp_type_int}, (TD_MEDIASELECT)};
+const mp_obj_int_t mod_rl_TD_MENU = {{&mp_type_int}, (TD_MENU)};
+const mp_obj_int_t mod_rl_TD_MINUS = {{&mp_type_int}, (TD_MINUS)};
+const mp_obj_int_t mod_rl_TD_MODE = {{&mp_type_int}, (TD_MODE)};
+const mp_obj_int_t mod_rl_TD_MUTE = {{&mp_type_int}, (TD_MUTE)};
+const mp_obj_int_t mod_rl_TD_NUMLOCKCLEAR = {{&mp_type_int}, (TD_NUMLOCKCLEAR)};
+const mp_obj_int_t mod_rl_TD_OPER = {{&mp_type_int}, (TD_OPER)};
+const mp_obj_int_t mod_rl_TD_OUT = {{&mp_type_int}, (TD_OUT)};
+const mp_obj_int_t mod_rl_TD_PAGEDOWN = {{&mp_type_int}, (TD_PAGEDOWN)};
+const mp_obj_int_t mod_rl_TD_PAGEUP = {{&mp_type_int}, (TD_PAGEUP)};
+const mp_obj_int_t mod_rl_TD_PASTE = {{&mp_type_int}, (TD_PASTE)};
+const mp_obj_int_t mod_rl_TD_PAUSE = {{&mp_type_int}, (TD_PAUSE)};
+const mp_obj_int_t mod_rl_TD_PERCENT = {{&mp_type_int}, (TD_PERCENT)};
+const mp_obj_int_t mod_rl_TD_PERIOD = {{&mp_type_int}, (TD_PERIOD)};
+const mp_obj_int_t mod_rl_TD_PLUS = {{&mp_type_int}, (TD_PLUS)};
+const mp_obj_int_t mod_rl_TD_POWER = {{&mp_type_int}, (TD_POWER)};
+const mp_obj_int_t mod_rl_TD_PRINTSCREEN = {{&mp_type_int}, (TD_PRINTSCREEN)};
+const mp_obj_int_t mod_rl_TD_PRIOR = {{&mp_type_int}, (TD_PRIOR)};
+const mp_obj_int_t mod_rl_TD_QUESTION = {{&mp_type_int}, (TD_QUESTION)};
+const mp_obj_int_t mod_rl_TD_QUOTE = {{&mp_type_int}, (TD_QUOTE)};
+const mp_obj_int_t mod_rl_TD_QUOTEDBL = {{&mp_type_int}, (TD_QUOTEDBL)};
+const mp_obj_int_t mod_rl_TD_RALT = {{&mp_type_int}, (TD_RALT)};
+const mp_obj_int_t mod_rl_TD_RCTRL = {{&mp_type_int}, (TD_RCTRL)};
+const mp_obj_int_t mod_rl_TD_RETURN = {{&mp_type_int}, (TD_RETURN)};
+const mp_obj_int_t mod_rl_TD_RETURN2 = {{&mp_type_int}, (TD_RETURN2)};
+const mp_obj_int_t mod_rl_TD_RGUI = {{&mp_type_int}, (TD_RGUI)};
+const mp_obj_int_t mod_rl_TD_RIGHT = {{&mp_type_int}, (TD_RIGHT)};
+const mp_obj_int_t mod_rl_TD_RIGHTBRACKET = {{&mp_type_int}, (TD_RIGHTBRACKET)};
+const mp_obj_int_t mod_rl_TD_RIGHTPAREN = {{&mp_type_int}, (TD_RIGHTPAREN)};
+const mp_obj_int_t mod_rl_TD_RSHIFT = {{&mp_type_int}, (TD_RSHIFT)};
+const mp_obj_int_t mod_rl_TD_SCANCODE_MASK = {{&mp_type_int}, (TD_SCANCODE_MASK)};
+const mp_obj_int_t mod_rl_TD_SCROLLLOCK = {{&mp_type_int}, (TD_SCROLLLOCK)};
+const mp_obj_int_t mod_rl_TD_SELECT = {{&mp_type_int}, (TD_SELECT)};
+const mp_obj_int_t mod_rl_TD_SEMICOLON = {{&mp_type_int}, (TD_SEMICOLON)};
+const mp_obj_int_t mod_rl_TD_SEPARATOR = {{&mp_type_int}, (TD_SEPARATOR)};
+const mp_obj_int_t mod_rl_TD_SLASH = {{&mp_type_int}, (TD_SLASH)};
+const mp_obj_int_t mod_rl_TD_SLEEP = {{&mp_type_int}, (TD_SLEEP)};
+const mp_obj_int_t mod_rl_TD_SPACE = {{&mp_type_int}, (TD_SPACE)};
+const mp_obj_int_t mod_rl_TD_STOP = {{&mp_type_int}, (TD_STOP)};
+const mp_obj_int_t mod_rl_TD_SYSREQ = {{&mp_type_int}, (TD_SYSREQ)};
+const mp_obj_int_t mod_rl_TD_TAB = {{&mp_type_int}, (TD_TAB)};
+const mp_obj_int_t mod_rl_TD_THOUSANDSSEPARATOR = {{&mp_type_int}, (TD_THOUSANDSSEPARATOR)};
+const mp_obj_int_t mod_rl_TD_UNDERSCORE = {{&mp_type_int}, (TD_UNDERSCORE)};
+const mp_obj_int_t mod_rl_TD_UNDO = {{&mp_type_int}, (TD_UNDO)};
+const mp_obj_int_t mod_rl_TD_UNKNOWN = {{&mp_type_int}, (TD_UNKNOWN)};
+const mp_obj_int_t mod_rl_TD_UP = {{&mp_type_int}, (TD_UP)};
+const mp_obj_int_t mod_rl_TD_VOLUMEDOWN = {{&mp_type_int}, (TD_VOLUMEDOWN)};
+const mp_obj_int_t mod_rl_TD_VOLUMEUP = {{&mp_type_int}, (TD_VOLUMEUP)};
+const mp_obj_int_t mod_rl_TD_WWW = {{&mp_type_int}, (TD_WWW)};
+const mp_obj_int_t mod_rl_TD_A = {{&mp_type_int}, (TD_A)};
+const mp_obj_int_t mod_rl_TD_B = {{&mp_type_int}, (TD_B)};
+const mp_obj_int_t mod_rl_TD_C = {{&mp_type_int}, (TD_C)};
+const mp_obj_int_t mod_rl_TD_D = {{&mp_type_int}, (TD_D)};
+const mp_obj_int_t mod_rl_TD_E = {{&mp_type_int}, (TD_E)};
+const mp_obj_int_t mod_rl_TD_F = {{&mp_type_int}, (TD_F)};
+const mp_obj_int_t mod_rl_TD_G = {{&mp_type_int}, (TD_G)};
+const mp_obj_int_t mod_rl_TD_H = {{&mp_type_int}, (TD_H)};
+const mp_obj_int_t mod_rl_TD_I = {{&mp_type_int}, (TD_I)};
+const mp_obj_int_t mod_rl_TD_J = {{&mp_type_int}, (TD_J)};
+const mp_obj_int_t mod_rl_TD_K = {{&mp_type_int}, (TD_K)};
+const mp_obj_int_t mod_rl_TD_L = {{&mp_type_int}, (TD_L)};
+const mp_obj_int_t mod_rl_TD_M = {{&mp_type_int}, (TD_M)};
+const mp_obj_int_t mod_rl_TD_N = {{&mp_type_int}, (TD_N)};
+const mp_obj_int_t mod_rl_TD_O = {{&mp_type_int}, (TD_O)};
+const mp_obj_int_t mod_rl_TD_P = {{&mp_type_int}, (TD_P)};
+const mp_obj_int_t mod_rl_TD_Q = {{&mp_type_int}, (TD_Q)};
+const mp_obj_int_t mod_rl_TD_R = {{&mp_type_int}, (TD_R)};
+const mp_obj_int_t mod_rl_TD_S = {{&mp_type_int}, (TD_S)};
+const mp_obj_int_t mod_rl_TD_T = {{&mp_type_int}, (TD_T)};
+const mp_obj_int_t mod_rl_TD_U = {{&mp_type_int}, (TD_U)};
+const mp_obj_int_t mod_rl_TD_V = {{&mp_type_int}, (TD_V)};
+const mp_obj_int_t mod_rl_TD_W = {{&mp_type_int}, (TD_W)};
+const mp_obj_int_t mod_rl_TD_X = {{&mp_type_int}, (TD_X)};
+const mp_obj_int_t mod_rl_TD_Y = {{&mp_type_int}, (TD_Y)};
+const mp_obj_int_t mod_rl_TD_Z = {{&mp_type_int}, (TD_Z)};
+
 STATIC const mp_rom_map_elem_t mp_module_rl_globals_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_rl) },
 	/************* rogue_random *******************/
@@ -1125,6 +1393,7 @@ STATIC const mp_rom_map_elem_t mp_module_rl_globals_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR_color_g), MP_ROM_PTR(&mod_td_color_g_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_color_b), MP_ROM_PTR(&mod_td_color_b_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_color_a), MP_ROM_PTR(&mod_td_color_a_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_random_color), MP_ROM_PTR(&mod_td_random_color_obj) },
 	/*{ MP_ROM_QSTR(MP_QSTR_mouse_x), MP_ROM_PTR(&mod_td_mouse_x_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_mouse_y), MP_ROM_PTR(&mod_td_mouse_y_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_mouse_button), MP_ROM_PTR(&mod_td_mouse_button_obj) },*/
@@ -1149,265 +1418,265 @@ STATIC const mp_rom_map_elem_t mp_module_rl_globals_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR_UPDATE_LOOP), MP_ROM_INT(TD_UPDATE_LOOP) },
 
 	// pico8 colors
-  { MP_ROM_QSTR(MP_QSTR_BLACK), MP_ROM_INT(td_color_rgba(0, 0, 0, 0)) },
-  { MP_ROM_QSTR(MP_QSTR_DARKBLUE), MP_ROM_INT(td_color_rgba(29, 43, 83, 255)) },
-  { MP_ROM_QSTR(MP_QSTR_DARKPURPLE), MP_ROM_INT(td_color_rgba(126, 37, 83, 255)) },
-  { MP_ROM_QSTR(MP_QSTR_DARKGREEN), MP_ROM_INT(td_color_rgba(0, 135, 81, 255)) },
-  { MP_ROM_QSTR(MP_QSTR_BROWN), MP_ROM_INT(td_color_rgba(171, 82, 54, 255)) },
-  { MP_ROM_QSTR(MP_QSTR_DARKGRAY), MP_ROM_INT(td_color_rgba(95, 87, 79, 255)) },
-  { MP_ROM_QSTR(MP_QSTR_LIGHTGRAY), MP_ROM_INT(td_color_rgba(194, 195, 199, 255)) },
-  { MP_ROM_QSTR(MP_QSTR_WHITE), MP_ROM_INT(td_color_rgba(255, 241, 232, 255)) },
-  { MP_ROM_QSTR(MP_QSTR_RED), MP_ROM_INT(td_color_rgba(255, 0, 77, 255)) },
-  { MP_ROM_QSTR(MP_QSTR_ORANGE), MP_ROM_INT(td_color_rgba(255, 163, 0, 255)) },
-  { MP_ROM_QSTR(MP_QSTR_YELLOW), MP_ROM_INT(td_color_rgba(255, 236, 39, 255)) },
-  { MP_ROM_QSTR(MP_QSTR_GREEN), MP_ROM_INT(td_color_rgba(0, 228, 54, 255)) },
-  { MP_ROM_QSTR(MP_QSTR_BLUE), MP_ROM_INT(td_color_rgba(41, 173, 255, 255)) },
-  { MP_ROM_QSTR(MP_QSTR_INDIGO), MP_ROM_INT(td_color_rgba(131, 118, 156, 255)) },
-  { MP_ROM_QSTR(MP_QSTR_PINK), MP_ROM_INT(td_color_rgba(255, 119, 168, 255)) },
-  { MP_ROM_QSTR(MP_QSTR_PEACH), MP_ROM_INT(td_color_rgba(255, 204, 170, 255)) },
+  { MP_ROM_QSTR(MP_QSTR_BLACK), MP_ROM_PTR(&mod_rl_BLACK) },
+  { MP_ROM_QSTR(MP_QSTR_DARKBLUE), MP_ROM_PTR(&mod_rl_DARKBLUE) },
+  { MP_ROM_QSTR(MP_QSTR_DARKPURPLE), MP_ROM_PTR(&mod_rl_DARKPURPLE) },
+  { MP_ROM_QSTR(MP_QSTR_DARKGREEN), MP_ROM_PTR(&mod_rl_DARKGREEN) },
+  { MP_ROM_QSTR(MP_QSTR_BROWN), MP_ROM_PTR(&mod_rl_BROWN) },
+  { MP_ROM_QSTR(MP_QSTR_DARKGRAY), MP_ROM_PTR(&mod_rl_DARKGRAY) },
+  { MP_ROM_QSTR(MP_QSTR_LIGHTGRAY), MP_ROM_PTR(&mod_rl_LIGHTGRAY) },
+  { MP_ROM_QSTR(MP_QSTR_WHITE), MP_ROM_PTR(&mod_rl_WHITE) },
+  { MP_ROM_QSTR(MP_QSTR_RED), MP_ROM_PTR(&mod_rl_RED) },
+  { MP_ROM_QSTR(MP_QSTR_ORANGE), MP_ROM_PTR(&mod_rl_ORANGE) },
+  { MP_ROM_QSTR(MP_QSTR_YELLOW), MP_ROM_PTR(&mod_rl_YELLOW) },
+  { MP_ROM_QSTR(MP_QSTR_GREEN), MP_ROM_PTR(&mod_rl_GREEN) },
+  { MP_ROM_QSTR(MP_QSTR_BLUE), MP_ROM_PTR(&mod_rl_BLUE) },
+  { MP_ROM_QSTR(MP_QSTR_INDIGO), MP_ROM_PTR(&mod_rl_INDIGO) },
+  { MP_ROM_QSTR(MP_QSTR_PINK), MP_ROM_PTR(&mod_rl_PINK) },
+  { MP_ROM_QSTR(MP_QSTR_PEACH), MP_ROM_PTR(&mod_rl_PEACH) },
 
 	// keys
-	{ MP_ROM_QSTR(MP_QSTR_0), MP_ROM_INT(TD_0) },
-	{ MP_ROM_QSTR(MP_QSTR_1), MP_ROM_INT(TD_1) },
-	{ MP_ROM_QSTR(MP_QSTR_2), MP_ROM_INT(TD_2) },
-	{ MP_ROM_QSTR(MP_QSTR_3), MP_ROM_INT(TD_3) },
-	{ MP_ROM_QSTR(MP_QSTR_4), MP_ROM_INT(TD_4) },
-	{ MP_ROM_QSTR(MP_QSTR_5), MP_ROM_INT(TD_5) },
-	{ MP_ROM_QSTR(MP_QSTR_6), MP_ROM_INT(TD_6) },
-	{ MP_ROM_QSTR(MP_QSTR_7), MP_ROM_INT(TD_7) },
-	{ MP_ROM_QSTR(MP_QSTR_8), MP_ROM_INT(TD_8) },
-	{ MP_ROM_QSTR(MP_QSTR_9), MP_ROM_INT(TD_9) },
-	{ MP_ROM_QSTR(MP_QSTR_AC_BACK), MP_ROM_INT(TD_AC_BACK) },
-	{ MP_ROM_QSTR(MP_QSTR_AC_BOOKMARKS), MP_ROM_INT(TD_AC_BOOKMARKS) },
-	{ MP_ROM_QSTR(MP_QSTR_AC_FORWARD), MP_ROM_INT(TD_AC_FORWARD) },
-	{ MP_ROM_QSTR(MP_QSTR_AC_HOME), MP_ROM_INT(TD_AC_HOME) },
-	{ MP_ROM_QSTR(MP_QSTR_AC_REFRESH), MP_ROM_INT(TD_AC_REFRESH) },
-	{ MP_ROM_QSTR(MP_QSTR_AC_SEARCH), MP_ROM_INT(TD_AC_SEARCH) },
-	{ MP_ROM_QSTR(MP_QSTR_AC_STOP), MP_ROM_INT(TD_AC_STOP) },
-	{ MP_ROM_QSTR(MP_QSTR_AGAIN), MP_ROM_INT(TD_AGAIN) },
-	{ MP_ROM_QSTR(MP_QSTR_ALTERASE), MP_ROM_INT(TD_ALTERASE) },
-	{ MP_ROM_QSTR(MP_QSTR_AMPERSAND), MP_ROM_INT(TD_AMPERSAND) },
-	{ MP_ROM_QSTR(MP_QSTR_APP1), MP_ROM_INT(TD_APP1) },
-	{ MP_ROM_QSTR(MP_QSTR_APP2), MP_ROM_INT(TD_APP2) },
-	{ MP_ROM_QSTR(MP_QSTR_APPLICATION), MP_ROM_INT(TD_APPLICATION) },
-	{ MP_ROM_QSTR(MP_QSTR_ASTERISK), MP_ROM_INT(TD_ASTERISK) },
-	{ MP_ROM_QSTR(MP_QSTR_AT), MP_ROM_INT(TD_AT) },
-	{ MP_ROM_QSTR(MP_QSTR_AUDIOFASTFORWARD), MP_ROM_INT(TD_AUDIOFASTFORWARD) },
-	{ MP_ROM_QSTR(MP_QSTR_AUDIOMUTE), MP_ROM_INT(TD_AUDIOMUTE) },
-	{ MP_ROM_QSTR(MP_QSTR_AUDIONEXT), MP_ROM_INT(TD_AUDIONEXT) },
-	{ MP_ROM_QSTR(MP_QSTR_AUDIOPLAY), MP_ROM_INT(TD_AUDIOPLAY) },
-	{ MP_ROM_QSTR(MP_QSTR_AUDIOPREV), MP_ROM_INT(TD_AUDIOPREV) },
-	{ MP_ROM_QSTR(MP_QSTR_AUDIOREWIND), MP_ROM_INT(TD_AUDIOREWIND) },
-	{ MP_ROM_QSTR(MP_QSTR_AUDIOSTOP), MP_ROM_INT(TD_AUDIOSTOP) },
-	{ MP_ROM_QSTR(MP_QSTR_BACKQUOTE), MP_ROM_INT(TD_BACKQUOTE) },
-	{ MP_ROM_QSTR(MP_QSTR_BACKSLASH), MP_ROM_INT(TD_BACKSLASH) },
-	{ MP_ROM_QSTR(MP_QSTR_BACKSPACE), MP_ROM_INT(TD_BACKSPACE) },
-	{ MP_ROM_QSTR(MP_QSTR_BRIGHTNESSDOWN), MP_ROM_INT(TD_BRIGHTNESSDOWN) },
-	{ MP_ROM_QSTR(MP_QSTR_BRIGHTNESSUP), MP_ROM_INT(TD_BRIGHTNESSUP) },
-	{ MP_ROM_QSTR(MP_QSTR_CALCULATOR), MP_ROM_INT(TD_CALCULATOR) },
-	{ MP_ROM_QSTR(MP_QSTR_CANCEL), MP_ROM_INT(TD_CANCEL) },
-	{ MP_ROM_QSTR(MP_QSTR_CAPSLOCK), MP_ROM_INT(TD_CAPSLOCK) },
-	{ MP_ROM_QSTR(MP_QSTR_CARET), MP_ROM_INT(TD_CARET) },
-	{ MP_ROM_QSTR(MP_QSTR_CLEAR), MP_ROM_INT(TD_CLEAR) },
-	{ MP_ROM_QSTR(MP_QSTR_CLEARAGAIN), MP_ROM_INT(TD_CLEARAGAIN) },
-	{ MP_ROM_QSTR(MP_QSTR_COLON), MP_ROM_INT(TD_COLON) },
-	{ MP_ROM_QSTR(MP_QSTR_COMMA), MP_ROM_INT(TD_COMMA) },
-	{ MP_ROM_QSTR(MP_QSTR_COMPUTER), MP_ROM_INT(TD_COMPUTER) },
-	{ MP_ROM_QSTR(MP_QSTR_COPY), MP_ROM_INT(TD_COPY) },
-	{ MP_ROM_QSTR(MP_QSTR_CRSEL), MP_ROM_INT(TD_CRSEL) },
-	{ MP_ROM_QSTR(MP_QSTR_CURRENCYSUBUNIT), MP_ROM_INT(TD_CURRENCYSUBUNIT) },
-	{ MP_ROM_QSTR(MP_QSTR_CURRENCYUNIT), MP_ROM_INT(TD_CURRENCYUNIT) },
-	{ MP_ROM_QSTR(MP_QSTR_CUT), MP_ROM_INT(TD_CUT) },
-	{ MP_ROM_QSTR(MP_QSTR_DECIMALSEPARATOR), MP_ROM_INT(TD_DECIMALSEPARATOR) },
-	{ MP_ROM_QSTR(MP_QSTR_DELETE), MP_ROM_INT(TD_DELETE) },
-	{ MP_ROM_QSTR(MP_QSTR_DISPLAYSWITCH), MP_ROM_INT(TD_DISPLAYSWITCH) },
-	{ MP_ROM_QSTR(MP_QSTR_DOLLAR), MP_ROM_INT(TD_DOLLAR) },
-	{ MP_ROM_QSTR(MP_QSTR_DOWN), MP_ROM_INT(TD_DOWN) },
-	{ MP_ROM_QSTR(MP_QSTR_EJECT), MP_ROM_INT(TD_EJECT) },
-	{ MP_ROM_QSTR(MP_QSTR_END), MP_ROM_INT(TD_END) },
-	{ MP_ROM_QSTR(MP_QSTR_EQUALS), MP_ROM_INT(TD_EQUALS) },
-	{ MP_ROM_QSTR(MP_QSTR_ESCAPE), MP_ROM_INT(TD_ESCAPE) },
-	{ MP_ROM_QSTR(MP_QSTR_EXCLAIM), MP_ROM_INT(TD_EXCLAIM) },
-	{ MP_ROM_QSTR(MP_QSTR_EXECUTE), MP_ROM_INT(TD_EXECUTE) },
-	{ MP_ROM_QSTR(MP_QSTR_EXSEL), MP_ROM_INT(TD_EXSEL) },
-	{ MP_ROM_QSTR(MP_QSTR_F1), MP_ROM_INT(TD_F1) },
-	{ MP_ROM_QSTR(MP_QSTR_F10), MP_ROM_INT(TD_F10) },
-	{ MP_ROM_QSTR(MP_QSTR_F11), MP_ROM_INT(TD_F11) },
-	{ MP_ROM_QSTR(MP_QSTR_F12), MP_ROM_INT(TD_F12) },
-	{ MP_ROM_QSTR(MP_QSTR_F13), MP_ROM_INT(TD_F13) },
-	{ MP_ROM_QSTR(MP_QSTR_F14), MP_ROM_INT(TD_F14) },
-	{ MP_ROM_QSTR(MP_QSTR_F15), MP_ROM_INT(TD_F15) },
-	{ MP_ROM_QSTR(MP_QSTR_F16), MP_ROM_INT(TD_F16) },
-	{ MP_ROM_QSTR(MP_QSTR_F17), MP_ROM_INT(TD_F17) },
-	{ MP_ROM_QSTR(MP_QSTR_F18), MP_ROM_INT(TD_F18) },
-	{ MP_ROM_QSTR(MP_QSTR_F19), MP_ROM_INT(TD_F19) },
-	{ MP_ROM_QSTR(MP_QSTR_F2), MP_ROM_INT(TD_F2) },
-	{ MP_ROM_QSTR(MP_QSTR_F20), MP_ROM_INT(TD_F20) },
-	{ MP_ROM_QSTR(MP_QSTR_F21), MP_ROM_INT(TD_F21) },
-	{ MP_ROM_QSTR(MP_QSTR_F22), MP_ROM_INT(TD_F22) },
-	{ MP_ROM_QSTR(MP_QSTR_F23), MP_ROM_INT(TD_F23) },
-	{ MP_ROM_QSTR(MP_QSTR_F24), MP_ROM_INT(TD_F24) },
-	{ MP_ROM_QSTR(MP_QSTR_F3), MP_ROM_INT(TD_F3) },
-	{ MP_ROM_QSTR(MP_QSTR_F4), MP_ROM_INT(TD_F4) },
-	{ MP_ROM_QSTR(MP_QSTR_F5), MP_ROM_INT(TD_F5) },
-	{ MP_ROM_QSTR(MP_QSTR_F6), MP_ROM_INT(TD_F6) },
-	{ MP_ROM_QSTR(MP_QSTR_F7), MP_ROM_INT(TD_F7) },
-	{ MP_ROM_QSTR(MP_QSTR_F8), MP_ROM_INT(TD_F8) },
-	{ MP_ROM_QSTR(MP_QSTR_F9), MP_ROM_INT(TD_F9) },
-	{ MP_ROM_QSTR(MP_QSTR_FIND), MP_ROM_INT(TD_FIND) },
-	{ MP_ROM_QSTR(MP_QSTR_GREATER), MP_ROM_INT(TD_GREATER) },
-	{ MP_ROM_QSTR(MP_QSTR_HASH), MP_ROM_INT(TD_HASH) },
-	{ MP_ROM_QSTR(MP_QSTR_HELP), MP_ROM_INT(TD_HELP) },
-	{ MP_ROM_QSTR(MP_QSTR_HOME), MP_ROM_INT(TD_HOME) },
-	{ MP_ROM_QSTR(MP_QSTR_INSERT), MP_ROM_INT(TD_INSERT) },
-	{ MP_ROM_QSTR(MP_QSTR_KBDILLUMDOWN), MP_ROM_INT(TD_KBDILLUMDOWN) },
-	{ MP_ROM_QSTR(MP_QSTR_KBDILLUMTOGGLE), MP_ROM_INT(TD_KBDILLUMTOGGLE) },
-	{ MP_ROM_QSTR(MP_QSTR_KBDILLUMUP), MP_ROM_INT(TD_KBDILLUMUP) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_0), MP_ROM_INT(TD_KP_0) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_00), MP_ROM_INT(TD_KP_00) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_000), MP_ROM_INT(TD_KP_000) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_1), MP_ROM_INT(TD_KP_1) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_2), MP_ROM_INT(TD_KP_2) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_3), MP_ROM_INT(TD_KP_3) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_4), MP_ROM_INT(TD_KP_4) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_5), MP_ROM_INT(TD_KP_5) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_6), MP_ROM_INT(TD_KP_6) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_7), MP_ROM_INT(TD_KP_7) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_8), MP_ROM_INT(TD_KP_8) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_9), MP_ROM_INT(TD_KP_9) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_A), MP_ROM_INT(TD_KP_A) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_AMPERSAND), MP_ROM_INT(TD_KP_AMPERSAND) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_AT), MP_ROM_INT(TD_KP_AT) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_B), MP_ROM_INT(TD_KP_B) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_BACKSPACE), MP_ROM_INT(TD_KP_BACKSPACE) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_BINARY), MP_ROM_INT(TD_KP_BINARY) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_C), MP_ROM_INT(TD_KP_C) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_CLEAR), MP_ROM_INT(TD_KP_CLEAR) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_CLEARENTRY), MP_ROM_INT(TD_KP_CLEARENTRY) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_COLON), MP_ROM_INT(TD_KP_COLON) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_COMMA), MP_ROM_INT(TD_KP_COMMA) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_D), MP_ROM_INT(TD_KP_D) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_DBLAMPERSAND), MP_ROM_INT(TD_KP_DBLAMPERSAND) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_DBLVERTICALBAR), MP_ROM_INT(TD_KP_DBLVERTICALBAR) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_DECIMAL), MP_ROM_INT(TD_KP_DECIMAL) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_DIVIDE), MP_ROM_INT(TD_KP_DIVIDE) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_E), MP_ROM_INT(TD_KP_E) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_ENTER), MP_ROM_INT(TD_KP_ENTER) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_EQUALS), MP_ROM_INT(TD_KP_EQUALS) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_EQUALSAS400), MP_ROM_INT(TD_KP_EQUALSAS400) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_EXCLAM), MP_ROM_INT(TD_KP_EXCLAM) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_F), MP_ROM_INT(TD_KP_F) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_GREATER), MP_ROM_INT(TD_KP_GREATER) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_HASH), MP_ROM_INT(TD_KP_HASH) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_HEXADECIMAL), MP_ROM_INT(TD_KP_HEXADECIMAL) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_LEFTBRACE), MP_ROM_INT(TD_KP_LEFTBRACE) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_LEFTPAREN), MP_ROM_INT(TD_KP_LEFTPAREN) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_LESS), MP_ROM_INT(TD_KP_LESS) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_MEMADD), MP_ROM_INT(TD_KP_MEMADD) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_MEMCLEAR), MP_ROM_INT(TD_KP_MEMCLEAR) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_MEMDIVIDE), MP_ROM_INT(TD_KP_MEMDIVIDE) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_MEMMULTIPLY), MP_ROM_INT(TD_KP_MEMMULTIPLY) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_MEMRECALL), MP_ROM_INT(TD_KP_MEMRECALL) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_MEMSTORE), MP_ROM_INT(TD_KP_MEMSTORE) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_MEMSUBTRACT), MP_ROM_INT(TD_KP_MEMSUBTRACT) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_MINUS), MP_ROM_INT(TD_KP_MINUS) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_MULTIPLY), MP_ROM_INT(TD_KP_MULTIPLY) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_OCTAL), MP_ROM_INT(TD_KP_OCTAL) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_PERCENT), MP_ROM_INT(TD_KP_PERCENT) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_PERIOD), MP_ROM_INT(TD_KP_PERIOD) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_PLUS), MP_ROM_INT(TD_KP_PLUS) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_PLUSMINUS), MP_ROM_INT(TD_KP_PLUSMINUS) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_POWER), MP_ROM_INT(TD_KP_POWER) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_RIGHTBRACE), MP_ROM_INT(TD_KP_RIGHTBRACE) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_RIGHTPAREN), MP_ROM_INT(TD_KP_RIGHTPAREN) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_SPACE), MP_ROM_INT(TD_KP_SPACE) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_TAB), MP_ROM_INT(TD_KP_TAB) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_VERTICALBAR), MP_ROM_INT(TD_KP_VERTICALBAR) },
-	{ MP_ROM_QSTR(MP_QSTR_KP_XOR), MP_ROM_INT(TD_KP_XOR) },
-	{ MP_ROM_QSTR(MP_QSTR_LALT), MP_ROM_INT(TD_LALT) },
-	{ MP_ROM_QSTR(MP_QSTR_LCTRL), MP_ROM_INT(TD_LCTRL) },
-	{ MP_ROM_QSTR(MP_QSTR_LEFT), MP_ROM_INT(TD_LEFT) },
-	{ MP_ROM_QSTR(MP_QSTR_LEFTBRACKET), MP_ROM_INT(TD_LEFTBRACKET) },
-	{ MP_ROM_QSTR(MP_QSTR_LEFTPAREN), MP_ROM_INT(TD_LEFTPAREN) },
-	{ MP_ROM_QSTR(MP_QSTR_LESS), MP_ROM_INT(TD_LESS) },
-	{ MP_ROM_QSTR(MP_QSTR_LGUI), MP_ROM_INT(TD_LGUI) },
-	{ MP_ROM_QSTR(MP_QSTR_LSHIFT), MP_ROM_INT(TD_LSHIFT) },
-	{ MP_ROM_QSTR(MP_QSTR_MAIL), MP_ROM_INT(TD_MAIL) },
-	{ MP_ROM_QSTR(MP_QSTR_MEDIASELECT), MP_ROM_INT(TD_MEDIASELECT) },
-	{ MP_ROM_QSTR(MP_QSTR_MENU), MP_ROM_INT(TD_MENU) },
-	{ MP_ROM_QSTR(MP_QSTR_MINUS), MP_ROM_INT(TD_MINUS) },
-	{ MP_ROM_QSTR(MP_QSTR_MODE), MP_ROM_INT(TD_MODE) },
-	{ MP_ROM_QSTR(MP_QSTR_MUTE), MP_ROM_INT(TD_MUTE) },
-	{ MP_ROM_QSTR(MP_QSTR_NUMLOCKCLEAR), MP_ROM_INT(TD_NUMLOCKCLEAR) },
-	{ MP_ROM_QSTR(MP_QSTR_OPER), MP_ROM_INT(TD_OPER) },
-	{ MP_ROM_QSTR(MP_QSTR_OUT), MP_ROM_INT(TD_OUT) },
-	{ MP_ROM_QSTR(MP_QSTR_PAGEDOWN), MP_ROM_INT(TD_PAGEDOWN) },
-	{ MP_ROM_QSTR(MP_QSTR_PAGEUP), MP_ROM_INT(TD_PAGEUP) },
-	{ MP_ROM_QSTR(MP_QSTR_PASTE), MP_ROM_INT(TD_PASTE) },
-	{ MP_ROM_QSTR(MP_QSTR_PAUSE), MP_ROM_INT(TD_PAUSE) },
-	{ MP_ROM_QSTR(MP_QSTR_PERCENT), MP_ROM_INT(TD_PERCENT) },
-	{ MP_ROM_QSTR(MP_QSTR_PERIOD), MP_ROM_INT(TD_PERIOD) },
-	{ MP_ROM_QSTR(MP_QSTR_PLUS), MP_ROM_INT(TD_PLUS) },
-	{ MP_ROM_QSTR(MP_QSTR_POWER), MP_ROM_INT(TD_POWER) },
-	{ MP_ROM_QSTR(MP_QSTR_PRINTSCREEN), MP_ROM_INT(TD_PRINTSCREEN) },
-	{ MP_ROM_QSTR(MP_QSTR_PRIOR), MP_ROM_INT(TD_PRIOR) },
-	{ MP_ROM_QSTR(MP_QSTR_QUESTION), MP_ROM_INT(TD_QUESTION) },
-	{ MP_ROM_QSTR(MP_QSTR_QUOTE), MP_ROM_INT(TD_QUOTE) },
-	{ MP_ROM_QSTR(MP_QSTR_QUOTEDBL), MP_ROM_INT(TD_QUOTEDBL) },
-	{ MP_ROM_QSTR(MP_QSTR_RALT), MP_ROM_INT(TD_RALT) },
-	{ MP_ROM_QSTR(MP_QSTR_RCTRL), MP_ROM_INT(TD_RCTRL) },
-	{ MP_ROM_QSTR(MP_QSTR_RETURN), MP_ROM_INT(TD_RETURN) },
-	{ MP_ROM_QSTR(MP_QSTR_RETURN2), MP_ROM_INT(TD_RETURN2) },
-	{ MP_ROM_QSTR(MP_QSTR_RGUI), MP_ROM_INT(TD_RGUI) },
-	{ MP_ROM_QSTR(MP_QSTR_RIGHT), MP_ROM_INT(TD_RIGHT) },
-	{ MP_ROM_QSTR(MP_QSTR_RIGHTBRACKET), MP_ROM_INT(TD_RIGHTBRACKET) },
-	{ MP_ROM_QSTR(MP_QSTR_RIGHTPAREN), MP_ROM_INT(TD_RIGHTPAREN) },
-	{ MP_ROM_QSTR(MP_QSTR_RSHIFT), MP_ROM_INT(TD_RSHIFT) },
-	{ MP_ROM_QSTR(MP_QSTR_SCANCODE_MASK), MP_ROM_INT(TD_SCANCODE_MASK) },
-	{ MP_ROM_QSTR(MP_QSTR_SCROLLLOCK), MP_ROM_INT(TD_SCROLLLOCK) },
-	{ MP_ROM_QSTR(MP_QSTR_SELECT), MP_ROM_INT(TD_SELECT) },
-	{ MP_ROM_QSTR(MP_QSTR_SEMICOLON), MP_ROM_INT(TD_SEMICOLON) },
-	{ MP_ROM_QSTR(MP_QSTR_SEPARATOR), MP_ROM_INT(TD_SEPARATOR) },
-	{ MP_ROM_QSTR(MP_QSTR_SLASH), MP_ROM_INT(TD_SLASH) },
-	{ MP_ROM_QSTR(MP_QSTR_SLEEP), MP_ROM_INT(TD_SLEEP) },
-	{ MP_ROM_QSTR(MP_QSTR_SPACE), MP_ROM_INT(TD_SPACE) },
-	{ MP_ROM_QSTR(MP_QSTR_STOP), MP_ROM_INT(TD_STOP) },
-	{ MP_ROM_QSTR(MP_QSTR_SYSREQ), MP_ROM_INT(TD_SYSREQ) },
-	{ MP_ROM_QSTR(MP_QSTR_TAB), MP_ROM_INT(TD_TAB) },
-	{ MP_ROM_QSTR(MP_QSTR_THOUSANDSSEPARATOR), MP_ROM_INT(TD_THOUSANDSSEPARATOR) },
-	{ MP_ROM_QSTR(MP_QSTR_UNDERSCORE), MP_ROM_INT(TD_UNDERSCORE) },
-	{ MP_ROM_QSTR(MP_QSTR_UNDO), MP_ROM_INT(TD_UNDO) },
-	{ MP_ROM_QSTR(MP_QSTR_UNKNOWN), MP_ROM_INT(TD_UNKNOWN) },
-	{ MP_ROM_QSTR(MP_QSTR_UP), MP_ROM_INT(TD_UP) },
-	{ MP_ROM_QSTR(MP_QSTR_VOLUMEDOWN), MP_ROM_INT(TD_VOLUMEDOWN) },
-	{ MP_ROM_QSTR(MP_QSTR_VOLUMEUP), MP_ROM_INT(TD_VOLUMEUP) },
-	{ MP_ROM_QSTR(MP_QSTR_WWW), MP_ROM_INT(TD_WWW) },
-	{ MP_ROM_QSTR(MP_QSTR_A), MP_ROM_INT(TD_A) },
-	{ MP_ROM_QSTR(MP_QSTR_B), MP_ROM_INT(TD_B) },
-	{ MP_ROM_QSTR(MP_QSTR_C), MP_ROM_INT(TD_C) },
-	{ MP_ROM_QSTR(MP_QSTR_D), MP_ROM_INT(TD_D) },
-	{ MP_ROM_QSTR(MP_QSTR_E), MP_ROM_INT(TD_E) },
-	{ MP_ROM_QSTR(MP_QSTR_F), MP_ROM_INT(TD_F) },
-	{ MP_ROM_QSTR(MP_QSTR_G), MP_ROM_INT(TD_G) },
-	{ MP_ROM_QSTR(MP_QSTR_H), MP_ROM_INT(TD_H) },
-	{ MP_ROM_QSTR(MP_QSTR_I), MP_ROM_INT(TD_I) },
-	{ MP_ROM_QSTR(MP_QSTR_J), MP_ROM_INT(TD_J) },
-	{ MP_ROM_QSTR(MP_QSTR_K), MP_ROM_INT(TD_K) },
-	{ MP_ROM_QSTR(MP_QSTR_L), MP_ROM_INT(TD_L) },
-	{ MP_ROM_QSTR(MP_QSTR_M), MP_ROM_INT(TD_M) },
-	{ MP_ROM_QSTR(MP_QSTR_N), MP_ROM_INT(TD_N) },
-	{ MP_ROM_QSTR(MP_QSTR_O), MP_ROM_INT(TD_O) },
-	{ MP_ROM_QSTR(MP_QSTR_P), MP_ROM_INT(TD_P) },
-	{ MP_ROM_QSTR(MP_QSTR_Q), MP_ROM_INT(TD_Q) },
-	{ MP_ROM_QSTR(MP_QSTR_R), MP_ROM_INT(TD_R) },
-	{ MP_ROM_QSTR(MP_QSTR_S), MP_ROM_INT(TD_S) },
-	{ MP_ROM_QSTR(MP_QSTR_T), MP_ROM_INT(TD_T) },
-	{ MP_ROM_QSTR(MP_QSTR_U), MP_ROM_INT(TD_U) },
-	{ MP_ROM_QSTR(MP_QSTR_V), MP_ROM_INT(TD_V) },
-	{ MP_ROM_QSTR(MP_QSTR_W), MP_ROM_INT(TD_W) },
-	{ MP_ROM_QSTR(MP_QSTR_X), MP_ROM_INT(TD_X) },
-	{ MP_ROM_QSTR(MP_QSTR_Y), MP_ROM_INT(TD_Y) },
-	{ MP_ROM_QSTR(MP_QSTR_Z), MP_ROM_INT(TD_Z) },
+	{ MP_ROM_QSTR(MP_QSTR_0), MP_ROM_PTR(&mod_rl_TD_0) },
+	{ MP_ROM_QSTR(MP_QSTR_1), MP_ROM_PTR(&mod_rl_TD_1) },
+	{ MP_ROM_QSTR(MP_QSTR_2), MP_ROM_PTR(&mod_rl_TD_2) },
+	{ MP_ROM_QSTR(MP_QSTR_3), MP_ROM_PTR(&mod_rl_TD_3) },
+	{ MP_ROM_QSTR(MP_QSTR_4), MP_ROM_PTR(&mod_rl_TD_4) },
+	{ MP_ROM_QSTR(MP_QSTR_5), MP_ROM_PTR(&mod_rl_TD_5) },
+	{ MP_ROM_QSTR(MP_QSTR_6), MP_ROM_PTR(&mod_rl_TD_6) },
+	{ MP_ROM_QSTR(MP_QSTR_7), MP_ROM_PTR(&mod_rl_TD_7) },
+	{ MP_ROM_QSTR(MP_QSTR_8), MP_ROM_PTR(&mod_rl_TD_8) },
+	{ MP_ROM_QSTR(MP_QSTR_9), MP_ROM_PTR(&mod_rl_TD_9) },
+	{ MP_ROM_QSTR(MP_QSTR_AC_BACK), MP_ROM_PTR(&mod_rl_TD_AC_BACK) },
+	{ MP_ROM_QSTR(MP_QSTR_AC_BOOKMARKS), MP_ROM_PTR(&mod_rl_TD_AC_BOOKMARKS) },
+	{ MP_ROM_QSTR(MP_QSTR_AC_FORWARD), MP_ROM_PTR(&mod_rl_TD_AC_FORWARD) },
+	{ MP_ROM_QSTR(MP_QSTR_AC_HOME), MP_ROM_PTR(&mod_rl_TD_AC_HOME) },
+	{ MP_ROM_QSTR(MP_QSTR_AC_REFRESH), MP_ROM_PTR(&mod_rl_TD_AC_REFRESH) },
+	{ MP_ROM_QSTR(MP_QSTR_AC_SEARCH), MP_ROM_PTR(&mod_rl_TD_AC_SEARCH) },
+	{ MP_ROM_QSTR(MP_QSTR_AC_STOP), MP_ROM_PTR(&mod_rl_TD_AC_STOP) },
+	{ MP_ROM_QSTR(MP_QSTR_AGAIN), MP_ROM_PTR(&mod_rl_TD_AGAIN) },
+	{ MP_ROM_QSTR(MP_QSTR_ALTERASE), MP_ROM_PTR(&mod_rl_TD_ALTERASE) },
+	{ MP_ROM_QSTR(MP_QSTR_AMPERSAND), MP_ROM_PTR(&mod_rl_TD_AMPERSAND) },
+	{ MP_ROM_QSTR(MP_QSTR_APP1), MP_ROM_PTR(&mod_rl_TD_APP1) },
+	{ MP_ROM_QSTR(MP_QSTR_APP2), MP_ROM_PTR(&mod_rl_TD_APP2) },
+	{ MP_ROM_QSTR(MP_QSTR_APPLICATION), MP_ROM_PTR(&mod_rl_TD_APPLICATION) },
+	{ MP_ROM_QSTR(MP_QSTR_ASTERISK), MP_ROM_PTR(&mod_rl_TD_ASTERISK) },
+	{ MP_ROM_QSTR(MP_QSTR_AT), MP_ROM_PTR(&mod_rl_TD_AT) },
+	{ MP_ROM_QSTR(MP_QSTR_AUDIOFASTFORWARD), MP_ROM_PTR(&mod_rl_TD_AUDIOFASTFORWARD) },
+	{ MP_ROM_QSTR(MP_QSTR_AUDIOMUTE), MP_ROM_PTR(&mod_rl_TD_AUDIOMUTE) },
+	{ MP_ROM_QSTR(MP_QSTR_AUDIONEXT), MP_ROM_PTR(&mod_rl_TD_AUDIONEXT) },
+	{ MP_ROM_QSTR(MP_QSTR_AUDIOPLAY), MP_ROM_PTR(&mod_rl_TD_AUDIOPLAY) },
+	{ MP_ROM_QSTR(MP_QSTR_AUDIOPREV), MP_ROM_PTR(&mod_rl_TD_AUDIOPREV) },
+	{ MP_ROM_QSTR(MP_QSTR_AUDIOREWIND), MP_ROM_PTR(&mod_rl_TD_AUDIOREWIND) },
+	{ MP_ROM_QSTR(MP_QSTR_AUDIOSTOP), MP_ROM_PTR(&mod_rl_TD_AUDIOSTOP) },
+	{ MP_ROM_QSTR(MP_QSTR_BACKQUOTE), MP_ROM_PTR(&mod_rl_TD_BACKQUOTE) },
+	{ MP_ROM_QSTR(MP_QSTR_BACKSLASH), MP_ROM_PTR(&mod_rl_TD_BACKSLASH) },
+	{ MP_ROM_QSTR(MP_QSTR_BACKSPACE), MP_ROM_PTR(&mod_rl_TD_BACKSPACE) },
+	{ MP_ROM_QSTR(MP_QSTR_BRIGHTNESSDOWN), MP_ROM_PTR(&mod_rl_TD_BRIGHTNESSDOWN) },
+	{ MP_ROM_QSTR(MP_QSTR_BRIGHTNESSUP), MP_ROM_PTR(&mod_rl_TD_BRIGHTNESSUP) },
+	{ MP_ROM_QSTR(MP_QSTR_CALCULATOR), MP_ROM_PTR(&mod_rl_TD_CALCULATOR) },
+	{ MP_ROM_QSTR(MP_QSTR_CANCEL), MP_ROM_PTR(&mod_rl_TD_CANCEL) },
+	{ MP_ROM_QSTR(MP_QSTR_CAPSLOCK), MP_ROM_PTR(&mod_rl_TD_CAPSLOCK) },
+	{ MP_ROM_QSTR(MP_QSTR_CARET), MP_ROM_PTR(&mod_rl_TD_CARET) },
+	{ MP_ROM_QSTR(MP_QSTR_CLEAR), MP_ROM_PTR(&mod_rl_TD_CLEAR) },
+	{ MP_ROM_QSTR(MP_QSTR_CLEARAGAIN), MP_ROM_PTR(&mod_rl_TD_CLEARAGAIN) },
+	{ MP_ROM_QSTR(MP_QSTR_COLON), MP_ROM_PTR(&mod_rl_TD_COLON) },
+	{ MP_ROM_QSTR(MP_QSTR_COMMA), MP_ROM_PTR(&mod_rl_TD_COMMA) },
+	{ MP_ROM_QSTR(MP_QSTR_COMPUTER), MP_ROM_PTR(&mod_rl_TD_COMPUTER) },
+	{ MP_ROM_QSTR(MP_QSTR_COPY), MP_ROM_PTR(&mod_rl_TD_COPY) },
+	{ MP_ROM_QSTR(MP_QSTR_CRSEL), MP_ROM_PTR(&mod_rl_TD_CRSEL) },
+	{ MP_ROM_QSTR(MP_QSTR_CURRENCYSUBUNIT), MP_ROM_PTR(&mod_rl_TD_CURRENCYSUBUNIT) },
+	{ MP_ROM_QSTR(MP_QSTR_CURRENCYUNIT), MP_ROM_PTR(&mod_rl_TD_CURRENCYUNIT) },
+	{ MP_ROM_QSTR(MP_QSTR_CUT), MP_ROM_PTR(&mod_rl_TD_CUT) },
+	{ MP_ROM_QSTR(MP_QSTR_DECIMALSEPARATOR), MP_ROM_PTR(&mod_rl_TD_DECIMALSEPARATOR) },
+	{ MP_ROM_QSTR(MP_QSTR_DELETE), MP_ROM_PTR(&mod_rl_TD_DELETE) },
+	{ MP_ROM_QSTR(MP_QSTR_DISPLAYSWITCH), MP_ROM_PTR(&mod_rl_TD_DISPLAYSWITCH) },
+	{ MP_ROM_QSTR(MP_QSTR_DOLLAR), MP_ROM_PTR(&mod_rl_TD_DOLLAR) },
+	{ MP_ROM_QSTR(MP_QSTR_DOWN), MP_ROM_PTR(&mod_rl_TD_DOWN) },
+	{ MP_ROM_QSTR(MP_QSTR_EJECT), MP_ROM_PTR(&mod_rl_TD_EJECT) },
+	{ MP_ROM_QSTR(MP_QSTR_END), MP_ROM_PTR(&mod_rl_TD_END) },
+	{ MP_ROM_QSTR(MP_QSTR_EQUALS), MP_ROM_PTR(&mod_rl_TD_EQUALS) },
+	{ MP_ROM_QSTR(MP_QSTR_ESCAPE), MP_ROM_PTR(&mod_rl_TD_ESCAPE) },
+	{ MP_ROM_QSTR(MP_QSTR_EXCLAIM), MP_ROM_PTR(&mod_rl_TD_EXCLAIM) },
+	{ MP_ROM_QSTR(MP_QSTR_EXECUTE), MP_ROM_PTR(&mod_rl_TD_EXECUTE) },
+	{ MP_ROM_QSTR(MP_QSTR_EXSEL), MP_ROM_PTR(&mod_rl_TD_EXSEL) },
+	{ MP_ROM_QSTR(MP_QSTR_F1), MP_ROM_PTR(&mod_rl_TD_F1) },
+	{ MP_ROM_QSTR(MP_QSTR_F10), MP_ROM_PTR(&mod_rl_TD_F10) },
+	{ MP_ROM_QSTR(MP_QSTR_F11), MP_ROM_PTR(&mod_rl_TD_F11) },
+	{ MP_ROM_QSTR(MP_QSTR_F12), MP_ROM_PTR(&mod_rl_TD_F12) },
+	{ MP_ROM_QSTR(MP_QSTR_F13), MP_ROM_PTR(&mod_rl_TD_F13) },
+	{ MP_ROM_QSTR(MP_QSTR_F14), MP_ROM_PTR(&mod_rl_TD_F14) },
+	{ MP_ROM_QSTR(MP_QSTR_F15), MP_ROM_PTR(&mod_rl_TD_F15) },
+	{ MP_ROM_QSTR(MP_QSTR_F16), MP_ROM_PTR(&mod_rl_TD_F16) },
+	{ MP_ROM_QSTR(MP_QSTR_F17), MP_ROM_PTR(&mod_rl_TD_F17) },
+	{ MP_ROM_QSTR(MP_QSTR_F18), MP_ROM_PTR(&mod_rl_TD_F18) },
+	{ MP_ROM_QSTR(MP_QSTR_F19), MP_ROM_PTR(&mod_rl_TD_F19) },
+	{ MP_ROM_QSTR(MP_QSTR_F2), MP_ROM_PTR(&mod_rl_TD_F2) },
+	{ MP_ROM_QSTR(MP_QSTR_F20), MP_ROM_PTR(&mod_rl_TD_F20) },
+	{ MP_ROM_QSTR(MP_QSTR_F21), MP_ROM_PTR(&mod_rl_TD_F21) },
+	{ MP_ROM_QSTR(MP_QSTR_F22), MP_ROM_PTR(&mod_rl_TD_F22) },
+	{ MP_ROM_QSTR(MP_QSTR_F23), MP_ROM_PTR(&mod_rl_TD_F23) },
+	{ MP_ROM_QSTR(MP_QSTR_F24), MP_ROM_PTR(&mod_rl_TD_F24) },
+	{ MP_ROM_QSTR(MP_QSTR_F3), MP_ROM_PTR(&mod_rl_TD_F3) },
+	{ MP_ROM_QSTR(MP_QSTR_F4), MP_ROM_PTR(&mod_rl_TD_F4) },
+	{ MP_ROM_QSTR(MP_QSTR_F5), MP_ROM_PTR(&mod_rl_TD_F5) },
+	{ MP_ROM_QSTR(MP_QSTR_F6), MP_ROM_PTR(&mod_rl_TD_F6) },
+	{ MP_ROM_QSTR(MP_QSTR_F7), MP_ROM_PTR(&mod_rl_TD_F7) },
+	{ MP_ROM_QSTR(MP_QSTR_F8), MP_ROM_PTR(&mod_rl_TD_F8) },
+	{ MP_ROM_QSTR(MP_QSTR_F9), MP_ROM_PTR(&mod_rl_TD_F9) },
+	{ MP_ROM_QSTR(MP_QSTR_FIND), MP_ROM_PTR(&mod_rl_TD_FIND) },
+	{ MP_ROM_QSTR(MP_QSTR_GREATER), MP_ROM_PTR(&mod_rl_TD_GREATER) },
+	{ MP_ROM_QSTR(MP_QSTR_HASH), MP_ROM_PTR(&mod_rl_TD_HASH) },
+	{ MP_ROM_QSTR(MP_QSTR_HELP), MP_ROM_PTR(&mod_rl_TD_HELP) },
+	{ MP_ROM_QSTR(MP_QSTR_HOME), MP_ROM_PTR(&mod_rl_TD_HOME) },
+	{ MP_ROM_QSTR(MP_QSTR_INSERT), MP_ROM_PTR(&mod_rl_TD_INSERT) },
+	{ MP_ROM_QSTR(MP_QSTR_KBDILLUMDOWN), MP_ROM_PTR(&mod_rl_TD_KBDILLUMDOWN) },
+	{ MP_ROM_QSTR(MP_QSTR_KBDILLUMTOGGLE), MP_ROM_PTR(&mod_rl_TD_KBDILLUMTOGGLE) },
+	{ MP_ROM_QSTR(MP_QSTR_KBDILLUMUP), MP_ROM_PTR(&mod_rl_TD_KBDILLUMUP) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_0), MP_ROM_PTR(&mod_rl_TD_KP_0) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_00), MP_ROM_PTR(&mod_rl_TD_KP_00) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_000), MP_ROM_PTR(&mod_rl_TD_KP_000) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_1), MP_ROM_PTR(&mod_rl_TD_KP_1) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_2), MP_ROM_PTR(&mod_rl_TD_KP_2) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_3), MP_ROM_PTR(&mod_rl_TD_KP_3) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_4), MP_ROM_PTR(&mod_rl_TD_KP_4) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_5), MP_ROM_PTR(&mod_rl_TD_KP_5) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_6), MP_ROM_PTR(&mod_rl_TD_KP_6) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_7), MP_ROM_PTR(&mod_rl_TD_KP_7) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_8), MP_ROM_PTR(&mod_rl_TD_KP_8) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_9), MP_ROM_PTR(&mod_rl_TD_KP_9) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_A), MP_ROM_PTR(&mod_rl_TD_KP_A) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_AMPERSAND), MP_ROM_PTR(&mod_rl_TD_KP_AMPERSAND) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_AT), MP_ROM_PTR(&mod_rl_TD_KP_AT) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_B), MP_ROM_PTR(&mod_rl_TD_KP_B) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_BACKSPACE), MP_ROM_PTR(&mod_rl_TD_KP_BACKSPACE) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_BINARY), MP_ROM_PTR(&mod_rl_TD_KP_BINARY) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_C), MP_ROM_PTR(&mod_rl_TD_KP_C) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_CLEAR), MP_ROM_PTR(&mod_rl_TD_KP_CLEAR) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_CLEARENTRY), MP_ROM_PTR(&mod_rl_TD_KP_CLEARENTRY) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_COLON), MP_ROM_PTR(&mod_rl_TD_KP_COLON) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_COMMA), MP_ROM_PTR(&mod_rl_TD_KP_COMMA) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_D), MP_ROM_PTR(&mod_rl_TD_KP_D) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_DBLAMPERSAND), MP_ROM_PTR(&mod_rl_TD_KP_DBLAMPERSAND) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_DBLVERTICALBAR), MP_ROM_PTR(&mod_rl_TD_KP_DBLVERTICALBAR) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_DECIMAL), MP_ROM_PTR(&mod_rl_TD_KP_DECIMAL) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_DIVIDE), MP_ROM_PTR(&mod_rl_TD_KP_DIVIDE) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_E), MP_ROM_PTR(&mod_rl_TD_KP_E) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_ENTER), MP_ROM_PTR(&mod_rl_TD_KP_ENTER) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_EQUALS), MP_ROM_PTR(&mod_rl_TD_KP_EQUALS) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_EQUALSAS400), MP_ROM_PTR(&mod_rl_TD_KP_EQUALSAS400) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_EXCLAM), MP_ROM_PTR(&mod_rl_TD_KP_EXCLAM) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_F), MP_ROM_PTR(&mod_rl_TD_KP_F) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_GREATER), MP_ROM_PTR(&mod_rl_TD_KP_GREATER) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_HASH), MP_ROM_PTR(&mod_rl_TD_KP_HASH) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_HEXADECIMAL), MP_ROM_PTR(&mod_rl_TD_KP_HEXADECIMAL) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_LEFTBRACE), MP_ROM_PTR(&mod_rl_TD_KP_LEFTBRACE) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_LEFTPAREN), MP_ROM_PTR(&mod_rl_TD_KP_LEFTPAREN) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_LESS), MP_ROM_PTR(&mod_rl_TD_KP_LESS) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_MEMADD), MP_ROM_PTR(&mod_rl_TD_KP_MEMADD) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_MEMCLEAR), MP_ROM_PTR(&mod_rl_TD_KP_MEMCLEAR) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_MEMDIVIDE), MP_ROM_PTR(&mod_rl_TD_KP_MEMDIVIDE) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_MEMMULTIPLY), MP_ROM_PTR(&mod_rl_TD_KP_MEMMULTIPLY) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_MEMRECALL), MP_ROM_PTR(&mod_rl_TD_KP_MEMRECALL) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_MEMSTORE), MP_ROM_PTR(&mod_rl_TD_KP_MEMSTORE) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_MEMSUBTRACT), MP_ROM_PTR(&mod_rl_TD_KP_MEMSUBTRACT) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_MINUS), MP_ROM_PTR(&mod_rl_TD_KP_MINUS) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_MULTIPLY), MP_ROM_PTR(&mod_rl_TD_KP_MULTIPLY) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_OCTAL), MP_ROM_PTR(&mod_rl_TD_KP_OCTAL) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_PERCENT), MP_ROM_PTR(&mod_rl_TD_KP_PERCENT) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_PERIOD), MP_ROM_PTR(&mod_rl_TD_KP_PERIOD) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_PLUS), MP_ROM_PTR(&mod_rl_TD_KP_PLUS) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_PLUSMINUS), MP_ROM_PTR(&mod_rl_TD_KP_PLUSMINUS) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_POWER), MP_ROM_PTR(&mod_rl_TD_KP_POWER) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_RIGHTBRACE), MP_ROM_PTR(&mod_rl_TD_KP_RIGHTBRACE) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_RIGHTPAREN), MP_ROM_PTR(&mod_rl_TD_KP_RIGHTPAREN) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_SPACE), MP_ROM_PTR(&mod_rl_TD_KP_SPACE) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_TAB), MP_ROM_PTR(&mod_rl_TD_KP_TAB) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_VERTICALBAR), MP_ROM_PTR(&mod_rl_TD_KP_VERTICALBAR) },
+	{ MP_ROM_QSTR(MP_QSTR_KP_XOR), MP_ROM_PTR(&mod_rl_TD_KP_XOR) },
+	{ MP_ROM_QSTR(MP_QSTR_LALT), MP_ROM_PTR(&mod_rl_TD_LALT) },
+	{ MP_ROM_QSTR(MP_QSTR_LCTRL), MP_ROM_PTR(&mod_rl_TD_LCTRL) },
+	{ MP_ROM_QSTR(MP_QSTR_LEFT), MP_ROM_PTR(&mod_rl_TD_LEFT) },
+	{ MP_ROM_QSTR(MP_QSTR_LEFTBRACKET), MP_ROM_PTR(&mod_rl_TD_LEFTBRACKET) },
+	{ MP_ROM_QSTR(MP_QSTR_LEFTPAREN), MP_ROM_PTR(&mod_rl_TD_LEFTPAREN) },
+	{ MP_ROM_QSTR(MP_QSTR_LESS), MP_ROM_PTR(&mod_rl_TD_LESS) },
+	{ MP_ROM_QSTR(MP_QSTR_LGUI), MP_ROM_PTR(&mod_rl_TD_LGUI) },
+	{ MP_ROM_QSTR(MP_QSTR_LSHIFT), MP_ROM_PTR(&mod_rl_TD_LSHIFT) },
+	{ MP_ROM_QSTR(MP_QSTR_MAIL), MP_ROM_PTR(&mod_rl_TD_MAIL) },
+	{ MP_ROM_QSTR(MP_QSTR_MEDIASELECT), MP_ROM_PTR(&mod_rl_TD_MEDIASELECT) },
+	{ MP_ROM_QSTR(MP_QSTR_MENU), MP_ROM_PTR(&mod_rl_TD_MENU) },
+	{ MP_ROM_QSTR(MP_QSTR_MINUS), MP_ROM_PTR(&mod_rl_TD_MINUS) },
+	{ MP_ROM_QSTR(MP_QSTR_MODE), MP_ROM_PTR(&mod_rl_TD_MODE) },
+	{ MP_ROM_QSTR(MP_QSTR_MUTE), MP_ROM_PTR(&mod_rl_TD_MUTE) },
+	{ MP_ROM_QSTR(MP_QSTR_NUMLOCKCLEAR), MP_ROM_PTR(&mod_rl_TD_NUMLOCKCLEAR) },
+	{ MP_ROM_QSTR(MP_QSTR_OPER), MP_ROM_PTR(&mod_rl_TD_OPER) },
+	{ MP_ROM_QSTR(MP_QSTR_OUT), MP_ROM_PTR(&mod_rl_TD_OUT) },
+	{ MP_ROM_QSTR(MP_QSTR_PAGEDOWN), MP_ROM_PTR(&mod_rl_TD_PAGEDOWN) },
+	{ MP_ROM_QSTR(MP_QSTR_PAGEUP), MP_ROM_PTR(&mod_rl_TD_PAGEUP) },
+	{ MP_ROM_QSTR(MP_QSTR_PASTE), MP_ROM_PTR(&mod_rl_TD_PASTE) },
+	{ MP_ROM_QSTR(MP_QSTR_PAUSE), MP_ROM_PTR(&mod_rl_TD_PAUSE) },
+	{ MP_ROM_QSTR(MP_QSTR_PERCENT), MP_ROM_PTR(&mod_rl_TD_PERCENT) },
+	{ MP_ROM_QSTR(MP_QSTR_PERIOD), MP_ROM_PTR(&mod_rl_TD_PERIOD) },
+	{ MP_ROM_QSTR(MP_QSTR_PLUS), MP_ROM_PTR(&mod_rl_TD_PLUS) },
+	{ MP_ROM_QSTR(MP_QSTR_POWER), MP_ROM_PTR(&mod_rl_TD_POWER) },
+	{ MP_ROM_QSTR(MP_QSTR_PRINTSCREEN), MP_ROM_PTR(&mod_rl_TD_PRINTSCREEN) },
+	{ MP_ROM_QSTR(MP_QSTR_PRIOR), MP_ROM_PTR(&mod_rl_TD_PRIOR) },
+	{ MP_ROM_QSTR(MP_QSTR_QUESTION), MP_ROM_PTR(&mod_rl_TD_QUESTION) },
+	{ MP_ROM_QSTR(MP_QSTR_QUOTE), MP_ROM_PTR(&mod_rl_TD_QUOTE) },
+	{ MP_ROM_QSTR(MP_QSTR_QUOTEDBL), MP_ROM_PTR(&mod_rl_TD_QUOTEDBL) },
+	{ MP_ROM_QSTR(MP_QSTR_RALT), MP_ROM_PTR(&mod_rl_TD_RALT) },
+	{ MP_ROM_QSTR(MP_QSTR_RCTRL), MP_ROM_PTR(&mod_rl_TD_RCTRL) },
+	{ MP_ROM_QSTR(MP_QSTR_RETURN), MP_ROM_PTR(&mod_rl_TD_RETURN) },
+	{ MP_ROM_QSTR(MP_QSTR_RETURN2), MP_ROM_PTR(&mod_rl_TD_RETURN2) },
+	{ MP_ROM_QSTR(MP_QSTR_RGUI), MP_ROM_PTR(&mod_rl_TD_RGUI) },
+	{ MP_ROM_QSTR(MP_QSTR_RIGHT), MP_ROM_PTR(&mod_rl_TD_RIGHT) },
+	{ MP_ROM_QSTR(MP_QSTR_RIGHTBRACKET), MP_ROM_PTR(&mod_rl_TD_RIGHTBRACKET) },
+	{ MP_ROM_QSTR(MP_QSTR_RIGHTPAREN), MP_ROM_PTR(&mod_rl_TD_RIGHTPAREN) },
+	{ MP_ROM_QSTR(MP_QSTR_RSHIFT), MP_ROM_PTR(&mod_rl_TD_RSHIFT) },
+	{ MP_ROM_QSTR(MP_QSTR_SCANCODE_MASK), MP_ROM_PTR(&mod_rl_TD_SCANCODE_MASK) },
+	{ MP_ROM_QSTR(MP_QSTR_SCROLLLOCK), MP_ROM_PTR(&mod_rl_TD_SCROLLLOCK) },
+	{ MP_ROM_QSTR(MP_QSTR_SELECT), MP_ROM_PTR(&mod_rl_TD_SELECT) },
+	{ MP_ROM_QSTR(MP_QSTR_SEMICOLON), MP_ROM_PTR(&mod_rl_TD_SEMICOLON) },
+	{ MP_ROM_QSTR(MP_QSTR_SEPARATOR), MP_ROM_PTR(&mod_rl_TD_SEPARATOR) },
+	{ MP_ROM_QSTR(MP_QSTR_SLASH), MP_ROM_PTR(&mod_rl_TD_SLASH) },
+	{ MP_ROM_QSTR(MP_QSTR_SLEEP), MP_ROM_PTR(&mod_rl_TD_SLEEP) },
+	{ MP_ROM_QSTR(MP_QSTR_SPACE), MP_ROM_PTR(&mod_rl_TD_SPACE) },
+	{ MP_ROM_QSTR(MP_QSTR_STOP), MP_ROM_PTR(&mod_rl_TD_STOP) },
+	{ MP_ROM_QSTR(MP_QSTR_SYSREQ), MP_ROM_PTR(&mod_rl_TD_SYSREQ) },
+	{ MP_ROM_QSTR(MP_QSTR_TAB), MP_ROM_PTR(&mod_rl_TD_TAB) },
+	{ MP_ROM_QSTR(MP_QSTR_THOUSANDSSEPARATOR), MP_ROM_PTR(&mod_rl_TD_THOUSANDSSEPARATOR) },
+	{ MP_ROM_QSTR(MP_QSTR_UNDERSCORE), MP_ROM_PTR(&mod_rl_TD_UNDERSCORE) },
+	{ MP_ROM_QSTR(MP_QSTR_UNDO), MP_ROM_PTR(&mod_rl_TD_UNDO) },
+	{ MP_ROM_QSTR(MP_QSTR_UNKNOWN), MP_ROM_PTR(&mod_rl_TD_UNKNOWN) },
+	{ MP_ROM_QSTR(MP_QSTR_UP), MP_ROM_PTR(&mod_rl_TD_UP) },
+	{ MP_ROM_QSTR(MP_QSTR_VOLUMEDOWN), MP_ROM_PTR(&mod_rl_TD_VOLUMEDOWN) },
+	{ MP_ROM_QSTR(MP_QSTR_VOLUMEUP), MP_ROM_PTR(&mod_rl_TD_VOLUMEUP) },
+	{ MP_ROM_QSTR(MP_QSTR_WWW), MP_ROM_PTR(&mod_rl_TD_WWW) },
+	{ MP_ROM_QSTR(MP_QSTR_A), MP_ROM_PTR(&mod_rl_TD_A) },
+	{ MP_ROM_QSTR(MP_QSTR_B), MP_ROM_PTR(&mod_rl_TD_B) },
+	{ MP_ROM_QSTR(MP_QSTR_C), MP_ROM_PTR(&mod_rl_TD_C) },
+	{ MP_ROM_QSTR(MP_QSTR_D), MP_ROM_PTR(&mod_rl_TD_D) },
+	{ MP_ROM_QSTR(MP_QSTR_E), MP_ROM_PTR(&mod_rl_TD_E) },
+	{ MP_ROM_QSTR(MP_QSTR_F), MP_ROM_PTR(&mod_rl_TD_F) },
+	{ MP_ROM_QSTR(MP_QSTR_G), MP_ROM_PTR(&mod_rl_TD_G) },
+	{ MP_ROM_QSTR(MP_QSTR_H), MP_ROM_PTR(&mod_rl_TD_H) },
+	{ MP_ROM_QSTR(MP_QSTR_I), MP_ROM_PTR(&mod_rl_TD_I) },
+	{ MP_ROM_QSTR(MP_QSTR_J), MP_ROM_PTR(&mod_rl_TD_J) },
+	{ MP_ROM_QSTR(MP_QSTR_K), MP_ROM_PTR(&mod_rl_TD_K) },
+	{ MP_ROM_QSTR(MP_QSTR_L), MP_ROM_PTR(&mod_rl_TD_L) },
+	{ MP_ROM_QSTR(MP_QSTR_M), MP_ROM_PTR(&mod_rl_TD_M) },
+	{ MP_ROM_QSTR(MP_QSTR_N), MP_ROM_PTR(&mod_rl_TD_N) },
+	{ MP_ROM_QSTR(MP_QSTR_O), MP_ROM_PTR(&mod_rl_TD_O) },
+	{ MP_ROM_QSTR(MP_QSTR_P), MP_ROM_PTR(&mod_rl_TD_P) },
+	{ MP_ROM_QSTR(MP_QSTR_Q), MP_ROM_PTR(&mod_rl_TD_Q) },
+	{ MP_ROM_QSTR(MP_QSTR_R), MP_ROM_PTR(&mod_rl_TD_R) },
+	{ MP_ROM_QSTR(MP_QSTR_S), MP_ROM_PTR(&mod_rl_TD_S) },
+	{ MP_ROM_QSTR(MP_QSTR_T), MP_ROM_PTR(&mod_rl_TD_T) },
+	{ MP_ROM_QSTR(MP_QSTR_U), MP_ROM_PTR(&mod_rl_TD_U) },
+	{ MP_ROM_QSTR(MP_QSTR_V), MP_ROM_PTR(&mod_rl_TD_V) },
+	{ MP_ROM_QSTR(MP_QSTR_W), MP_ROM_PTR(&mod_rl_TD_W) },
+	{ MP_ROM_QSTR(MP_QSTR_X), MP_ROM_PTR(&mod_rl_TD_X) },
+	{ MP_ROM_QSTR(MP_QSTR_Y), MP_ROM_PTR(&mod_rl_TD_Y) },
+	{ MP_ROM_QSTR(MP_QSTR_Z), MP_ROM_PTR(&mod_rl_TD_Z) },
 
 };
 

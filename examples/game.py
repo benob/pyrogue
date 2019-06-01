@@ -410,7 +410,7 @@ def redraw():
     rl.print_text(0, Tile.HEIGHT * HEIGHT, '\n'.join(messages[-4:]), image=font_source)
 
 def handler(event):
-    print('handler')
+    print('handler', event, rl.LEFT, type(event), type(rl.LEFT))
     if handle_input(event) != rl.REDRAW:
         update()
     redraw()
