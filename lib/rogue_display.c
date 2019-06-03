@@ -673,7 +673,6 @@ static void process_events() {
 				break;
 			case SDL_WINDOWEVENT:
 				if(event.window.event == SDL_WINDOWEVENT_RESIZED || event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
-					printf("window resized %d %d\n", event.window.data1, event.window.data2);
 #ifdef USE_SDLGPU
 					GPU_SetWindowResolution(event.window.data1, event.window.data2);
 #endif
