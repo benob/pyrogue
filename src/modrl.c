@@ -1082,7 +1082,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_rl_walk_line_next_obj, mod_rl_walk_line_nex
 
 // WARNING: declaring const long intenger requires to use of MICROPY_LONGINT_IMPL_LONGLONG
 // pico8 colors
-const mp_obj_int_t mod_rl_BLACK = {{&mp_type_int}, (td_color_rgba(0, 0, 0, 0)) };
+const mp_obj_int_t mod_rl_BLACK = {{&mp_type_int}, (td_color_rgba(0, 0, 0, 255)) };
 const mp_obj_int_t mod_rl_DARKBLUE = {{&mp_type_int}, (td_color_rgba(29, 43, 83, 255)) };
 const mp_obj_int_t mod_rl_DARKPURPLE = {{&mp_type_int}, (td_color_rgba(126, 37, 83, 255)) };
 const mp_obj_int_t mod_rl_DARKGREEN = {{&mp_type_int}, (td_color_rgba(0, 135, 81, 255)) };

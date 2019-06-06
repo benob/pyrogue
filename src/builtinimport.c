@@ -251,7 +251,7 @@ STATIC void do_load(mp_obj_t module_obj, vstr_t *file) {
 #ifdef PYROGUE_IMPORT_ASSET
 				uint32_t content_size = 0;
 				char* content = fs_load_asset(file_str, &content_size);
-				mp_lexer_t *lex = mp_lexer_new_from_str_len(1, content, content_size, false); // TODO: replace 1st parameter with new string
+				mp_lexer_t *lex = mp_lexer_new_from_str_len(qstr_from_str(file_str), content, content_size, false); // TODO: replace 1st parameter with new string
 #else
         mp_lexer_t *lex = mp_lexer_new_from_file(file_str);
 #endif
