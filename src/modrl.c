@@ -1040,6 +1040,30 @@ STATIC mp_obj_t mod_td_mouse() {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_td_mouse_obj, mod_td_mouse);
 
+STATIC mp_obj_t mod_td_shift_pressed() {
+	mp_int_t result = td_shift_pressed();
+	return mp_obj_new_bool(result);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_td_shift_pressed_obj, mod_td_shift_pressed);
+
+STATIC mp_obj_t mod_td_alt_pressed() {
+	mp_int_t result = td_alt_pressed();
+	return mp_obj_new_bool(result);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_td_alt_pressed_obj, mod_td_alt_pressed);
+
+STATIC mp_obj_t mod_td_ctrl_pressed() {
+	mp_int_t result = td_ctrl_pressed();
+	return mp_obj_new_bool(result);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_td_ctrl_pressed_obj, mod_td_ctrl_pressed);
+
+STATIC mp_obj_t mod_td_win_pressed() {
+	mp_int_t result = td_win_pressed();
+	return mp_obj_new_bool(result);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_td_win_pressed_obj, mod_td_win_pressed);
+
 static mp_obj_t event_callback;
 static void run_callback(int key) {
 	mp_call_function_1(event_callback, mp_obj_new_int(key));
@@ -1398,6 +1422,10 @@ STATIC const mp_rom_map_elem_t mp_module_rl_globals_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR_mouse_y), MP_ROM_PTR(&mod_td_mouse_y_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_mouse_button), MP_ROM_PTR(&mod_td_mouse_button_obj) },*/
 	{ MP_ROM_QSTR(MP_QSTR_mouse), MP_ROM_PTR(&mod_td_mouse_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_shift_pressed), MP_ROM_PTR(&mod_td_shift_pressed_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_alt_pressed), MP_ROM_PTR(&mod_td_alt_pressed_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_ctrl_pressed), MP_ROM_PTR(&mod_td_ctrl_pressed_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_win_pressed), MP_ROM_PTR(&mod_td_win_pressed_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_run), MP_ROM_PTR(&mod_td_run_obj) },
 	/************** utils ******************/
 	{ MP_ROM_QSTR(MP_QSTR_walk_line_start), MP_ROM_PTR(&mod_rl_walk_line_start_obj) },

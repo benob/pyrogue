@@ -61,8 +61,10 @@ typedef struct {
 	GPU_Target* screen;
 	GPU_Image* screen_image;
 	GPU_Target* actual_screen;
+	GPU_Rect scaled_rect;
 #else
 	SDL_Texture* screen;
+	SDL_Rect scaled_rect;
 #endif
 	int is_fullscreen, is_maximized, use_integral_scale;
 	int update_filter;
@@ -140,8 +142,8 @@ int td_init(const char* title, int width, int height) {
 	//GPU_SetSnapMode(display.screen_image, GPU_SNAP_POSITION_AND_DIMENSIONS);
 	GPU_LoadTarget(display.screen_image);
 	display.screen = display.screen_image->target;
+	display.window = SDL_GL_GetCurrentWindow();
 #else
-	SDL_SetWindowTitle(display.window, title);
 	if(display.screen != NULL && (display.width != width || display.height != height))
 		SDL_DestroyTexture(display.screen);
 	if(display.screen == NULL || display.width != width || display.height != height)
@@ -149,6 +151,7 @@ int td_init(const char* title, int width, int height) {
 	
 	SDL_SetRenderTarget(display.renderer, display.screen);
 #endif
+	SDL_SetWindowTitle(display.window, title);
 
 	display.width = width;
 	display.height = height;
@@ -628,14 +631,16 @@ void td_present() {
 		x = (width - new_width) / 2;
 		width = new_width;
 	}
+	display.scaled_rect.x = x;
+	display.scaled_rect.y = y;
+	display.scaled_rect.w = width;
+	display.scaled_rect.h = height;
 #ifdef USE_SDLGPU
 	GPU_Clear(display.actual_screen);
-	GPU_Rect dest = {x, y, width, height};
-	GPU_BlitRect(display.screen_image, NULL, display.actual_screen, &dest);
+	GPU_BlitRect(display.screen_image, NULL, display.actual_screen, &display.scaled_rect);
 	GPU_Flip(display.actual_screen);
 #else
-	SDL_Rect dest = {x, y, width, height};
-	SDL_RenderCopy(display.renderer, display.screen, NULL, &dest);
+	SDL_RenderCopy(display.renderer, display.screen, NULL, &display.scaled_rect);
 	SDL_RenderPresent(display.renderer);
 #endif
 	// TODO: wait only the time needed to achieve fps
@@ -689,8 +694,8 @@ static void process_events() {
 				key = event.text.text[0];
 				break;
 			case SDL_MOUSEMOTION:
-				display.mouse_x = event.motion.x;
-				display.mouse_y = event.motion.y;
+				display.mouse_x = (event.motion.x - display.scaled_rect.x) * display.width / display.scaled_rect.w;
+				display.mouse_y = (event.motion.y - display.scaled_rect.y) * display.height / display.scaled_rect.h;
 				key = TD_MOUSE;
 				break;
 			case SDL_MOUSEBUTTONUP:
@@ -810,3 +815,20 @@ void td_draw_points(td_point_t* points, int num, uint32_t color) {
 uint32_t td_random_color() {
 	return td_color_rgb(rl_random_int(0, 255), rl_random_int(0, 255), rl_random_int(0, 255));
 }
+
+int td_shift_pressed() {
+	return SDL_GetModState() & KMOD_SHIFT;
+}
+
+int td_alt_pressed() {
+	return SDL_GetModState() & KMOD_ALT;
+}
+
+int td_ctrl_pressed() {
+	return SDL_GetModState() & KMOD_CTRL;
+}
+
+int td_win_pressed() {
+	return SDL_GetModState() & KMOD_GUI;
+}
+

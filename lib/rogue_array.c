@@ -362,6 +362,7 @@ array_t* rl_array_field_of_view(array_t* a, int xc, int yc, int radius, VALUE bl
 path_t* rl_array_shortest_path(array_t* a, int x1, int y1, int x2, int y2, VALUE blocking) {
 	if(x1 < 0 || x1 >= a->width || y1 < 0 || y1 >= a->height) return NULL;
 	if(x2 < 0 || x2 >= a->width || y2 < 0 || y2 >= a->height) return NULL;
+	if(x1 == x2 && y1 == y2) return NULL;
 	uint32_t num = a->width * a->height;
 	uint32_t* came_from = malloc(sizeof(uint32_t) * num);
 	VALUE* cost_so_far = malloc(sizeof(VALUE) * num);
@@ -428,7 +429,7 @@ path_t* rl_array_shortest_path(array_t* a, int x1, int y1, int x2, int y2, VALUE
 		uint32_t path_size = (uint32_t) cost_so_far[current];
 		path = malloc(sizeof(path_t) + sizeof(point_t) * (path_size - 1));
 		path->size = path_size;
-		while(cost_so_far[current] != 0 && cost_so_far[current] != VALUE_MAX) {
+		while(path_size > 0 && cost_so_far[current] != 0 && cost_so_far[current] != VALUE_MAX) {
 			path_size--;
 			path->points[path_size].x = current % a->width;
 			path->points[path_size].y = current / a->width;

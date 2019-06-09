@@ -37,6 +37,7 @@
 #include "py/stackctrl.h"
 #include "py/misc.h"
 #include "extmod/misc.h"
+#include "lib/utils/interrupt_char.h"
 
 #include "rogue.h"
 
@@ -101,7 +102,7 @@ STATIC int handle_uncaught_exception(mp_obj_base_t *exc) {
 // except if FORCED_EXIT bit is set then script raised SystemExit and the
 // value of the exit is in the lower 8 bits of the return value
 STATIC int execute_from_lexer(int source_kind, const void *source, uint32_t size, mp_parse_input_kind_t input_kind, bool is_repl, const char* name) {
-    //mp_hal_set_interrupt_char('c');
+    mp_hal_set_interrupt_char('c');
 
     nlr_buf_t nlr;
     if (nlr_push(&nlr) == 0) {
@@ -155,7 +156,7 @@ STATIC int execute_from_lexer(int source_kind, const void *source, uint32_t size
 
     } else {
         // uncaught exception
-        //mp_hal_set_interrupt_char(-1);
+        mp_hal_set_interrupt_char(-1);
         return handle_uncaught_exception(nlr.ret_val);
     }
 }

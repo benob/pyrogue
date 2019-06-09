@@ -61,5 +61,9 @@ int td_mouse_x();
 int td_mouse_y();
 int td_mouse_button();
 void rl_force_redraw();
+int td_shift_pressed();
+int td_alt_pressed();
+int td_ctrl_pressed();
+int td_win_pressed();
 
 #endif
