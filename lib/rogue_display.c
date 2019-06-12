@@ -43,6 +43,7 @@ typedef struct {
 #ifdef USE_SDLGPU
 	GPU_Image* texture;
 #else
+	SDL_Surface* surface;
 	SDL_Texture* texture;
 #endif
 } image_t;
@@ -77,13 +78,13 @@ static void __attribute__((constructor)) _td_init() {
 	memset(&display, 0, sizeof(display_t));
 }
 
-// TODO: merge buffers and images
 static void __attribute__((destructor)) _td_fini() {
 	if(display.was_init) {
 		for(int i = 0; i < TD_NUM_IMAGES; i++) {
 #ifdef USE_SDLGPU
 			if(display.images[i].texture != NULL) GPU_FreeImage(display.images[i].texture);
 #else
+			if(display.images[i].surface != NULL) SDL_FreeSurface(display.images[i].surface);
 			if(display.images[i].texture != NULL) SDL_DestroyTexture(display.images[i].texture);
 #endif
 			if(display.images[i].pixels != NULL) free(display.images[i].pixels);
@@ -190,32 +191,28 @@ int td_load_image(int index, const char* filename, int tile_width, int tile_heig
 	image.texture = GPU_LoadImage_RW(ops, 1);
 	if(image.texture == NULL) rl_error("cannot decode image data '%s'", filename);
 	GPU_SetImageFilter(image.texture, GPU_FILTER_NEAREST);
-	GPU_SetAnchor(image.texture, 0, 1);
+	GPU_SetAnchor(image.texture, 0, 0);
 	GPU_SetBlending(image.texture, 1);
 	GPU_SetBlendMode(image.texture, GPU_BLEND_NORMAL);
 	GPU_SetSnapMode(image.texture, GPU_SNAP_POSITION_AND_DIMENSIONS);
 	image.width = image.texture->w;
 	image.height = image.texture->h;
-	image.pixels = NULL;
 #else
-	SDL_Surface* surface = STBIMG_Load_RW(ops, 1);
-	free(image_data);
-	if(surface == NULL) rl_error("cannot decode image data '%s'", filename);
+	image.surface = STBIMG_Load_RW(ops, 1);
+	if(image.surface == NULL) rl_error("cannot decode image data '%s'", filename);
 	image.width = surface->w;
 	image.height = surface->h;
 	image.texture = SDL_CreateTextureFromSurface(display.renderer, surface);
 	if(image.texture == NULL) rl_error("cannot create texture for image '%s'", filename);
-	image.pixels = malloc(sizeof(uint32_t) * surface->w * surface->h);
-	memcpy(image.pixels, surface->pixels, sizeof(uint32_t) * surface->w * surface->h);
-	SDL_FreeSurface(surface);
 #endif
+	free(image_data);
 	image.tiles_per_line = image.width / image.tile_width;
 	if(display.images[index].texture != NULL) {
 #ifdef USE_SDLGPU
 		GPU_FreeImage(display.images[index].texture);
 #else
+		SDL_FreeSurface(display.images[index].surface);
 		SDL_DestroyTexture(display.images[index].texture);
-		free(display.images[index].pixels);
 #endif
 	}
 	display.images[index] = image;
@@ -223,9 +220,6 @@ int td_load_image(int index, const char* filename, int tile_width, int tile_heig
 }
 
 void td_array_to_image(int index, array_t* a, int tile_width, int tile_height) {
-#ifdef USE_SDLGPU
-	rl_error("unimplemented");
-#else
 	if(index < 0 || index >= TD_NUM_IMAGES) rl_error("invalid image '%d'", index);
 	image_t* image = &display.images[index];
 	image->tile_width = tile_width;
@@ -233,37 +227,44 @@ void td_array_to_image(int index, array_t* a, int tile_width, int tile_height) {
 	image->width = a->width;
 	image->height = a->height;
 	image->tiles_per_line = image->width / image->tile_width;
+	int row_size = sizeof(uint32_t) * (a->width + a->stride);
 
+#ifdef USE_SDLGPU
 	if(image->texture == NULL || a->width != image->width || a->height != image->height) {
-		if(image->texture != NULL) SDL_DestroyTexture(image->texture);
-		image->texture = SDL_CreateTexture(display.renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STATIC, a->width, a->height);
+		if(image->texture != NULL) GPU_FreeImage(image->texture);
+		image->texture = GPU_CreateImage(a->width, a->height, GPU_FORMAT_RGBA);
+		GPU_SetAnchor(image->texture, 0, 0);
+		GPU_SetBlending(image->texture, 1);
+		GPU_SetBlendMode(image->texture, GPU_BLEND_NORMAL);
+		GPU_SetSnapMode(image->texture, GPU_SNAP_POSITION_AND_DIMENSIONS);
 	}
 	if(image->texture == NULL) rl_error("cannot create texture");
-	SDL_UpdateTexture(image->texture, NULL, a->values, sizeof(uint32_t) * (a->width + a->stride));
-
-	if(image->pixels != NULL) free(image->pixels);
-	image->pixels = malloc(sizeof(uint32_t) * a->width * a->height);
-	if(a->is_view) {
-		for(int i = 0; i < a->height; i++)
-			memcpy(image->pixels + i * a->width, a->values + i * (a->width + a->stride), sizeof(uint32_t) * a->width);
-	} else {
-		memcpy(image->pixels, a->values, sizeof(uint32_t) * a->width * a->height);
+	GPU_UpdateImageBytes(image->texture, NULL, (const unsigned char*)a->values, row_size);
+#else
+	if(image->texture == NULL || a->width != image->width || a->height != image->height) {
+		if(image->texture != NULL) SDL_DestroyTexture(image->texture);
+		if(image->surface != NULL) SDL_FreeSurface(image->surface);
+		image->texture = SDL_CreateTexture(display.renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STATIC, a->width, a->height);
+		image->surface = SDL_CreateRGBSurfaceWithFormat(0, a->width, a->height, 32, SDL_PIXELFORMAT_RGBA32);
 	}
+	if(image->texture == NULL) rl_error("cannot create texture");
+	SDL_UpdateTexture(image->texture, NULL, a->values, row_size);
+	for(int j = 0; j < a->height; j++) memcpy(((uint32_t*) image->surface->pixels) + j * a->width, ((char*) a->values) + j * row_size, sizeof(uint32_t) * a->width);
 #endif
 }
 
 array_t* td_image_to_array(int index) {
-#ifdef USE_SDLGPU
-	rl_error("unimplemented");
-	return NULL;
-#else
 	if(index < 0 || index >= TD_NUM_IMAGES) rl_error("invalid image '%d'", index);
 	image_t* image = &display.images[index];
-	if(image->pixels == NULL) rl_error("invalid image '%d'", index);
-	array_t* a = rl_array_new(image->width, image->height);
-	memcpy(a->values, image->pixels, sizeof(uint32_t) * a->width * a->height);
-	return a;
+	if(image->texture == NULL) rl_error("invalid image '%d'", index);
+#ifdef USE_SDLGPU
+	SDL_Surface* surface = GPU_CopySurfaceFromImage(image->texture);
+#else
+	SDL_Surface* surface = image->surface;
 #endif
+	array_t* a = rl_array_new(image->width, image->height);
+	memcpy(a->values, surface->pixels, sizeof(uint32_t) * a->width * a->height);
+	return a;
 }
 
 void td_draw_image(int index, int x, int y) {
@@ -363,11 +364,6 @@ void td_draw_array(int index, array_t* a, int x, int y, int x_shift, int y_shift
 			int tile_y = (tile / image->tiles_per_line) * image->tile_height;
 			uint32_t fg = info_fg ? info_fg[num] : 0;
 #ifdef USE_SDLGPU
-			/*if(info_bg != NULL && num >= info_size) continue;
-			uint32_t bg = info_bg ? info_bg[num] : 0;
-			SDL_Color bg_color = {td_color_r(bg), td_color_g(bg), td_color_b(bg), td_color_a(bg)};
-			GPU_RectangleFilled(display.screen, x + x_shift * i, y + y_shift * j, x + x_shift * i + image->tile_width, y + y_shift * j + image->tile_height, bg_color);*/
-
 			SDL_Color fg_color = {td_color_r(fg), td_color_g(fg), td_color_b(fg), td_color_a(fg)};
 			GPU_Rect src_rect = {tile_x, tile_y, image->tile_width, image->tile_height};
 			GPU_Rect dst_rect = {x + x_shift * i, y + y_shift * j, image->tile_width, image->tile_height};
@@ -507,92 +503,6 @@ void td_draw_line(int x1, int y1, int x2, int y2, uint32_t color) {
 #endif
 }
 
-/*int td_still_running() {
-	return display.running;
-}
-
-int td_wait_key() {
-	int key = td_wait_event(0);
-	while(display.running && key == TD_REDRAW) {
-		key = td_wait_event(0);
-	}
-	return key;
-}
- 
-int td_wait_event(int include_mouse) {
-	int key;
-	SDL_Event event;
-	while(display.running) {
-		while(SDL_WaitEvent(&event) != 0) {
-			switch(event.type) {
-				case SDL_QUIT:
-					display.running = 0;
-					return TD_QUIT;
-					break;
-				case SDL_WINDOWEVENT:
-					td_present();
-					break;
-        case SDL_TEXTINPUT:
-					return event.text.text[0];
-					break;
-				case SDL_KEYDOWN:
-					key = event.key.keysym.sym;
-					if(SDL_GetModState() & KMOD_ALT) {
-						if(key == SDLK_RETURN) {
-							if(display.is_fullscreen) {
-								SDL_SetWindowFullscreen(display.window, 0);
-								display.is_fullscreen = 0;
-							}
-							else {
-								SDL_SetWindowFullscreen(display.window, SDL_WINDOW_FULLSCREEN_DESKTOP);
-								display.is_fullscreen = 1;
-							}
-						} else if(key == SDLK_q) {
-							// TODO: use customizable exit handler
-							exit(1); // force quit
-						} else if(key == SDLK_i) {
-							// TODO: investgate why it doesn't update immediately.
-							display.use_integral_scale = 1 - display.use_integral_scale;
-							SDL_RenderSetIntegerScale(display.renderer, display.use_integral_scale ? SDL_TRUE : SDL_FALSE);
-						}
-						return TD_REDRAW;
-					}
-					else if(key >= 32 && key < 127) continue;
-					else if(key != SDLK_LALT && key != SDLK_LSHIFT && key != SDLK_LCTRL && key != SDLK_RALT && key != SDLK_RSHIFT && key != SDLK_RCTRL && key != SDLK_LGUI && key != SDLK_RGUI) return key;
-					break;
-				case SDL_MOUSEMOTION:
-					display.mouse_x = event.motion.x;
-					display.mouse_y = event.motion.y;
-					if(include_mouse)
-						return TD_MOUSE;
-					break;
-				case SDL_MOUSEBUTTONUP:
-					display.mouse_button = 0;
-					if(include_mouse)
-						return TD_MOUSE;
-					break;
-				case SDL_MOUSEBUTTONDOWN:
-					display.mouse_button = event.button.button;
-					if(include_mouse)
-						return TD_MOUSE;
-					break;
-			}
-		}
-	}
-	return TD_QUIT;
-}
-
-int td_poll_event() {
-	SDL_Event event;
-	while(SDL_PollEvent(&event)) {
-		if(event.type == SDL_QUIT) {
-			display.running = 0;
-			return 0;
-		}
-	}
-	return 1;
-}*/
-
 // emscripten hack for redrawing when canvas was resized
 void rl_force_redraw() {
 	SDL_Event event = {.type = SDL_WINDOWEVENT};
@@ -607,6 +517,8 @@ void td_present() {
 #endif
 #ifdef __EMSCRIPTEN__
 	// canvas size is based on canvas container
+	int canvas_fit_parent = EM_ASM_INT(return Module.canvas_fit_parent);
+	if(canvas_fit_parent) {
 	display.window_width = EM_ASM_INT({ 
 			let container = Module.canvas.parentNode;
 			return container.clientWidth;
@@ -615,6 +527,10 @@ void td_present() {
 			let container = Module.canvas.parentNode;
 			return container.clientHeight;
 	});
+	} else {
+		display.window_width = display.width;
+		display.window_height = display.height;
+	}
 	GPU_SetWindowResolution(display.window_width, display.window_height);
 	double devicePixelRatio = emscripten_get_device_pixel_ratio();
 	// fix handling of HiDPI by emscripten
@@ -754,10 +670,6 @@ void td_run(void (*update_callback)(int key), int update_filter) {
 #endif
 }
 
-/*void td_delay(uint32_t ms) {
-	SDL_Delay(ms);
-}*/
-
 uint32_t td_color(unsigned char r, unsigned char g, unsigned char b, unsigned char a) {
 	return td_color_rgba(r, g, b, a);
 }
@@ -796,20 +708,6 @@ int td_mouse_y() {
 
 int td_mouse_button() {
 	return display.mouse_button;
-}
-
-void td_draw_points(td_point_t* points, int num, uint32_t color) {
-#ifdef USE_SDLGPU
-	rl_error("unimplemented");
-#else
-	SDL_Surface* surface = SDL_CreateRGBSurfaceWithFormat(0, display.width, display.height, 32, SDL_PIXELFORMAT_RGBA32);
-	for(int i = 0; i < num; i++)
-		((uint32_t*)surface->pixels)[points[i].x + points[i].y * surface->w] = color;
-	SDL_Texture* texture = SDL_CreateTextureFromSurface(display.renderer, surface);
-	SDL_RenderCopy(display.renderer, texture, NULL, NULL);
-	SDL_DestroyTexture(texture);
-	SDL_FreeSurface(surface);
-#endif
 }
 
 uint32_t td_random_color() {

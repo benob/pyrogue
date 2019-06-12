@@ -75,6 +75,7 @@
 				Module.ccall('pyrogue_quit', null, []);
 			}
       var Module = {
+				canvas_fit_parent: 1,
         canvas: document.getElementById('canvas'),
 				onRuntimeInitialized: function() {
 					window.addEventListener("resize", function() {

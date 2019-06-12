@@ -882,66 +882,6 @@ STATIC mp_obj_t mod_td_draw_line(size_t n_args, const mp_obj_t *args) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_td_draw_line_obj, 4, 5, mod_td_draw_line);
 
-void td_draw_points(td_point_t* points, int num, uint32_t color);
-STATIC mp_obj_t mod_td_draw_points(mp_obj_t points_in, mp_obj_t color_in) {
-	mp_int_t size = mp_obj_get_int(mp_obj_len(points_in));
-	td_point_t* points = malloc(size * sizeof(point_t));
-	for(int i = 0; i < size; i++) {
-		mp_obj_t* tuple_in = mp_obj_subscr(points_in, mp_obj_new_int(i), MP_OBJ_SENTINEL);
-		if(!mp_obj_is_type(tuple_in, &mp_type_tuple)) mp_raise_msg(&mp_type_TypeError, "expecting list of tuples");
-		mp_obj_tuple_t* tuple = MP_OBJ_TO_PTR(tuple_in);
-		if(tuple->len != 2) mp_raise_msg(&mp_type_ValueError, "expecting tuples of size 2");
-
-		points[i].x = mp_obj_get_int(tuple->items[0]);
-		points[i].y = mp_obj_get_int(tuple->items[1]);
-	}
-	mp_uint_t color = mp_obj_get_int(color_in);
-	td_draw_points(points, size, color);
-	free(points);
-	return mp_const_none;
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(mod_td_draw_points_obj, mod_td_draw_points);
-
-/*STATIC mp_obj_t mod_td_still_running() {
-	mp_int_t result = td_still_running();
-	return mp_obj_new_bool(result);
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_td_still_running_obj, mod_td_still_running);
-
-STATIC mp_obj_t mod_td_wait_key() {
-	mp_int_t result = td_wait_key();
-	return mp_obj_new_int(result);
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_td_wait_key_obj, mod_td_wait_key);
-
-STATIC mp_obj_t mod_td_wait_event(size_t n_args, const mp_obj_t *args) {
-	mp_int_t include_mouse = 0;
-	if(n_args > 0) include_mouse = mp_obj_is_true(args[0]);
-	mp_int_t result = td_wait_event(include_mouse);
-	return mp_obj_new_int(result);
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_td_wait_event_obj, 0, 1, mod_td_wait_event);
-
-STATIC mp_obj_t mod_td_poll_event() {
-	mp_int_t result = td_poll_event();
-	return mp_obj_new_int(result);
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_td_poll_event_obj, mod_td_poll_event);
-
-STATIC mp_obj_t mod_td_present() {
-	td_present();
-	return mp_const_none;
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_td_present_obj, mod_td_present);
-
-STATIC mp_obj_t mod_td_delay(mp_obj_t ms_in) {
-	mp_uint_t ms = mp_obj_get_int(ms_in);
-	td_delay(ms);
-	return mp_const_none;
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_td_delay_obj, mod_td_delay);
-*/
-
 STATIC mp_obj_t mod_td_clear() {
 	td_clear();
 	return mp_const_none;
@@ -1105,6 +1045,10 @@ STATIC mp_obj_t mod_rl_walk_line_next() {
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_rl_walk_line_next_obj, mod_rl_walk_line_next);
 
 // WARNING: declaring const long intenger requires to use of MICROPY_LONGINT_IMPL_LONGLONG
+
+const mp_obj_int_t mod_rl_INT_MAX = {{&mp_type_int}, INT_MAX};
+const mp_obj_int_t mod_rl_INT_MIN = {{&mp_type_int}, INT_MIN};
+
 // pico8 colors
 const mp_obj_int_t mod_rl_BLACK = {{&mp_type_int}, (td_color_rgba(0, 0, 0, 255)) };
 const mp_obj_int_t mod_rl_DARKBLUE = {{&mp_type_int}, (td_color_rgba(29, 43, 83, 255)) };
@@ -1402,13 +1346,6 @@ STATIC const mp_rom_map_elem_t mp_module_rl_globals_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR_fill_rect), MP_ROM_PTR(&mod_td_fill_rect_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_draw_rect), MP_ROM_PTR(&mod_td_draw_rect_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_draw_line), MP_ROM_PTR(&mod_td_draw_line_obj) },
-	{ MP_ROM_QSTR(MP_QSTR_draw_points), MP_ROM_PTR(&mod_td_draw_points_obj) },
-	/*{ MP_ROM_QSTR(MP_QSTR_still_running), MP_ROM_PTR(&mod_td_still_running_obj) },
-	{ MP_ROM_QSTR(MP_QSTR_wait_key), MP_ROM_PTR(&mod_td_wait_key_obj) },
-	{ MP_ROM_QSTR(MP_QSTR_wait_event), MP_ROM_PTR(&mod_td_wait_event_obj) },
-	{ MP_ROM_QSTR(MP_QSTR_poll_event), MP_ROM_PTR(&mod_td_poll_event_obj) },
-	{ MP_ROM_QSTR(MP_QSTR_present), MP_ROM_PTR(&mod_td_present_obj) },
-	{ MP_ROM_QSTR(MP_QSTR_delay), MP_ROM_PTR(&mod_td_delay_obj) },*/
 	{ MP_ROM_QSTR(MP_QSTR_clear), MP_ROM_PTR(&mod_td_clear_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_quit), MP_ROM_PTR(&mod_td_quit_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_color), MP_ROM_PTR(&mod_td_color_obj) },
@@ -1418,9 +1355,6 @@ STATIC const mp_rom_map_elem_t mp_module_rl_globals_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR_color_b), MP_ROM_PTR(&mod_td_color_b_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_color_a), MP_ROM_PTR(&mod_td_color_a_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_random_color), MP_ROM_PTR(&mod_td_random_color_obj) },
-	/*{ MP_ROM_QSTR(MP_QSTR_mouse_x), MP_ROM_PTR(&mod_td_mouse_x_obj) },
-	{ MP_ROM_QSTR(MP_QSTR_mouse_y), MP_ROM_PTR(&mod_td_mouse_y_obj) },
-	{ MP_ROM_QSTR(MP_QSTR_mouse_button), MP_ROM_PTR(&mod_td_mouse_button_obj) },*/
 	{ MP_ROM_QSTR(MP_QSTR_mouse), MP_ROM_PTR(&mod_td_mouse_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_shift_pressed), MP_ROM_PTR(&mod_td_shift_pressed_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_alt_pressed), MP_ROM_PTR(&mod_td_alt_pressed_obj) },
@@ -1445,6 +1379,10 @@ STATIC const mp_rom_map_elem_t mp_module_rl_globals_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR_UPDATE_MOUSE), MP_ROM_INT(TD_UPDATE_MOUSE) },
 	{ MP_ROM_QSTR(MP_QSTR_UPDATE_LOOP), MP_ROM_INT(TD_UPDATE_LOOP) },
 
+	// math
+  { MP_ROM_QSTR(MP_QSTR_INT_MAX), MP_ROM_PTR(&mod_rl_INT_MAX) },
+  { MP_ROM_QSTR(MP_QSTR_INT_MIN), MP_ROM_PTR(&mod_rl_INT_MIN) },
+	
 	// pico8 colors
   { MP_ROM_QSTR(MP_QSTR_BLACK), MP_ROM_PTR(&mod_rl_BLACK) },
   { MP_ROM_QSTR(MP_QSTR_DARKBLUE), MP_ROM_PTR(&mod_rl_DARKBLUE) },

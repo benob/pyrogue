@@ -13,10 +13,6 @@ enum {TD_QUIT = -3, TD_MOUSE = -2, TD_REDRAW = -1, TD_PASS = 0};
 // event types
 enum {TD_UPDATE_KEY=1, TD_UPDATE_MOUSE=2, TD_UPDATE_LOOP=4};
 
-typedef struct {
-	int x, y;
-} td_point_t;
-
 #define TD_NUM_IMAGES 32
 #define TD_NUM_BUFFERS 4
 
@@ -37,20 +33,13 @@ void td_draw_image(int image, int x, int y);
 void td_draw_tile(int image, int x, int y, int tile);
 void td_colorize_tile(int image, int x, int y, int tile, uint32_t fg, uint32_t bg);
 void td_draw_array(int index, array_t* a, int x, int y, int x_shift, int y_shift, int info_size, int* info_mapping, uint32_t* info_fg, uint32_t* info_bg);
-// print utf8 characters
+// TODO: print utf8 characters
 void td_print_text(int orig_x, int orig_y, const char* text, uint32_t color, int align);
 void td_print_text_from_tiles(int index, int orig_x, int orig_y, const char* text, uint32_t color, int align);
 void td_size_text(const char* text, int* width, int* height);
 void td_fill_rect(int x, int y, int w, int h, uint32_t color);
 void td_draw_rect(int x, int y, int w, int h, uint32_t color);
 void td_draw_line(int x1, int y1, int x2, int y2, uint32_t color);
-void td_draw_points(td_point_t* points, int num, uint32_t color);
-/*int td_still_running();
-int td_wait_key();
-int td_wait_event(int include_mouse);
-int td_poll_event();
-void td_present();
-void td_delay(uint32_t ms);*/
 void td_clear();
 void td_quit();
 void td_run(void (*update_callback)(int key), int update_filter);
