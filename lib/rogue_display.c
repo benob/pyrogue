@@ -37,19 +37,6 @@
 
 typedef struct {
 	int width, height;
-	int tile_width, tile_height;
-	int tiles_per_line;
-	uint32_t* pixels;
-#ifdef USE_SDLGPU
-	GPU_Image* texture;
-#else
-	SDL_Surface* surface;
-	SDL_Texture* texture;
-#endif
-} image_t;
-
-typedef struct {
-	int width, height;
 	int window_width, window_height;
 	int running, was_init;
 	int mouse_x, mouse_y, mouse_button;
@@ -57,7 +44,7 @@ typedef struct {
 	SDL_Renderer* renderer;
 	STBTTF_Font* font;
 	int line_height;
-	image_t images[TD_NUM_IMAGES];
+	//image_t images[TD_NUM_IMAGES];
 #ifdef USE_SDLGPU
 	GPU_Target* screen;
 	GPU_Image* screen_image;
@@ -76,11 +63,12 @@ static display_t display;
 
 static void __attribute__((constructor)) _td_init() {
 	memset(&display, 0, sizeof(display_t));
+	td_init("pyrogue", 320, 240);
 }
 
 static void __attribute__((destructor)) _td_fini() {
 	if(display.was_init) {
-		for(int i = 0; i < TD_NUM_IMAGES; i++) {
+/*		for(int i = 0; i < TD_NUM_IMAGES; i++) {
 #ifdef USE_SDLGPU
 			if(display.images[i].texture != NULL) GPU_FreeImage(display.images[i].texture);
 #else
@@ -88,7 +76,7 @@ static void __attribute__((destructor)) _td_fini() {
 			if(display.images[i].texture != NULL) SDL_DestroyTexture(display.images[i].texture);
 #endif
 			if(display.images[i].pixels != NULL) free(display.images[i].pixels);
-		}
+		}*/
 #ifndef USE_SDLGPU
 		SDL_DestroyTexture(display.screen);
 #endif
@@ -179,35 +167,48 @@ void td_load_font(const char* font_path, int font_size, int line_height) {
 	if(line_height != 0) display.line_height = line_height;
 }
 
-int td_load_image(int index, const char* filename, int tile_width, int tile_height) {
+image_t* td_load_image(const char* filename, int tile_width, int tile_height) {
 	uint32_t image_data_size;
 	char* image_data = fs_load_asset(filename, &image_data_size);
 	if(image_data == NULL) rl_error("cannot load image '%s' from assets", filename);
 	SDL_RWops* ops = SDL_RWFromMem(image_data, image_data_size);
-	image_t image;
-	image.tile_width = tile_width;
-	image.tile_height = tile_height;
+	image_t* image = rl_malloc(sizeof(image_t));
+	image->tile_width = tile_width;
+	image->tile_height = tile_height;
 #ifdef USE_SDLGPU
-	image.texture = GPU_LoadImage_RW(ops, 1);
-	if(image.texture == NULL) rl_error("cannot decode image data '%s'", filename);
-	GPU_SetImageFilter(image.texture, GPU_FILTER_NEAREST);
-	GPU_SetAnchor(image.texture, 0, 0);
-	GPU_SetBlending(image.texture, 1);
-	GPU_SetBlendMode(image.texture, GPU_BLEND_NORMAL);
-	GPU_SetSnapMode(image.texture, GPU_SNAP_POSITION_AND_DIMENSIONS);
-	image.width = image.texture->w;
-	image.height = image.texture->h;
+	image->texture = GPU_LoadImage_RW(ops, 1);
+	if(image->texture == NULL) {
+		rl_free(image, sizeof(image_t));
+		free(image_data);
+		rl_error("cannot decode image data '%s'", filename);
+	}
+	GPU_SetImageFilter(image->texture, GPU_FILTER_NEAREST);
+	GPU_SetAnchor(image->texture, 0, 0);
+	GPU_SetBlending(image->texture, 1);
+	GPU_SetBlendMode(image->texture, GPU_BLEND_NORMAL);
+	GPU_SetSnapMode(image->texture, GPU_SNAP_POSITION_AND_DIMENSIONS);
+	image->width = image->texture->w;
+	image->height = image->texture->h;
 #else
-	image.surface = STBIMG_Load_RW(ops, 1);
-	if(image.surface == NULL) rl_error("cannot decode image data '%s'", filename);
-	image.width = surface->w;
-	image.height = surface->h;
-	image.texture = SDL_CreateTextureFromSurface(display.renderer, surface);
-	if(image.texture == NULL) rl_error("cannot create texture for image '%s'", filename);
+	image->surface = STBIMG_Load_RW(ops, 1);
+	if(image->surface == NULL) {
+		rl_free(image, sizeof(image_t));
+		free(image_data);
+		rl_error("cannot decode image data '%s'", filename);
+	}
+	image->width = surface->w;
+	image->height = surface->h;
+	image->texture = SDL_CreateTextureFromSurface(display.renderer, surface);
+	if(image->texture == NULL) {
+		SDL_FreeSurface(image->surface);
+		rl_free(image, sizeof(image_t));
+		free(image_data);
+		rl_error("cannot create texture for image '%s'", filename);
+	}
 #endif
 	free(image_data);
-	image.tiles_per_line = image.width / image.tile_width;
-	if(display.images[index].texture != NULL) {
+	image->tiles_per_line = image->width / image->tile_width;
+	/*if(display.images[index].texture != NULL) {
 #ifdef USE_SDLGPU
 		GPU_FreeImage(display.images[index].texture);
 #else
@@ -215,13 +216,22 @@ int td_load_image(int index, const char* filename, int tile_width, int tile_heig
 		SDL_DestroyTexture(display.images[index].texture);
 #endif
 	}
-	display.images[index] = image;
-	return 1;
+	display.images[index] = image;*/
+	return image;
 }
 
-void td_array_to_image(int index, array_t* a, int tile_width, int tile_height) {
-	if(index < 0 || index >= TD_NUM_IMAGES) rl_error("invalid image '%d'", index);
-	image_t* image = &display.images[index];
+void td_free_image(image_t* image) {
+#ifdef USE_SDLGPU
+	GPU_FreeImage(image->texture);
+#else
+	SDL_FreeSurface(image->surface);
+	SDL_DestroyTexture(image->texture);
+#endif
+	rl_free(image, sizeof(image_t));
+}
+
+image_t* td_array_to_image(array_t* a, int tile_width, int tile_height) {
+	image_t* image = rl_malloc(sizeof(image_t));
 	image->tile_width = tile_width;
 	image->tile_height = tile_height;
 	image->width = a->width;
@@ -230,32 +240,31 @@ void td_array_to_image(int index, array_t* a, int tile_width, int tile_height) {
 	int row_size = sizeof(uint32_t) * (a->width + a->stride);
 
 #ifdef USE_SDLGPU
-	if(image->texture == NULL || a->width != image->width || a->height != image->height) {
-		if(image->texture != NULL) GPU_FreeImage(image->texture);
-		image->texture = GPU_CreateImage(a->width, a->height, GPU_FORMAT_RGBA);
-		GPU_SetAnchor(image->texture, 0, 0);
-		GPU_SetBlending(image->texture, 1);
-		GPU_SetBlendMode(image->texture, GPU_BLEND_NORMAL);
-		GPU_SetSnapMode(image->texture, GPU_SNAP_POSITION_AND_DIMENSIONS);
+	image->texture = GPU_CreateImage(a->width, a->height, GPU_FORMAT_RGBA);
+	GPU_SetAnchor(image->texture, 0, 0);
+	GPU_SetBlending(image->texture, 1);
+	GPU_SetBlendMode(image->texture, GPU_BLEND_NORMAL);
+	GPU_SetSnapMode(image->texture, GPU_SNAP_POSITION_AND_DIMENSIONS);
+	if(image->texture == NULL) {
+		rl_free(image, sizeof(image_t));
+		rl_error("cannot create texture");
 	}
-	if(image->texture == NULL) rl_error("cannot create texture");
 	GPU_UpdateImageBytes(image->texture, NULL, (const unsigned char*)a->values, row_size);
 #else
-	if(image->texture == NULL || a->width != image->width || a->height != image->height) {
-		if(image->texture != NULL) SDL_DestroyTexture(image->texture);
-		if(image->surface != NULL) SDL_FreeSurface(image->surface);
-		image->texture = SDL_CreateTexture(display.renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STATIC, a->width, a->height);
-		image->surface = SDL_CreateRGBSurfaceWithFormat(0, a->width, a->height, 32, SDL_PIXELFORMAT_RGBA32);
+	image->texture = SDL_CreateTexture(display.renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STATIC, a->width, a->height);
+	image->surface = SDL_CreateRGBSurfaceWithFormat(0, a->width, a->height, 32, SDL_PIXELFORMAT_RGBA32);
 	}
-	if(image->texture == NULL) rl_error("cannot create texture");
+	if(image->texture == NULL) {
+		rl_free(image, sizeof(image_t));
+		rl_error("cannot create texture");
+	}
 	SDL_UpdateTexture(image->texture, NULL, a->values, row_size);
 	for(int j = 0; j < a->height; j++) memcpy(((uint32_t*) image->surface->pixels) + j * a->width, ((char*) a->values) + j * row_size, sizeof(uint32_t) * a->width);
 #endif
+	return image;
 }
 
-array_t* td_image_to_array(int index) {
-	if(index < 0 || index >= TD_NUM_IMAGES) rl_error("invalid image '%d'", index);
-	image_t* image = &display.images[index];
+array_t* td_image_to_array(image_t* image) {
 	if(image->texture == NULL) rl_error("invalid image '%d'", index);
 #ifdef USE_SDLGPU
 	SDL_Surface* surface = GPU_CopySurfaceFromImage(image->texture);
@@ -264,12 +273,13 @@ array_t* td_image_to_array(int index) {
 #endif
 	array_t* a = rl_array_new(image->width, image->height);
 	memcpy(a->values, surface->pixels, sizeof(uint32_t) * a->width * a->height);
+#ifdef USE_SDLGPU
+	SDL_FreeSurface(surface);
+#endif
 	return a;
 }
 
-void td_draw_image(int index, int x, int y) {
-	if(index < 0 || index >= TD_NUM_IMAGES) rl_error("invalid image '%d'", index);
-	image_t* image = &display.images[index];
+void td_draw_image(image_t* image, int x, int y) {
 	if(image->texture == NULL) rl_error("invalid image '%d'", index);
 #ifdef USE_SDLGPU
 	GPU_Blit(image->texture, NULL, display.screen, x, y);
@@ -279,9 +289,7 @@ void td_draw_image(int index, int x, int y) {
 #endif
 }
 
-void td_draw_tile(int index, int x, int y, int tile) {
-	if(index < 0 || index >= TD_NUM_IMAGES) rl_error("invalid image '%d'", index);
-	image_t* image = &display.images[index];
+void td_draw_tile(image_t* image, int x, int y, int tile) {
 	if(image->texture == NULL) rl_error("invalid image '%d'", index);
 	int tile_x = (tile % image->tiles_per_line) * image->tile_width;
 	int tile_y = (tile / image->tiles_per_line) * image->tile_height;
@@ -296,9 +304,7 @@ void td_draw_tile(int index, int x, int y, int tile) {
 #endif
 }
 
-void td_colorize_tile(int index, int x, int y, int tile, uint32_t fg, uint32_t bg) {
-	if(index < 0 || index >= TD_NUM_IMAGES) rl_error("invalid image '%d'", index);
-	image_t* image = &display.images[index];
+void td_colorize_tile(image_t* image, int x, int y, int tile, uint32_t fg, uint32_t bg) {
 	if(image->texture == NULL) rl_error("invalid image '%d'", index);
 	int tile_x = (tile % image->tiles_per_line) * image->tile_width;
 	int tile_y = (tile / image->tiles_per_line) * image->tile_height;
@@ -328,9 +334,7 @@ void td_colorize_tile(int index, int x, int y, int tile, uint32_t fg, uint32_t b
 #endif
 }
 
-void td_draw_array(int index, array_t* a, int x, int y, int x_shift, int y_shift, int info_size, int* info_mapping, uint32_t* info_fg, uint32_t* info_bg) {
-	if(index < 0 || index >= TD_NUM_IMAGES) rl_error("invalid image '%d'", index);
-	image_t* image = &display.images[index];
+void td_draw_array(image_t* image, array_t* a, int x, int y, int x_shift, int y_shift, int info_size, int* info_mapping, uint32_t* info_fg, uint32_t* info_bg) {
 	if(image->texture == NULL) rl_error("invalid image '%d'", index);
 	if(x_shift == 0) x_shift = image->tile_width;
 	if(y_shift == 0) y_shift = image->tile_height;
@@ -391,9 +395,7 @@ void td_draw_array(int index, array_t* a, int x, int y, int x_shift, int y_shift
 
 
 // TODO: align is not implemented
-void td_print_text_from_tiles(int index, int orig_x, int orig_y, const char* text, uint32_t color, int align) {
-	if(index < 0 || index >= TD_NUM_IMAGES) rl_error("invalid image '%d'", index);
-	image_t* image = &display.images[index];
+void td_draw_text_from_tiles(image_t* image, int orig_x, int orig_y, const char* text, uint32_t color, int align) {
 	if(image->texture == NULL) rl_error("invalid image '%d'", index);
 	int x = orig_x, y = orig_y + image->tile_height;
 #ifdef USE_SDLGPU
@@ -431,7 +433,7 @@ void td_print_text_from_tiles(int index, int orig_x, int orig_y, const char* tex
 #endif
 }
 
-void td_print_text(int orig_x, int orig_y, const char* text, uint32_t color, int align) {
+void td_draw_text(int orig_x, int orig_y, const char* text, uint32_t color, int align) {
 	if(!display.font) rl_error("no font loaded");
 	int x = orig_x, y = orig_y + display.font->baseline;
 	SDL_Color fg = {td_color_r(color), td_color_g(color), td_color_b(color), td_color_a(color)};

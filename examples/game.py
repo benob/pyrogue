@@ -88,18 +88,18 @@ Tile.ascii = [
     ]
 
 def load_theme():
-    global font_source
+    global tileset
     tilesets = [
-            ['data/ascii_8x8.png', 8, 8, Tile.ascii, 8, 0],
-            ['data/minirogue-c64-all.png', 8, 8, Tile.minirogue, 8, -1],
-            ['data/cp437.png', 9, 16, Tile.ascii, 16, 0],
-            ['data/polyducks_12x12.png', 12, 12, Tile.ascii, 8, 0],
-            ['data/dcss.png', 32, 32, Tile.dcss, 32, -1],
+            ['data/ascii_8x8.png', 8, 8, Tile.ascii, 8],
+            ['data/minirogue-c64-all.png', 8, 8, Tile.minirogue, 8],
+            ['data/cp437.png', 9, 16, Tile.ascii, 16],
+            ['data/polyducks_12x12.png', 12, 12, Tile.ascii, 8],
+            ['data/dcss.png', 32, 32, Tile.dcss, 32],
         ]
-    filename, Tile.WIDTH, Tile.HEIGHT, Tile.mapping, font_size, font_source = tilesets[game.theme % len(tilesets)]
+    filename, Tile.WIDTH, Tile.HEIGHT, Tile.mapping, font_size = tilesets[game.theme % len(tilesets)]
 
     rl.init('Example roguelike [' + filename + ']', WIDTH * Tile.WIDTH, (HEIGHT + 4) * Tile.HEIGHT)
-    rl.load_image(0, filename, Tile.WIDTH, Tile.HEIGHT)
+    tileset = rl.image(filename, Tile.WIDTH, Tile.HEIGHT)
     rl.load_font('data/font.ttf', font_size, font_size)
 
 class Level:
@@ -377,19 +377,19 @@ def update():
 def redraw():
     rl.clear()
     # draw the full level
-    '''rl.draw_array(level.array, 0, 0, 
+    '''rl.draw_array(level.array, tileset, 0, 0, 
             mapping=[tile.num for tile in Tile.mapping],
             fg=[tile.fg for tile in Tile.mapping],
             bg=[tile.bg for tile in Tile.mapping])'''
 
     # draw memorized tiles
-    rl.draw_array(level.memory, 0, 0, 
+    rl.draw_array(level.memory, tileset, 0, 0, 
             mapping=[tile.num for tile in Tile.mapping],
             fg=[rl.color(255, 255, 255, 192) for tile in Tile.mapping])
     # draw level masked with fov
     to_draw = rl.array(WIDTH, HEIGHT)
     level.array.copy_masked(to_draw, fov)
-    rl.draw_array(to_draw, 0, 0, 
+    rl.draw_array(to_draw, tileset, 0, 0, 
             mapping=[tile.num for tile in Tile.mapping],
             fg=[tile.fg for tile in Tile.mapping],
             bg=[tile.bg for tile in Tile.mapping])
@@ -400,17 +400,16 @@ def redraw():
         if player.can_see(actor):
             tile = Tile.mapping[actor.tile]
             floor = Tile.mapping[level.array[actor.x, actor.y]]
-            rl.colorize_tile(0, actor.x * Tile.WIDTH, actor.y * Tile.HEIGHT, floor.num, floor.fg, floor.bg)
-            rl.colorize_tile(0, actor.x * Tile.WIDTH, actor.y * Tile.HEIGHT, tile.num, tile.fg, tile.bg)
-    #rl.draw_image(0, Tile.WIDTH * WIDTH - 128, 0)
+            rl.colorize_tile(tileset, actor.x * Tile.WIDTH, actor.y * Tile.HEIGHT, floor.num, floor.fg, floor.bg)
+            rl.colorize_tile(tileset, actor.x * Tile.WIDTH, actor.y * Tile.HEIGHT, tile.num, tile.fg, tile.bg)
+    #rl.draw_image(tileset, Tile.WIDTH * WIDTH - 128, 0)
 
-    rl.print_text(Tile.WIDTH // 8, Tile.HEIGHT // 8, 'hp: %d  damage: %d' % (player.hp, player.damage), color=rl.color(0, 0, 0, 192), image=font_source)
-    rl.print_text(0, 0, 'hp: %d  damage: %d' % (player.hp, player.damage), image=font_source)
+    rl.draw_text(Tile.WIDTH // 8, Tile.HEIGHT // 8, 'hp: %d  damage: %d' % (player.hp, player.damage), color=rl.color(0, 0, 0, 192))
+    rl.draw_text(0, 0, 'hp: %d  damage: %d' % (player.hp, player.damage))
 
-    rl.print_text(0, Tile.HEIGHT * HEIGHT, '\n'.join(messages[-4:]), image=font_source)
+    rl.draw_text(0, Tile.HEIGHT * HEIGHT, '\n'.join(messages[-4:]))
 
 def handler(event):
-    print('handler', event, rl.LEFT, type(event), type(rl.LEFT))
     if handle_input(event) != rl.REDRAW:
         update()
     redraw()

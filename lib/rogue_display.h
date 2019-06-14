@@ -5,6 +5,23 @@
 #include "rogue_array.h"
 #include "rogue_random.h"
 #include "rogue_keys.h"
+#include <SDL.h>
+
+#ifdef USE_SDLGPU
+#include <SDL_gpu.h>
+#endif
+
+typedef struct {
+	int width, height;
+	int tile_width, tile_height;
+	int tiles_per_line;
+#ifdef USE_SDLGPU
+	GPU_Image* texture;
+#else
+	SDL_Surface* surface;
+	SDL_Texture* texture;
+#endif
+} image_t;
 
 // text alignment
 enum {TD_ALIGN_LEFT, TD_ALIGN_RIGHT, TD_ALIGN_CENTER};
@@ -26,16 +43,17 @@ enum {TD_UPDATE_KEY=1, TD_UPDATE_MOUSE=2, TD_UPDATE_LOOP=4};
 // TODO: set images as render targets
 int td_init(const char* title, int width, int height);
 void td_load_font(const char* font_path, int font_size, int line_height);
-int td_load_image(int image, const char* filename, int tile_width, int tile_height);
-void td_array_to_image(int index, array_t* a, int tile_width, int tile_height);
-array_t* td_image_to_array(int index);
-void td_draw_image(int image, int x, int y);
-void td_draw_tile(int image, int x, int y, int tile);
-void td_colorize_tile(int image, int x, int y, int tile, uint32_t fg, uint32_t bg);
-void td_draw_array(int index, array_t* a, int x, int y, int x_shift, int y_shift, int info_size, int* info_mapping, uint32_t* info_fg, uint32_t* info_bg);
+image_t* td_load_image(const char* filename, int tile_width, int tile_height);
+void td_free_image(image_t* image);
+image_t* td_array_to_image(array_t* a, int tile_width, int tile_height);
+array_t* td_image_to_array(image_t* image);
+void td_draw_image(image_t* image, int x, int y);
+void td_draw_tile(image_t* image, int x, int y, int tile);
+void td_colorize_tile(image_t* image, int x, int y, int tile, uint32_t fg, uint32_t bg);
+void td_draw_array(image_t*, array_t* a, int x, int y, int x_shift, int y_shift, int info_size, int* info_mapping, uint32_t* info_fg, uint32_t* info_bg);
 // TODO: print utf8 characters
-void td_print_text(int orig_x, int orig_y, const char* text, uint32_t color, int align);
-void td_print_text_from_tiles(int index, int orig_x, int orig_y, const char* text, uint32_t color, int align);
+void td_draw_text(int orig_x, int orig_y, const char* text, uint32_t color, int align);
+void td_draw_text_from_tiles(image_t* image, int orig_x, int orig_y, const char* text, uint32_t color, int align);
 void td_size_text(const char* text, int* width, int* height);
 void td_fill_rect(int x, int y, int w, int h, uint32_t color);
 void td_draw_rect(int x, int y, int w, int h, uint32_t color);

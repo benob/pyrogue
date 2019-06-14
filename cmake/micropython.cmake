@@ -50,6 +50,7 @@ set(micropython_CFLAGS
 	-I. 
 	-I${GENHDR}/.. 
 	${micropython_platform_CFLAGS}
+	${micropython_EXTRA_MODULES_CFLAGS}
 	-I${MP}/ 
 	-Wall
 	-Werror
@@ -239,7 +240,7 @@ target_compile_options(micropython PRIVATE ${micropython_CFLAGS})
 if (EMSCRIPTEN)
 	target_compile_definitions(micropython PRIVATE FFCONF_H=\"${MP}/lib/oofatfs/ffconf.h\" MICROPY_ROOT_STACK=1)
 else()
-	target_compile_definitions(micropython PRIVATE FFCONF_H=\"${MP}/lib/oofatfs/ffconf.h\" MICROPY_ROOT_STACK=0)
+	target_compile_definitions(micropython PRIVATE FFCONF_H=\"${MP}/lib/oofatfs/ffconf.h\")
 endif()
 
 # hack to get cmake's C_FLAGS

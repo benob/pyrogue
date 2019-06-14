@@ -6,7 +6,7 @@ TILE_WIDTH = 9
 TILE_HEIGHT = 16
 
 rl.init('fire', WIDTH * TILE_WIDTH, HEIGHT * TILE_HEIGHT)
-rl.load_image(0, 'data/cp437.png', TILE_WIDTH, TILE_HEIGHT)
+tiles = rl.image('data/cp437.png', TILE_WIDTH, TILE_HEIGHT)
 
 def gradient(start, stop, steps):
     r1 = rl.color_r(start)
@@ -33,7 +33,7 @@ def redraw(event):
             fire[i, j] = value
 
     rl.clear()
-    rl.draw_array(fire, 0, 0, mapping=chars, fg=palette)
+    rl.draw_array(fire, tiles, 0, 0, mapping=chars, fg=palette)
 
 rl.run(redraw, rl.UPDATE_LOOP)
 
