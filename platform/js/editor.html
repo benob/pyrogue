@@ -9,14 +9,18 @@
 		<script src="https://codemirror.net/mode/python/python.js"></script>
     <style>
 			body {
-				margin-left: 3em;
-				margin-right: 3em;
+				margin-left: auto;
+				margin-right: auto;
+				margin-bottom: 2em;
+				width: 800px;
 			}
 			#canvas-container {
 				text-align: center;
 				width: 100%;
 				background: black;
-				border-radius: 20px 20px 0px 0px;
+				border-radius: 10px 10px 0px 0px;
+				margin: 0px;
+				padding: 0px;
 			}
 			#buttons-container {
 				background: black;
@@ -25,23 +29,17 @@
 				font-family: monospace;
 				font-size: 13px;
 			}
-			#buttons-container a:link {
-				color: white;
+			#buttons-container a, a:link, a:visited, a:active, a:hover {
+				color: dodgerblue;
 			}
-			#buttons-container a:visited {
-				color: white;
-			}
-			#buttons-container a:hover {
-				color: white;
-			}
-			#buttons-container a:active {
-				color: white;
+			#buttons-container button, select {
+				color: dodgerblue;
+				background: black;
+				border: 1px solid dodgerblue;
+				font-family: monospace;
 			}
 			#canvas {
 				background: rgb(16, 16, 32);
-				margin-top: 2em;
-				width: 320px;
-				height: 240px;
 			}
 			#script {
 				width: 100%;
@@ -50,8 +48,8 @@
 				width: 100%;
 				height: 200px;
 				overflow-y: scroll;
-				background: black;
-				color: white;
+				background: gray;
+				color: black;
 				font-family: monospace;
 				font-size: 13px;
 			}
@@ -63,20 +61,28 @@
 	<body>
 		<div id="canvas-container"><canvas width="320" height="240" id="canvas"></canvas></div>
 		<div id="buttons-container">
-		Pyrogue: <a href="#" onclick="press_run(this)">Run</a>
+		Pyrogue: <button onclick="press_run(this)">▶</button>
+		<button id="console-button" onclick="toggle_console(this)">Console</button>
+		<!--<select>
+			<option selected disabled>Snippet</option>
+			<option>Plasma</option>
+			<option>Tileset</option>
+		</select>-->
+		<button onclick="get_link()">Get link</button>
+		<a href="documentation.html" target='documentation'>Documentation</a> 
 		</div>
 		<div id="script-container"><textarea id="script" rows="8">
 import rl
 
-rl.init('test', 320, 240)
+WIDTH, HEIGHT = 320, 240
+rl.init_display('test', WIDTH, HEIGHT)
 
 def update(event):
-    print(event)
-    color = rl.color(rl.random_int(0, 255), rl.random_int(0, 255), rl.random_int(0, 255))
-    rl.fill_rect(rl.random_int(0, 320), rl.random_int(0, 240), 50, 50, color)
+    color = rl.random_color()
+    rl.fill_rect(rl.random_int(0, WIDTH - 1), rl.random_int(0, HEIGHT - 1), 50, 50, color)
 
 rl.run(update)</textarea></div>
-		<div id="stdout"></div>
+		<div style="display: none" id="stdout"></div>
     <script type='text/javascript'>
 			var stdout = document.getElementById('stdout');
       var Module = {
@@ -87,9 +93,11 @@ rl.run(update)</textarea></div>
 					}],
 					print: function(text) {
 						stdout.innerText += text + '\n';
+						update_console_button(1);
 					},
 					printErr: function(text) {
 						stdout.innerText += text + '\n';
+						update_console_button(1);
 					},
       };
 			var running = false;
@@ -97,11 +105,11 @@ rl.run(update)</textarea></div>
 				if(running) {
 					pyrogue_quit();
 					running = false;
-					button.innerText = 'Run';
+					button.innerText = '▶';
 				} else {
 					stdout.innerText = '';
 					running = true;
-					button.innerText = 'Stop';
+					button.innerText = '◼';
 					let code = codeEditor.getValue();
 					document.getElementById('canvas').focus();
 					console.log('starting');
@@ -109,9 +117,21 @@ rl.run(update)</textarea></div>
 					pyrogue_quit();
 					console.log('finished');
 					running = false;
-					button.innerText = 'Start';
+					button.innerText = '▶';
+					//update_console_button(0);
 				}
+			}
+			function get_link() {
+				let code = codeEditor.getValue();
+				let url = window.location.href.split("#", 1)[0] + '#' + escape(code);
 
+				let dummy = document.createElement('input');
+				dummy.value = url;
+				document.body.appendChild(dummy);
+				dummy.select();
+				document.execCommand('copy');
+				document.body.removeChild(dummy);
+				alert('Copied url to clipboard.');
 			}
     </script>
     <script async type="text/javascript" src="pyrogue.preload.js"></script>
@@ -144,6 +164,32 @@ rl.run(update)</textarea></div>
 				theme: 'solarized dark',
 				viewportMargin: Infinity,
 			});
+			let url_parts = document.location.href.split('#');
+			if(url_parts.length == 2) {
+				let code = unescape(url_parts[1]);
+				console.log('code=', code);
+				codeEditor.setValue(code);
+			}
+			var showing_console = true;
+			function update_console_button(flag) {
+				let element = document.getElementById('console-button');
+				let editor = document.getElementById('script-container');
+				let stdout = document.getElementById('stdout');
+				if(showing_console) {
+					if(flag) element.innerText = 'Console*';
+					else element.innerText = 'Console';
+					editor.style.display = '';
+					stdout.style.display = 'none';
+				} else {
+					element.innerText = 'Code';
+					editor.style.display = 'none';
+					stdout.style.display = '';
+				}
+			}
+			function toggle_console(element) {
+				showing_console = !showing_console;
+				update_console_button(0);
+			}
 		</script>
 	</body>
 </html>

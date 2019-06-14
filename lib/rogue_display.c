@@ -252,7 +252,7 @@ image_t* td_array_to_image(array_t* a, int tile_width, int tile_height) {
 }
 
 array_t* td_image_to_array(image_t* image) {
-	if(image->texture == NULL) rl_error("invalid image '%d'", index);
+	if(image->texture == NULL) rl_error("invalid image");
 #ifdef USE_SDLGPU
 	SDL_Surface* surface = GPU_CopySurfaceFromImage(image->texture);
 #else
@@ -267,7 +267,7 @@ array_t* td_image_to_array(image_t* image) {
 }
 
 void td_draw_image(image_t* image, int x, int y) {
-	if(image->texture == NULL) rl_error("invalid image '%d'", index);
+	if(image->texture == NULL) rl_error("invalid image");
 #ifdef USE_SDLGPU
 	GPU_Blit(image->texture, NULL, display.screen, x, y);
 #else
@@ -277,7 +277,7 @@ void td_draw_image(image_t* image, int x, int y) {
 }
 
 void td_draw_tile(image_t* image, int x, int y, int tile) {
-	if(image->texture == NULL) rl_error("invalid image '%d'", index);
+	if(image->texture == NULL) rl_error("invalid image");
 	int tile_x = (tile % image->tiles_per_line) * image->tile_width;
 	int tile_y = (tile / image->tiles_per_line) * image->tile_height;
 #ifdef USE_SDLGPU
@@ -292,7 +292,7 @@ void td_draw_tile(image_t* image, int x, int y, int tile) {
 }
 
 void td_colorize_tile(image_t* image, int x, int y, int tile, uint32_t fg, uint32_t bg) {
-	if(image->texture == NULL) rl_error("invalid image '%d'", index);
+	if(image->texture == NULL) rl_error("invalid image");
 	int tile_x = (tile % image->tiles_per_line) * image->tile_width;
 	int tile_y = (tile / image->tiles_per_line) * image->tile_height;
 #ifdef USE_SDLGPU
@@ -322,7 +322,7 @@ void td_colorize_tile(image_t* image, int x, int y, int tile, uint32_t fg, uint3
 }
 
 void td_draw_array(image_t* image, array_t* a, int x, int y, int x_shift, int y_shift, int info_size, int* info_mapping, uint32_t* info_fg, uint32_t* info_bg) {
-	if(image->texture == NULL) rl_error("invalid image '%d'", index);
+	if(image->texture == NULL) rl_error("invalid image");
 	if(x_shift == 0) x_shift = image->tile_width;
 	if(y_shift == 0) y_shift = image->tile_height;
 	/* split background and foreground drawing to prevent slow switch of gl primitive type */
@@ -383,7 +383,7 @@ void td_draw_array(image_t* image, array_t* a, int x, int y, int x_shift, int y_
 
 // TODO: align is not implemented
 void td_draw_text_from_tiles(image_t* image, int orig_x, int orig_y, const char* text, uint32_t color, int align) {
-	if(image->texture == NULL) rl_error("invalid image '%d'", index);
+	if(image->texture == NULL) rl_error("invalid image");
 	int x = orig_x, y = orig_y;
 #ifdef USE_SDLGPU
 	SDL_Color fg = {td_color_r(color), td_color_g(color), td_color_b(color), td_color_a(color)};
