@@ -11,6 +11,8 @@
 #include <SDL_gpu.h>
 #endif
 
+#include "stbttf.h"
+
 typedef struct {
 	int width, height;
 	int tile_width, tile_height;
@@ -22,6 +24,8 @@ typedef struct {
 	SDL_Texture* texture;
 #endif
 } image_t;
+
+typedef STBTTF_Font font_t;
 
 // text alignment
 enum {TD_ALIGN_LEFT, TD_ALIGN_RIGHT, TD_ALIGN_CENTER};
@@ -41,8 +45,9 @@ enum {TD_UPDATE_KEY=1, TD_UPDATE_MOUSE=2, TD_UPDATE_LOOP=4};
 #define td_color_rgb(r, g, b) td_color_rgba(r, g, b, 255)
 
 // TODO: set images as render targets
-int td_init(const char* title, int width, int height);
-void td_load_font(const char* font_path, int font_size, int line_height);
+int td_init_display(const char* title, int width, int height);
+font_t* td_load_font(const char* font_path, float font_size);
+void td_free_font(font_t* font);
 image_t* td_load_image(const char* filename, int tile_width, int tile_height);
 void td_free_image(image_t* image);
 image_t* td_array_to_image(array_t* a, int tile_width, int tile_height);
@@ -52,9 +57,9 @@ void td_draw_tile(image_t* image, int x, int y, int tile);
 void td_colorize_tile(image_t* image, int x, int y, int tile, uint32_t fg, uint32_t bg);
 void td_draw_array(image_t*, array_t* a, int x, int y, int x_shift, int y_shift, int info_size, int* info_mapping, uint32_t* info_fg, uint32_t* info_bg);
 // TODO: print utf8 characters
-void td_draw_text(int orig_x, int orig_y, const char* text, uint32_t color, int align);
+void td_draw_text(font_t* font, int orig_x, int orig_y, const char* text, uint32_t color, int align, int line_height);
 void td_draw_text_from_tiles(image_t* image, int orig_x, int orig_y, const char* text, uint32_t color, int align);
-void td_size_text(const char* text, int* width, int* height);
+void td_size_text(font_t* font, const char* text, int* width, int* height);
 void td_fill_rect(int x, int y, int w, int h, uint32_t color);
 void td_draw_rect(int x, int y, int w, int h, uint32_t color);
 void td_draw_line(int x1, int y1, int x2, int y2, uint32_t color);

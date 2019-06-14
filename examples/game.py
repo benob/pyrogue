@@ -88,7 +88,7 @@ Tile.ascii = [
     ]
 
 def load_theme():
-    global tileset
+    global tileset, font
     tilesets = [
             ['data/ascii_8x8.png', 8, 8, Tile.ascii, 8],
             ['data/minirogue-c64-all.png', 8, 8, Tile.minirogue, 8],
@@ -98,9 +98,12 @@ def load_theme():
         ]
     filename, Tile.WIDTH, Tile.HEIGHT, Tile.mapping, font_size = tilesets[game.theme % len(tilesets)]
 
-    rl.init('Example roguelike [' + filename + ']', WIDTH * Tile.WIDTH, (HEIGHT + 4) * Tile.HEIGHT)
+    rl.init_display('Example roguelike [' + filename + ']', WIDTH * Tile.WIDTH, (HEIGHT + 4) * Tile.HEIGHT)
     tileset = rl.image(filename, Tile.WIDTH, Tile.HEIGHT)
-    rl.load_font('data/font.ttf', font_size, font_size)
+    if Tile.mapping is Tile.ascii:
+        font = tileset
+    else:
+        font = rl.font('data/font.ttf', font_size)
 
 class Level:
     def __init__(self, width, height):
@@ -400,14 +403,14 @@ def redraw():
         if player.can_see(actor):
             tile = Tile.mapping[actor.tile]
             floor = Tile.mapping[level.array[actor.x, actor.y]]
-            rl.colorize_tile(tileset, actor.x * Tile.WIDTH, actor.y * Tile.HEIGHT, floor.num, floor.fg, floor.bg)
-            rl.colorize_tile(tileset, actor.x * Tile.WIDTH, actor.y * Tile.HEIGHT, tile.num, tile.fg, tile.bg)
+            rl.draw_tile(tileset, actor.x * Tile.WIDTH, actor.y * Tile.HEIGHT, floor.num, floor.fg, floor.bg)
+            rl.draw_tile(tileset, actor.x * Tile.WIDTH, actor.y * Tile.HEIGHT, tile.num, tile.fg, tile.bg)
     #rl.draw_image(tileset, Tile.WIDTH * WIDTH - 128, 0)
 
-    rl.draw_text(Tile.WIDTH // 8, Tile.HEIGHT // 8, 'hp: %d  damage: %d' % (player.hp, player.damage), color=rl.color(0, 0, 0, 192))
-    rl.draw_text(0, 0, 'hp: %d  damage: %d' % (player.hp, player.damage))
+    rl.draw_text(font, Tile.WIDTH // 8, Tile.HEIGHT // 8, 'hp: %d  damage: %d' % (player.hp, player.damage), color=rl.color(0, 0, 0, 192))
+    rl.draw_text(font, 0, 0, 'hp: %d  damage: %d' % (player.hp, player.damage))
 
-    rl.draw_text(0, Tile.HEIGHT * HEIGHT, '\n'.join(messages[-4:]))
+    rl.draw_text(font, 0, Tile.HEIGHT * HEIGHT, '\n'.join(messages[-4:]))
 
 def handler(event):
     if handle_input(event) != rl.REDRAW:

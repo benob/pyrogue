@@ -32,7 +32,9 @@ typedef struct {
 	float size;
 	float scale;
 	int ascent;
-	int baseline;
+	int descent;
+	int line_gap;
+	float line_height;
 } STBTTF_Font;
 
 /* Release the memory and textures associated with a font */
@@ -69,7 +71,7 @@ void STBTTF_RenderText(SDL_Renderer* renderer, STBTTF_Font* font, float x, float
 #endif
 
 /* Return the length in pixels of a text. 
- * You can get the height of a line by using font->baseline.
+ * You can get the height of a line by using font->line_height.
  */
 float STBTTF_MeasureText(STBTTF_Font* font, const char *text);
 
@@ -156,8 +158,8 @@ STBTTF_Font* STBTTF_OpenFontRW(SDL_Renderer* renderer, SDL_RWops* rw, float size
 
 	// setup additional info
   font->scale = stbtt_ScaleForPixelHeight(font->info, size);
-	stbtt_GetFontVMetrics(font->info, &font->ascent, 0, 0);
-  font->baseline = (int) (font->ascent * font->scale);
+	stbtt_GetFontVMetrics(font->info, &font->ascent, &font->descent, &font->line_gap);
+  font->line_height = ((font->ascent - font->descent + font->line_gap) * font->scale);
 
 	free(buffer);
 

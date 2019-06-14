@@ -42,9 +42,6 @@ typedef struct {
 	int mouse_x, mouse_y, mouse_button;
 	SDL_Window* window;
 	SDL_Renderer* renderer;
-	STBTTF_Font* font;
-	int line_height;
-	//image_t images[TD_NUM_IMAGES];
 #ifdef USE_SDLGPU
 	GPU_Target* screen;
 	GPU_Image* screen_image;
@@ -63,7 +60,7 @@ static display_t display;
 
 static void __attribute__((constructor)) _td_init() {
 	memset(&display, 0, sizeof(display_t));
-	td_init("pyrogue", 320, 240);
+	td_init_display("pyrogue", 320, 240);
 }
 
 static void __attribute__((destructor)) _td_fini() {
@@ -81,9 +78,6 @@ static void __attribute__((destructor)) _td_fini() {
 		SDL_DestroyTexture(display.screen);
 #endif
 
-		if(display.font != NULL) {
-			STBTTF_CloseFont(display.font);
-		}
 #ifdef USE_SDLGPU
 		GPU_Quit();
 #else
@@ -99,7 +93,7 @@ void td_present();
 static void null_main_loop() {
 }
 
-int td_init(const char* title, int width, int height) {
+int td_init_display(const char* title, int width, int height) {
 	if(!display.was_init) {
 		display.window_width = width;
 		display.window_height = height;
@@ -150,21 +144,23 @@ int td_init(const char* title, int width, int height) {
 	return 1;
 }
 
-void td_load_font(const char* font_path, int font_size, int line_height) {
+font_t* td_load_font(const char* font_path, float font_size) {
 	uint32_t font_data_size;
 	char* font_data = fs_load_asset(font_path, &font_data_size);
 	if(font_data == NULL) rl_error("[Errno %d] %s: '%s'", errno, strerror(errno), font_path);
 	SDL_RWops* ops = SDL_RWFromMem(font_data, font_data_size);
-	if(display.font != NULL) STBTTF_CloseFont(display.font);
 #ifdef USE_SDLGPU
-	display.font = STBTTF_OpenFontRW(ops, font_size);
+	font_t* font = STBTTF_OpenFontRW(ops, font_size);
 #else
-	display.font = STBTTF_OpenFontRW(display.renderer, ops, font_size);
+	font_t* font = STBTTF_OpenFontRW(display.renderer, ops, font_size);
 #endif
-	if(display.font) display.line_height = display.font->baseline;
 	free(font_data);
-	if(display.font == NULL) rl_error("cannot load font '%s'", font_path);
-	if(line_height != 0) display.line_height = line_height;
+	if(font == NULL) rl_error("cannot load font '%s'", font_path);
+	return font;
+}
+
+void td_free_font(font_t* font) {
+	STBTTF_CloseFont(font);
 }
 
 image_t* td_load_image(const char* filename, int tile_width, int tile_height) {
@@ -208,15 +204,6 @@ image_t* td_load_image(const char* filename, int tile_width, int tile_height) {
 #endif
 	free(image_data);
 	image->tiles_per_line = image->width / image->tile_width;
-	/*if(display.images[index].texture != NULL) {
-#ifdef USE_SDLGPU
-		GPU_FreeImage(display.images[index].texture);
-#else
-		SDL_FreeSurface(display.images[index].surface);
-		SDL_DestroyTexture(display.images[index].texture);
-#endif
-	}
-	display.images[index] = image;*/
 	return image;
 }
 
@@ -397,7 +384,7 @@ void td_draw_array(image_t* image, array_t* a, int x, int y, int x_shift, int y_
 // TODO: align is not implemented
 void td_draw_text_from_tiles(image_t* image, int orig_x, int orig_y, const char* text, uint32_t color, int align) {
 	if(image->texture == NULL) rl_error("invalid image '%d'", index);
-	int x = orig_x, y = orig_y + image->tile_height;
+	int x = orig_x, y = orig_y;
 #ifdef USE_SDLGPU
 	SDL_Color fg = {td_color_r(color), td_color_g(color), td_color_b(color), td_color_a(color)};
 	GPU_SetColor(image->texture, fg);
@@ -433,14 +420,14 @@ void td_draw_text_from_tiles(image_t* image, int orig_x, int orig_y, const char*
 #endif
 }
 
-void td_draw_text(int orig_x, int orig_y, const char* text, uint32_t color, int align) {
-	if(!display.font) rl_error("no font loaded");
-	int x = orig_x, y = orig_y + display.font->baseline;
+void td_draw_text(font_t* font, int orig_x, int orig_y, const char* text, uint32_t color, int align, int line_height) {
+	int x = orig_x, y = orig_y + (int) (font->ascent * font->scale);
+	if(line_height == 0) line_height = font->line_height;
 	SDL_Color fg = {td_color_r(color), td_color_g(color), td_color_b(color), td_color_a(color)};
 	while(text && *text != '\0') {
 		if(*text == '\n') {
 			x = orig_x;
-			y += display.line_height;
+			y += line_height;
 			text++;
 		} else {
 			char* eol = strchr(text, '\n');
@@ -451,15 +438,15 @@ void td_draw_text(int orig_x, int orig_y, const char* text, uint32_t color, int 
 				char line[length + 1];
 				strncpy(line, text, length);
 				line[length] = '\0';
-				int width = STBTTF_MeasureText(display.font, line);
+				int width = STBTTF_MeasureText(font, line);
 				// TODO: does not work with multiline text
 				if(align == TD_ALIGN_CENTER) x -= width / 2;
 				else if(align == TD_ALIGN_RIGHT) x -= width;
 #ifdef USE_SDLGPU
-				STBTTF_RenderText(display.screen, display.font, x, y, line, fg);
+				STBTTF_RenderText(display.screen, font, x, y, line, fg);
 #else
 				SDL_SetRenderDrawColor(display.renderer, fg.r, fg.g, fg.b, fg.a);
-				STBTTF_RenderText(display.renderer, display.font, x, y, line, fg);
+				STBTTF_RenderText(display.renderer, font, x, y, line, fg);
 #endif
 			}
 			text += length;
@@ -467,10 +454,9 @@ void td_draw_text(int orig_x, int orig_y, const char* text, uint32_t color, int 
 	}
 }
 
-void td_size_text(const char* text, int* width, int* height) {
-	if(!display.font) rl_error("no font loaded");
-	*width = STBTTF_MeasureText(display.font, text);
-	*height = display.line_height;
+void td_size_text(font_t* font, const char* text, int* width, int* height) {
+	*width = STBTTF_MeasureText(font, text);
+	*height = font->line_height;
 };
 
 void td_fill_rect(int x, int y, int w, int h, uint32_t color) {

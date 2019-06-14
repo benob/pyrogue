@@ -240,7 +240,7 @@ target_compile_options(micropython PRIVATE ${micropython_CFLAGS})
 if (EMSCRIPTEN)
 	target_compile_definitions(micropython PRIVATE FFCONF_H=\"${MP}/lib/oofatfs/ffconf.h\" MICROPY_ROOT_STACK=1)
 else()
-	target_compile_definitions(micropython PRIVATE FFCONF_H=\"${MP}/lib/oofatfs/ffconf.h\")
+	target_compile_definitions(micropython PRIVATE FFCONF_H=\"${MP}/lib/oofatfs/ffconf.h\" MICROPY_ROOT_STACK=0)
 endif()
 
 # hack to get cmake's C_FLAGS

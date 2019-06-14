@@ -108,7 +108,7 @@ target_link_libraries(rogue ${SDL2_LIBRARIES} ${SDLGPU_LIBRARIES} -lm)
 
 # micropython module rl
 set(micropython_EXTRA_MODULES ${CMAKE_SOURCE_DIR}/src/modrl.c)
-set(micropython_EXTRA_MODULES_CFLAGS ${SDL2_CFLAGS} ${SDLGPU_CFLAGS})
+set(micropython_EXTRA_MODULES_CFLAGS ${SDL2_CFLAGS} ${SDLGPU_CFLAGS} -I${CMAKE_SOURCE_DIR}/deps)
 include(cmake/micropython.cmake)
 target_link_libraries(micropython rogue)
 

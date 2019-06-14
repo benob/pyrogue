@@ -254,7 +254,7 @@ MP_NOINLINE void pyrogue_init() {
 	// Initialize heap
 #if MICROPY_ENABLE_GC
 	// allocate 50M to python (used for python memory and rl arrays)
-#define HEAP_SIZE (1024 * 1024)
+#define HEAP_SIZE (50 * 1024 * 1024)
 	python_heap = malloc(HEAP_SIZE);
 
 	gc_init(python_heap, python_heap + HEAP_SIZE);

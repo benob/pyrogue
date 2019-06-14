@@ -6,7 +6,7 @@ HEIGHT = 24
 TILE_WIDTH = 9
 TILE_HEIGHT = 16
 
-rl.init("plasma", WIDTH * TILE_WIDTH, HEIGHT * TILE_HEIGHT)
+rl.init_display("plasma", WIDTH * TILE_WIDTH, HEIGHT * TILE_HEIGHT)
 tileset = rl.image("data/cp437.png", TILE_WIDTH, TILE_HEIGHT)
 
 shift = 0.0

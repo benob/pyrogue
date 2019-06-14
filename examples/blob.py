@@ -6,7 +6,7 @@ HEIGHT = 25
 TILE_WIDTH = 9
 TILE_HEIGHT = 16
 
-rl.init('Blob', WIDTH * TILE_WIDTH, HEIGHT * TILE_HEIGHT)
+rl.init_display('Blob', WIDTH * TILE_WIDTH, HEIGHT * TILE_HEIGHT)
 tileset = rl.image('data/cp437.png', TILE_WIDTH, TILE_HEIGHT)
 
 screen = rl.array(WIDTH, HEIGHT)

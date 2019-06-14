@@ -159,6 +159,70 @@ STATIC mp_obj_t mod_fs_save_pref(mp_obj_t path_in, mp_obj_t data_in) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(mod_fs_save_pref_obj, mod_fs_save_pref);
 
+/************* font **************************/
+
+extern const mp_obj_type_t mp_type_rl_font;
+
+typedef struct {
+	mp_obj_base_t base;
+	font_t* font;
+} mp_obj_rl_font_t;
+
+STATIC mp_obj_t mod_rl_font_make_new(const mp_obj_type_t *type_in, size_t n_args, size_t n_kw, const mp_obj_t *args) {
+	(void)type_in;
+	mp_arg_check_num(n_args, n_kw, 2, 2, false);
+	size_t len;
+	const char *filename = mp_obj_str_get_data(args[0], &len);
+	mp_float_t size = mp_obj_get_float(args[1]);
+	mp_obj_rl_font_t* output = m_new_obj_with_finaliser(mp_obj_rl_font_t);
+	output->base.type = &mp_type_rl_font;
+	output->font = td_load_font(filename, size);
+	return MP_OBJ_FROM_PTR(output);
+}
+
+STATIC mp_obj_t mod_rl_font_free(mp_obj_t self_in) {
+	mp_obj_rl_font_t *self = MP_OBJ_TO_PTR(self_in);
+	td_free_font(self->font);
+	self->font = NULL;
+	return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_rl_font_free_obj, mod_rl_font_free);
+
+// Implements load, store and delete attribute.
+//
+// dest[0] = MP_OBJ_NULL means load
+//  return: for fail, do nothing
+//          for attr, dest[0] = value
+//          for method, dest[0] = method, dest[1] = self
+//
+// dest[0,1] = {MP_OBJ_SENTINEL, MP_OBJ_NULL} means delete
+// dest[0,1] = {MP_OBJ_SENTINEL, object} means store
+//  return: for fail, do nothing
+//          for success set dest[0] = MP_OBJ_NULL
+STATIC void mod_rl_font_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest) {
+	mp_obj_rl_font_t *self = MP_OBJ_TO_PTR(self_in);
+	if(self->font == NULL) return;
+	if (attr == MP_QSTR_size) {
+		if(dest[0] == MP_OBJ_NULL) 
+			dest[0] = mp_obj_new_float(self->font->size);
+	} else if (attr == MP_QSTR_line_height) {
+		if(dest[0] == MP_OBJ_NULL) 
+			dest[0] = mp_obj_new_float(self->font->line_height);
+	} else if(attr == MP_QSTR___del__) { // method
+		if(dest[0] == MP_OBJ_NULL) {
+			dest[0] = MP_OBJ_FROM_PTR(&mod_rl_font_free_obj);
+			dest[1] = self_in;
+		}
+	}
+}
+
+const mp_obj_type_t mp_type_rl_font = {
+	{ &mp_type_type },
+	.name = MP_QSTR_rl_font,
+	.make_new = mod_rl_font_make_new,
+	.attr = mod_rl_font_attr,
+};
+
 /************* image **************************/
 
 extern const mp_obj_type_t mp_type_rl_image;
@@ -170,11 +234,13 @@ typedef struct {
 
 STATIC mp_obj_t mod_rl_image_make_new(const mp_obj_type_t *type_in, size_t n_args, size_t n_kw, const mp_obj_t *args) {
 	(void)type_in;
-	mp_arg_check_num(n_args, n_kw, 3, 3, false);
+	mp_arg_check_num(n_args, n_kw, 1, 3, false);
 	size_t len;
 	const char *filename = mp_obj_str_get_data(args[0], &len);
-	mp_int_t tile_width = mp_obj_get_int(args[1]);
-	mp_int_t tile_height = mp_obj_get_int(args[2]);
+	mp_int_t tile_width = 8;
+	if(n_args > 1) tile_width = mp_obj_get_int(args[1]);
+	mp_int_t tile_height = 8;
+	if(n_args > 2) tile_height = mp_obj_get_int(args[2]);
 	mp_obj_rl_image_t* output = m_new_obj_with_finaliser(mp_obj_rl_image_t);
 	output->base.type = &mp_type_rl_image;
 	output->image = td_load_image(filename, tile_width, tile_height);
@@ -184,6 +250,7 @@ STATIC mp_obj_t mod_rl_image_make_new(const mp_obj_type_t *type_in, size_t n_arg
 STATIC mp_obj_t mod_rl_image_free(mp_obj_t self_in) {
 	mp_obj_rl_image_t *self = MP_OBJ_TO_PTR(self_in);
 	td_free_image(self->image);
+	self->image = NULL;
 	return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_rl_image_free_obj, mod_rl_image_free);
@@ -201,6 +268,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_rl_image_free_obj, mod_rl_image_free);
 //          for success set dest[0] = MP_OBJ_NULL
 STATIC void mod_rl_image_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest) {
 	mp_obj_rl_image_t *self = MP_OBJ_TO_PTR(self_in);
+	if(self->image == NULL) return;
 	if (attr == MP_QSTR_width) {
 		if(dest[0] == MP_OBJ_NULL) 
 			dest[0] = mp_obj_new_int(self->image->width);
@@ -212,6 +280,7 @@ STATIC void mod_rl_image_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest) {
 			dest[0] = mp_obj_new_int(self->image->tile_width);
 		else if(dest[0] == MP_OBJ_SENTINEL && dest[1] != MP_OBJ_NULL) {
 			self->image->tile_width = mp_obj_get_int(dest[1]);
+			self->image->tiles_per_line = self->image->width / self->image->tile_width;
 			dest[0] = MP_OBJ_NULL;
 		}
 	} else if (attr == MP_QSTR_tile_height) {
@@ -726,66 +795,45 @@ const mp_obj_type_t mp_type_rl_array = {
 
 /************* rogue_display ******************/
 
-STATIC mp_obj_t mod_td_init(mp_obj_t title_in, mp_obj_t width_in, mp_obj_t height_in) {
+STATIC mp_obj_t mod_td_init_display(mp_obj_t title_in, mp_obj_t width_in, mp_obj_t height_in) {
 	size_t len;
 	const char *title = mp_obj_str_get_data(title_in, &len);
 	mp_int_t width = mp_obj_get_int(width_in);
 	mp_int_t height = mp_obj_get_int(height_in);
-	mp_int_t result = td_init(title, width, height);
+	mp_int_t result = td_init_display(title, width, height);
 	return mp_obj_new_bool(result);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_3(mod_td_init_obj, mod_td_init);
+STATIC MP_DEFINE_CONST_FUN_OBJ_3(mod_td_init_display_obj, mod_td_init_display);
 
-STATIC mp_obj_t mod_td_load_font(size_t n_args, const mp_obj_t *args) {
-	size_t len;
-	const char *font_path = mp_obj_str_get_data(args[0], &len);
-	mp_int_t size = mp_obj_get_int(args[1]);
-	mp_int_t line_height = 0;
-	if(n_args > 2) line_height = mp_obj_get_int(args[2]);
-	td_load_font(font_path, size, line_height);
-	return mp_const_none;
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_td_load_font_obj, 2, 3, mod_td_load_font);
-
-/*STATIC mp_obj_t mod_td_load_image(size_t n_args, const mp_obj_t *args) {
-	mp_int_t image = mp_obj_get_int(args[0]);
-	size_t len;
-	const char *path = mp_obj_str_get_data(args[1], &len);
-	mp_int_t tile_width = 8;
-	if(n_args > 2) tile_width = mp_obj_get_int(args[2]);
-	mp_int_t tile_height = 8;
-	if(n_args > 3) tile_height = mp_obj_get_int(args[3]);
-	mp_int_t result = td_load_image(image, path, tile_width, tile_height);
-	return mp_obj_new_bool(result);
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_td_load_image_obj, 2, 4, mod_td_load_image);
-*/
-
-/*STATIC mp_obj_t mod_td_array_to_image(size_t n_args, const mp_obj_t *args) {
+STATIC mp_obj_t mod_td_array_to_image(size_t n_args, const mp_obj_t *args) {
 	mp_check_self(mp_obj_is_type(args[0], &mp_type_rl_array));
 	mp_obj_rl_array_t *array = MP_OBJ_TO_PTR(args[0]);
-	mp_int_t image = mp_obj_get_int(args[1]);
 	mp_int_t tile_width = 8;
-	if(n_args > 2) tile_width = mp_obj_get_int(args[2]);
+	if(n_args > 2) tile_width = mp_obj_get_int(args[1]);
 	mp_int_t tile_height = 8;
-	if(n_args > 3) tile_height = mp_obj_get_int(args[3]);
-	td_array_to_image(image, array->array, tile_width, tile_height);
-	return mp_const_none;
+	if(n_args > 3) tile_height = mp_obj_get_int(args[2]);
+	mp_obj_rl_image_t* output = m_new_obj_with_finaliser(mp_obj_rl_image_t);
+	output->base.type = &mp_type_rl_image;
+	output->image = td_array_to_image(array->array, tile_width, tile_height);
+	return MP_OBJ_FROM_PTR(output);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_td_array_to_image_obj, 2, 4, mod_td_array_to_image);
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_td_array_to_image_obj, 1, 3, mod_td_array_to_image);
 
 STATIC mp_obj_t mod_td_image_to_array(mp_obj_t image_in) {
-	mp_int_t image = mp_obj_get_int(image_in);
+	mp_obj_rl_image_t* image = MP_OBJ_TO_PTR(image_in);
+	if(!mp_obj_is_type(image, &mp_type_rl_image) || image->image == NULL)
+		mp_raise_msg(&mp_type_TypeError, "invalid image");
 	mp_obj_rl_array_t* output = m_new_obj(mp_obj_rl_array_t);
 	output->base.type = &mp_type_rl_array;
-	output->array = td_image_to_array(image);
+	output->array = td_image_to_array(image->image);
 	return MP_OBJ_FROM_PTR(output);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_td_image_to_array_obj, mod_td_image_to_array);
-*/
 
 STATIC mp_obj_t mod_td_draw_image(mp_obj_t image_in, mp_obj_t x_in, mp_obj_t y_in) {
 	mp_obj_rl_image_t *image = MP_OBJ_TO_PTR(image_in);
+	if(!mp_obj_is_type(image, &mp_type_rl_image) || image->image == NULL)
+		mp_raise_msg(&mp_type_TypeError, "invalid image");
 	mp_int_t x = mp_obj_get_int(x_in);
 	mp_int_t y = mp_obj_get_int(y_in);
 	td_draw_image(image->image, x, y);
@@ -793,18 +841,22 @@ STATIC mp_obj_t mod_td_draw_image(mp_obj_t image_in, mp_obj_t x_in, mp_obj_t y_i
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_3(mod_td_draw_image_obj, mod_td_draw_image);
 
-STATIC mp_obj_t mod_td_draw_tile(size_t n_args, const mp_obj_t *args) {
+/*STATIC mp_obj_t mod_td_draw_tile(size_t n_args, const mp_obj_t *args) {
 	mp_obj_rl_image_t *image = MP_OBJ_TO_PTR(args[0]);
+	if(!mp_obj_is_type(image, &mp_type_rl_image) || image->image == NULL)
+		mp_raise_msg(&mp_type_TypeError, "invalid image");
 	mp_int_t x = mp_obj_get_int(args[1]);
 	mp_int_t y = mp_obj_get_int(args[2]);
 	mp_int_t tile = mp_obj_get_int(args[3]);
 	td_draw_tile(image->image, x, y, tile);
 	return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_td_draw_tile_obj, 4, 4, mod_td_draw_tile);
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_td_draw_tile_obj, 4, 4, mod_td_draw_tile);*/
 
-STATIC mp_obj_t mod_td_colorize_tile(size_t n_args, const mp_obj_t *args) {
+STATIC mp_obj_t mod_td_draw_tile(size_t n_args, const mp_obj_t *args) {
 	mp_obj_rl_image_t *image = MP_OBJ_TO_PTR(args[0]);
+	if(!mp_obj_is_type(image, &mp_type_rl_image) || image->image == NULL)
+		mp_raise_msg(&mp_type_TypeError, "invalid image");
 	mp_int_t x = mp_obj_get_int(args[1]);
 	mp_int_t y = mp_obj_get_int(args[2]);
 	mp_int_t tile = mp_obj_get_int(args[3]);
@@ -815,7 +867,7 @@ STATIC mp_obj_t mod_td_colorize_tile(size_t n_args, const mp_obj_t *args) {
 	td_colorize_tile(image->image, x, y, tile, fg, bg);
 	return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_td_colorize_tile_obj, 4, 6, mod_td_colorize_tile);
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_td_draw_tile_obj, 4, 6, mod_td_draw_tile);
 
 //void td_draw_array(int index, array_t* a, int x, int y, int x_shift, int y_shift, int info_size, int* info_mapping, uint32_t* info_fg, uint32_t* info_bg);
 mp_obj_t mod_td_draw_array(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
@@ -840,7 +892,11 @@ mp_obj_t mod_td_draw_array(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw
 
 	mp_check_self(mp_obj_is_type(args.array.u_obj, &mp_type_rl_array));
 	mp_obj_rl_array_t *array = MP_OBJ_TO_PTR(args.array.u_obj);
+	if(!mp_obj_is_type(array, &mp_type_rl_array))
+		mp_raise_msg(&mp_type_TypeError, "invalid array");
 	mp_obj_rl_image_t *image = MP_OBJ_TO_PTR(args.image.u_obj);
+	if(image != NULL && (!mp_obj_is_type(image, &mp_type_rl_image) || image->image == NULL))
+		mp_raise_msg(&mp_type_TypeError, "invalid image");
 	mp_int_t x = args.x.u_int;
 	mp_int_t y = args.y.u_int;
 
@@ -892,17 +948,18 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_KW(mod_td_draw_array_obj, 3, mod_td_draw_array);
 
 mp_obj_t mod_td_draw_text(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
 	static const mp_arg_t allowed_args[] = {
+		{ MP_QSTR_font, MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
 		{ MP_QSTR_x, MP_ARG_INT | MP_ARG_REQUIRED, {.u_int = 0} },
 		{ MP_QSTR_y, MP_ARG_INT | MP_ARG_REQUIRED, {.u_int = 0} },
 		{ MP_QSTR_text, MP_ARG_OBJ | MP_ARG_REQUIRED, {.u_obj = MP_OBJ_NULL} },
 		{ MP_QSTR_color, MP_ARG_INT, {.u_int = 0xffffffff} },
 		{ MP_QSTR_align, MP_ARG_INT, {.u_int = TD_ALIGN_LEFT} },
-		{ MP_QSTR_image, MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
+		{ MP_QSTR_line_height, MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
 	};
 
 	// parse args
 	struct {
-		mp_arg_val_t x, y, text, color, align, image;
+		mp_arg_val_t font, x, y, text, color, align, line_height;
 	} args;
 
 	mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, (mp_arg_val_t*)&args);
@@ -911,27 +968,40 @@ mp_obj_t mod_td_draw_text(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_
 	mp_int_t y = args.y.u_int;
 	size_t len;
 	const char *text = mp_obj_str_get_data(args.text.u_obj, &len);
-	mp_obj_rl_image_t *image = MP_OBJ_TO_PTR(args.image.u_obj);
+	mp_obj_rl_font_t *font = NULL;
+	mp_obj_rl_image_t *image = NULL;
+	if(mp_obj_is_type(args.font.u_obj, &mp_type_rl_font)) {
+		font = MP_OBJ_TO_PTR(args.font.u_obj);
+	} else if(mp_obj_is_type(args.font.u_obj, &mp_type_rl_image)) {
+		image = MP_OBJ_TO_PTR(args.font.u_obj);
+	} else 
+		mp_raise_msg(&mp_type_TypeError, "invalid font");
 
-	if(image == NULL)
-		td_draw_text(x, y, text, args.color.u_int, args.align.u_int);
-	else
+	mp_float_t line_height = 0;
+	if(args.line_height.u_obj != NULL) line_height = mp_obj_get_float(args.line_height.u_obj);
+
+	if(font != NULL)
+		td_draw_text(font->font, x, y, text, args.color.u_int, args.align.u_int, line_height);
+	else if(image != NULL)
 		td_draw_text_from_tiles(image->image, x, y, text, args.color.u_int, args.align.u_int);
 	return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_KW(mod_td_draw_text_obj, 3, mod_td_draw_text);
 
-STATIC mp_obj_t mod_td_size_text(mp_obj_t text_in) {
+STATIC mp_obj_t mod_td_size_text(mp_obj_t font_in, mp_obj_t text_in) {
 	int width, height;
+	mp_obj_rl_font_t *font = MP_OBJ_TO_PTR(font_in);
+	if(!mp_obj_is_type(font, &mp_type_rl_font))
+		mp_raise_msg(&mp_type_TypeError, "invalid font");
 	size_t len;
 	const char *text = mp_obj_str_get_data(text_in, &len);
-	td_size_text(text, &width, &height);
+	td_size_text(font->font, text, &width, &height);
 	mp_obj_tuple_t *result = MP_OBJ_TO_PTR(mp_obj_new_tuple(2, NULL));
 	result->items[0] = mp_obj_new_int(width);
 	result->items[1] = mp_obj_new_int(height);
 	return result;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_td_size_text_obj, mod_td_size_text);
+STATIC MP_DEFINE_CONST_FUN_OBJ_2(mod_td_size_text_obj, mod_td_size_text);
 
 STATIC mp_obj_t mod_td_fill_rect(size_t n_args, const mp_obj_t *args) {
 	mp_int_t x = mp_obj_get_int(args[0]);
@@ -1415,20 +1485,19 @@ STATIC const mp_rom_map_elem_t mp_module_rl_globals_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR_load_asset), MP_ROM_PTR(&mod_fs_load_asset_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_load_pref), MP_ROM_PTR(&mod_fs_load_pref_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_save_pref), MP_ROM_PTR(&mod_fs_save_pref_obj) },
+	/************* font ********************/
+	{ MP_ROM_QSTR(MP_QSTR_font), MP_ROM_PTR(&mp_type_rl_font) },
 	/************* image ********************/
 	{ MP_ROM_QSTR(MP_QSTR_image), MP_ROM_PTR(&mp_type_rl_image) },
 	/************* rogue_array ********************/
 	{ MP_ROM_QSTR(MP_QSTR_array), MP_ROM_PTR(&mp_type_rl_array) },
 	{ MP_ROM_QSTR(MP_QSTR_array_from_string), MP_ROM_PTR(&mod_rl_array_from_string_obj) },
 	/************* rogue_display ******************/
-	{ MP_ROM_QSTR(MP_QSTR_init), MP_ROM_PTR(&mod_td_init_obj) },
-	{ MP_ROM_QSTR(MP_QSTR_load_font), MP_ROM_PTR(&mod_td_load_font_obj) },
-	/*{ MP_ROM_QSTR(MP_QSTR_load_image), MP_ROM_PTR(&mod_td_load_image_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_init_display), MP_ROM_PTR(&mod_td_init_display_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_array_to_image), MP_ROM_PTR(&mod_td_array_to_image_obj) },
-	{ MP_ROM_QSTR(MP_QSTR_image_to_array), MP_ROM_PTR(&mod_td_image_to_array_obj) },*/
+	{ MP_ROM_QSTR(MP_QSTR_image_to_array), MP_ROM_PTR(&mod_td_image_to_array_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_draw_image), MP_ROM_PTR(&mod_td_draw_image_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_draw_tile), MP_ROM_PTR(&mod_td_draw_tile_obj) },
-	{ MP_ROM_QSTR(MP_QSTR_colorize_tile), MP_ROM_PTR(&mod_td_colorize_tile_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_draw_array), MP_ROM_PTR(&mod_td_draw_array_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_draw_text), MP_ROM_PTR(&mod_td_draw_text_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_size_text), MP_ROM_PTR(&mod_td_size_text_obj) },

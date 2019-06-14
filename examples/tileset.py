@@ -5,7 +5,7 @@ TILE_HEIGHT = 16
 WIDTH = 24
 HEIGHT = 15
 
-rl.init('Tileset', WIDTH * TILE_WIDTH, HEIGHT * TILE_HEIGHT)
+rl.init_display('Tileset', WIDTH * TILE_WIDTH, HEIGHT * TILE_HEIGHT)
 tileset = rl.image('data/kenney_1bit_16x16.png', TILE_WIDTH, TILE_HEIGHT)
 
 def update(event):

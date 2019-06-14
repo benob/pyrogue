@@ -5,7 +5,7 @@ HEIGHT = 25
 TILE_WIDTH = 9
 TILE_HEIGHT = 16
 
-rl.init('fire', WIDTH * TILE_WIDTH, HEIGHT * TILE_HEIGHT)
+rl.init_display('fire', WIDTH * TILE_WIDTH, HEIGHT * TILE_HEIGHT)
 tiles = rl.image('data/cp437.png', TILE_WIDTH, TILE_HEIGHT)
 
 def gradient(start, stop, steps):
