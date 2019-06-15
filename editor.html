@@ -1,0 +1,209 @@
+<!doctype HTML>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <title>Pyrogue</title>
+		<script src="https://codemirror.net/lib/codemirror.js"></script>
+		<link rel="stylesheet" href="https://codemirror.net/lib/codemirror.css">
+		<link rel="stylesheet" href="https://codemirror.net/theme/solarized.css">
+		<script src="https://codemirror.net/mode/python/python.js"></script>
+    <style>
+			body {
+				margin-left: auto;
+				margin-right: auto;
+				margin-bottom: 2em;
+				width: 800px;
+			}
+			#canvas-container {
+				text-align: center;
+				width: 100%;
+				background: black;
+				border-radius: 10px 10px 0px 0px;
+				margin: 0px;
+				padding: 0px;
+			}
+			#buttons-container {
+				background: black;
+				color: white;
+				padding: .3em 1em;
+				font-family: monospace;
+				font-size: 13px;
+			}
+			#buttons-container a, a:link, a:visited, a:active, a:hover {
+				color: dodgerblue;
+			}
+			#buttons-container button, select {
+				color: dodgerblue;
+				background: black;
+				border: 1px solid dodgerblue;
+				font-family: monospace;
+			}
+			#canvas {
+				background: rgb(16, 16, 32);
+			}
+			#script {
+				width: 100%;
+			}
+			#stdout {
+				width: 100%;
+				height: 200px;
+				overflow-y: scroll;
+				background: #002b36;
+				-color: #d7d4f0;
+				color: #839496;
+				font-family: monospace;
+				font-size: 13px;
+			}
+			.stderr {
+				color: #cb4b16;
+			}
+			.CodeMirror {
+				height: auto;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="canvas-container"><canvas width="320" height="240" id="canvas"></canvas></div>
+		<div id="buttons-container">
+		Pyrogue: <button onclick="press_run(this)">▶</button>
+		<button id="console-button" onclick="toggle_console(this)">Console</button>
+		<!--<select>
+			<option selected disabled>Snippet</option>
+			<option>Plasma</option>
+			<option>Tileset</option>
+		</select>-->
+		<button onclick="get_link()">Get link</button>
+		<a href="documentation.html" target='documentation'>Documentation</a> 
+		<a href="assets.html" target='assets'>Assets</a> 
+		</div>
+		<div id="script-container"><textarea id="script" rows="8">
+import rl
+
+WIDTH, HEIGHT = 320, 240
+rl.init_display('test', WIDTH, HEIGHT)
+
+def update(event):
+    color = rl.random_color()
+    rl.fill_rect(rl.random_int(0, WIDTH - 1), rl.random_int(0, HEIGHT - 1), 50, 50, color)
+
+rl.run(update)</textarea></div>
+		<div style="display: none" id="stdout"></div>
+    <script type='text/javascript'>
+			function escape_text(str) {
+				return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+			}
+			var stdout = document.getElementById('stdout');
+      var Module = {
+          canvas: document.getElementById('canvas'),
+					'arguments': ['game.zip'],
+					preRun: [function() {
+						ENV.SDL_EMSCRIPTEN_KEYBOARD_ELEMENT = '#canvas';
+					}],
+					print: function(text) {
+						if(running) {
+							stdout.innerHTML += escape_text(text) + '<br>';
+							update_console_button(1);
+						}
+					},
+					printErr: function(text) {
+						if(running) {
+							stdout.innerHTML += '<span class="stderr">'+ escape_text(text) + '</span><br>';
+							update_console_button(1);
+						}
+					},
+      };
+			var running = false;
+			function press_run(button) {
+				if(running) {
+					pyrogue_quit();
+					running = false;
+					button.innerText = '▶';
+				} else {
+					stdout.innerText = '';
+					running = true;
+					button.innerText = '◼';
+					let code = codeEditor.getValue();
+					document.getElementById('canvas').focus();
+					console.log('starting');
+					showing_console = false;
+					update_console_button(0);
+					pyrogue_run_string(code);
+					pyrogue_quit();
+					console.log('finished');
+					running = false;
+					button.innerText = '▶';
+					//update_console_button(0);
+				}
+			}
+			function get_link() {
+				let code = codeEditor.getValue();
+				let url = window.location.href.split("#", 1)[0] + '#' + escape(code);
+
+				let dummy = document.createElement('input');
+				dummy.value = url;
+				document.body.appendChild(dummy);
+				dummy.select();
+				document.execCommand('copy');
+				document.body.removeChild(dummy);
+				alert('Copied url to clipboard.');
+			}
+    </script>
+    <script async type="text/javascript" src="pyrogue.preload.editor.js"></script>
+    <script async type="text/javascript" src="pyrogue.js"></script>
+		<script>
+			let was_init = false;
+			function pyrogue_init() {
+				Module.ccall('pyrogue_init', null, ['string'], ['editor.zip']);
+				was_init = true;
+			}
+			function pyrogue_shutdown() {
+				Module.ccall('pyrogue_shutdown', null, []);
+			}
+			function pyrogue_run_string(script) {
+				pyrogue_quit();
+				if(was_init) pyrogue_shutdown();
+				pyrogue_init();
+				Module.ccall('pyrogue_run_string', null, ['string', 'string'], ['code', script]);
+			}
+			function pyrogue_run(filename) {
+				return Module.ccall('pyrogue_run', 'integer', ['string'], [filename]);
+			}
+			function pyrogue_quit() {
+				Module.ccall('pyrogue_quit', null, []);
+			}
+			let script = document.getElementById('script');
+			var codeEditor = CodeMirror.fromTextArea(script, {
+				mode: 'python',
+				lineNumbers: true,
+				theme: 'solarized dark',
+				viewportMargin: Infinity,
+			});
+			let url_parts = document.location.href.split('#');
+			if(url_parts.length == 2) {
+				let code = unescape(url_parts[1]);
+				console.log('code=', code);
+				codeEditor.setValue(code);
+			}
+			var showing_console = true;
+			function update_console_button(flag) {
+				let element = document.getElementById('console-button');
+				let editor = document.getElementById('script-container');
+				let stdout = document.getElementById('stdout');
+				if(showing_console) {
+					if(flag) element.innerText = 'Console*';
+					else element.innerText = 'Console';
+					editor.style.display = '';
+					stdout.style.display = 'none';
+				} else {
+					element.innerText = 'Editor';
+					editor.style.display = 'none';
+					stdout.style.display = '';
+				}
+			}
+			function toggle_console(element) {
+				showing_console = !showing_console;
+				update_console_button(0);
+			}
+		</script>
+	</body>
+</html>
