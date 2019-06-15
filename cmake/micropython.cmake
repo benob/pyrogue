@@ -11,7 +11,7 @@ if(MINGW) # windows
 		-I${MP}/ports/windows
 		)
 	set(micropython_platform_SOURCE 
-		${MP}/ports/unix/main.c
+		#${MP}/ports/unix/main.c
 		${MP}/ports/unix/file.c
 		${MP}/ports/unix/input.c
 		${MP}/ports/unix/modos.c
@@ -30,7 +30,7 @@ else(MINGW) # regular unix
 		${micropython_CFLAGS}
 		)
 	set(micropython_platform_SOURCE 
-		${MP}/ports/unix/main.c
+		#${MP}/ports/unix/main.c
 		${MP}/ports/unix/gccollect.c
 		${MP}/ports/unix/unix_mphal.c
 		${MP}/ports/unix/input.c

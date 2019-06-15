@@ -21,7 +21,7 @@ else ()
 endif ()
 
 if (WIN32)
-	SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -gstabs")
+	set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -gstabs")
 endif()
 
 #set(SDLGPU_DIR "${CMAKE_SOURCE_DIR}/deps/sdl-gpu/build/SDL_gpu-0.11.0")
