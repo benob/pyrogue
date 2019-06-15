@@ -1,7 +1,7 @@
 import rl
 
 rl.init_display('Keys', 640, 480)
-font = rl.font('data/font.ttf', 24)
+font = rl.Font('data/font.ttf', 24)
 
 keys = []
 

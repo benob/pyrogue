@@ -99,18 +99,18 @@ def load_theme():
     filename, Tile.WIDTH, Tile.HEIGHT, Tile.mapping, font_size = tilesets[game.theme % len(tilesets)]
 
     rl.init_display('Example roguelike [' + filename + ']', WIDTH * Tile.WIDTH, (HEIGHT + 4) * Tile.HEIGHT)
-    tileset = rl.image(filename, Tile.WIDTH, Tile.HEIGHT)
+    tileset = rl.Image(filename, Tile.WIDTH, Tile.HEIGHT)
     if Tile.mapping is Tile.ascii:
         font = tileset
     else:
-        font = rl.font('data/font.ttf', font_size)
+        font = rl.Font('data/font.ttf', font_size)
 
 class Level:
     def __init__(self, width, height):
-        self.array = rl.array(width, height)
+        self.array = rl.Array(width, height)
         self.array.fill(Tile.FLOOR)
         self.bsp(0, 0, WIDTH, HEIGHT, Tile.FLOOR, Tile.WALL)
-        self.memory = rl.array(width, height)
+        self.memory = rl.Array(width, height)
 
         self.array.line(0, 0, WIDTH - 1, 0, Tile.WALL)
         self.array.line(0, HEIGHT - 1, WIDTH, HEIGHT - 1, Tile.WALL)
@@ -390,7 +390,7 @@ def redraw():
             mapping=[tile.num for tile in Tile.mapping],
             fg=[rl.color(255, 255, 255, 192) for tile in Tile.mapping])
     # draw level masked with fov
-    to_draw = rl.array(WIDTH, HEIGHT)
+    to_draw = rl.Array(WIDTH, HEIGHT)
     level.array.copy_masked(to_draw, fov)
     rl.draw_array(to_draw, tileset, 0, 0, 
             mapping=[tile.num for tile in Tile.mapping],

@@ -51,6 +51,7 @@ typedef struct {
 	SDL_Texture* screen;
 	SDL_Rect scaled_rect;
 #endif
+	double device_pixel_ratio;
 	int is_fullscreen, is_maximized, use_integral_scale;
 	int update_filter;
 	void (*update_callback)(int);
@@ -65,15 +66,6 @@ static void __attribute__((constructor)) _td_init() {
 
 static void __attribute__((destructor)) _td_fini() {
 	if(display.was_init) {
-/*		for(int i = 0; i < TD_NUM_IMAGES; i++) {
-#ifdef USE_SDLGPU
-			if(display.images[i].texture != NULL) GPU_FreeImage(display.images[i].texture);
-#else
-			if(display.images[i].surface != NULL) SDL_FreeSurface(display.images[i].surface);
-			if(display.images[i].texture != NULL) SDL_DestroyTexture(display.images[i].texture);
-#endif
-			if(display.images[i].pixels != NULL) free(display.images[i].pixels);
-		}*/
 #ifndef USE_SDLGPU
 		SDL_DestroyTexture(display.screen);
 #endif
@@ -97,6 +89,7 @@ int td_init_display(const char* title, int width, int height) {
 	if(!display.was_init) {
 		display.window_width = width;
 		display.window_height = height;
+		display.device_pixel_ratio = 1;
 #ifdef USE_SDLGPU
 		//GPU_SetRequiredFeatures(GPU_FEATURE_BASIC_SHADERS);
 		display.actual_screen = GPU_Init(width, height, SDL_WINDOW_SHOWN | SDL_WINDOW_MAXIMIZED | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_OPENGL);
@@ -520,10 +513,10 @@ void td_present() {
 		display.window_height = display.height;
 	}
 	GPU_SetWindowResolution(display.window_width, display.window_height);
-	double devicePixelRatio = emscripten_get_device_pixel_ratio();
+	display.device_pixel_ratio = emscripten_get_device_pixel_ratio();
 	// fix handling of HiDPI by emscripten
-	display.window_width = (int) (display.window_width * devicePixelRatio);
-	display.window_height = (int) (display.window_height * devicePixelRatio);
+	display.window_width = (int) (display.window_width * display.device_pixel_ratio);
+	display.window_height = (int) (display.window_height * display.device_pixel_ratio);
 #endif
 	int width = display.window_width, height = display.window_height, x = 0, y = 0;
 	if(width * display.height / height < display.width) {
@@ -598,8 +591,10 @@ static void process_events() {
 				key = event.text.text[0];
 				break;
 			case SDL_MOUSEMOTION:
-				display.mouse_x = (event.motion.x - display.scaled_rect.x) * display.width / display.scaled_rect.w;
-				display.mouse_y = (event.motion.y - display.scaled_rect.y) * display.height / display.scaled_rect.h;
+				display.mouse_x = (event.motion.x - display.scaled_rect.x) 
+					* display.width * display.device_pixel_ratio / display.scaled_rect.w;
+				display.mouse_y = (event.motion.y - display.scaled_rect.y) 
+					* display.height * display.device_pixel_ratio / display.scaled_rect.h;
 				key = TD_MOUSE;
 				break;
 			case SDL_MOUSEBUTTONUP:

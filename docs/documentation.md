@@ -34,12 +34,6 @@ rl.run(update)
 
 Pyrogue's display functions are only honored if called from an update callback which is called every time events occur and the screen needs to be repainted. `rl.run()` is a blocking function which calls the update function repeatedly according to the given event filter.
 
-```python
-def update(event):
-	rl.fill_rect(0, 0, 50, 50, rl.INDIGO)
-rl.run(update)
-```
-
 Valid values for the filter are `rl.UPDATE_LOOP` to recieve update continuously, `rl.UPDATE_KEY` to recieve updates when a key is pressed, and `rl.UPDATE_MOUSE` to receive updates on mouse events. The last two can be combined (`rl.UPDATE_KEYS|rl.UPDATE_MOUSE`) to recieve both kinds of events.
 
 The update callback is a function taking one parameter which represents the event that triggered it. Events can be:
@@ -47,6 +41,33 @@ The update callback is a function taking one parameter which represents the even
 * `rl.QUIT` is recieved when the `rl.quit()` function is called or the window is closed.
 * `rl.MOUSE` is received when a mouse event occured. `rl.mouse()` can be used to retrive mouse coordinates.
 * `rl.REDRAW` is recieved for other events that require a redraw (such as window size changes)
+
+```python
+import rl
+
+x, y = 50, 50
+
+def update(event):
+	global x, y
+
+	# move rectangle by 10 pixels in the direction of the pressed key
+	if event == rl.LEFT:
+		x -= 10
+	elif event == rl.RIGHT:
+		x += 10
+	elif event == rl.UP:
+		y -= 10
+	elif event == rl.DOWN:
+		y += 10
+	# or use mouse to move the rectangle
+	elif event == rl.MOUSE:
+		x, y, button = rl.mouse()
+
+	rl.clear()
+	rl.fill_rect(x, y, 50, 50, rl.GREEN)
+
+rl.run(update)
+```
 
 ### `rl.quit()`
 
@@ -61,7 +82,7 @@ rl.run(update, rl.UPDATE_KEY)
 
 ### `rl.mouse()`
 
-Returns the coordinates of the mouse, as well as the button being pressed. The coordinates are in pixels according to the resolution of the display (see `rl.init_display()`).
+Returns the coordinates of the mouse, as well as the button being pressed. The coordinates are in pixels according to the resolution of the display (see `rl.init_display()`). The button can be `left = 1`, `middle = 2`, `right = 3`.
 
 ```python
 x, y, button = rl.mouse()
@@ -84,23 +105,23 @@ Coordinates follow the standard in graphics: (0, 0) is at the top-left corner, (
 rl.init_display('snake', 320, 240)
 ```
 
-### `rl.font(filename, size)`
+### `rl.Font(filename, size)`
 
 Load a TTF font for writing text on the display. The text renderer is fast but does not support sub-pixel positionning of letters, which sometimes leads to weird kernings. The returned font can be passed to the `rl.draw_text()` function. Note that only ascii characters in range 32-127 can be drawn. The font object has two read-only attributes: `size` which is the size passed to the constructor, and `line_height` which is the line height stored in the font.
 
 ```python
-font = rl.font('monospace.ttf', 14)
+font = rl.Font('monospace.ttf', 14)
 print(font.line_height)
 ```
 
 Note that system resources behind a font (such as the character atlas) are only disposed when the garbage collector is run after memory gets low. When manipulating many fonts, it is a good idea to call `del font`, where `font` is a variable holding the font, to explicitly release the resources.
 
-### `rl.image(filename, tile_width=8, tile_height=8)`
+### `rl.Image(filename, tile_width=8, tile_height=8)`
 
 Load a png/jpg image from resources and return an image object. Optionnaly, the size of tiles can be specified. It defaults to 8x8. The returned image object can be passed to drawing functions such as `rl.draw_image()`. It has two read-only members: `width` and `height` and two read-write members: `tile_width` and `tile_height`.
 
 ```python
-image = rl.image('tiles.png', 16, 16)
+image = rl.Image('tiles.png', 16, 16)
 print(image.width, image.height)
 image.tile_width = 8
 print(image.tile_width)
@@ -144,15 +165,15 @@ Note that the alpha channel of the image is used to determine transparent pixels
 
 ### `rl.draw_text(font, x, y, text, color=rl.WHITE, align=rl.ALIGN_LEFT, line_height=0)`
 
-Draw text on the screen at coordinates (x, y) using the given color. The font can be either a TTF font loaded with `rl.font()` or an image loaded with `rl.image()`. If it is an image, it is assumed to be a tileset with ASCII characters as letters.
+Draw text on the screen at coordinates (x, y) using the given color. The font can be either a TTF font loaded with `rl.Font()` or an image loaded with `rl.Image()`. If it is an image, it is assumed to be a tileset with ASCII characters as letters.
 
 The align parameter selects the anchoring point of the text compared to the coordinates (x, y). Valid values are `rl.ALIGN_LEFT`, `rl.ALIGN_RIGHT` and `rl.ALIGN_CENTER`.
 
 Note that only characters from 32 to 127 can be printed (both when using a TTF font or a tileset).
 
 ```python
-font = rl.font('font.ttf', 10)
-image = rl.image('font.png', 10, 10)
+font = rl.Font('font.ttf', 10)
+image = rl.Image('font.png', 10, 10)
 rl.draw_text(font, 0, 0, 'Hello world')
 rl.draw_text(image, 0, 20, 'Hello world')
 ```
@@ -298,12 +319,12 @@ The underlying data type for each cell of the array is a 32-bit signed integer. 
 
 Two useful constants are defined, `rl.INT_MAX` and `rl.INT_MIN`, which correspond to the largest and smallest values that can be stored in an array.
 
-### `rl.array(width, height)`
+### `rl.Array(width, height)`
 
 Create a new array filled with zeros.
 
 ```python
-a = rl.array(80, 25)
+a = rl.Array(80, 25)
 ```
 
 ### `rl.array_from_string(text)`, `array.to_string()`
@@ -311,7 +332,7 @@ a = rl.array(80, 25)
 Deserialize and serialize and array from and to a string. Useful for saving and restoring array data.
 
 ```python
-a = rl.array(10, 10)
+a = rl.Array(10, 10)
 text = a.to_string()
 print(text)
 b = rl.array_from_string(text)
@@ -323,7 +344,7 @@ print(b)
 Access individual elements of the array. The bracket operator is a shortcut.
 
 ```python
-a = rl.array(5, 5)
+a = rl.Array(5, 5)
 a.set(3, 3, 42)
 a[2, 1] = a.get(3, 3)
 ```
@@ -333,7 +354,7 @@ a[2, 1] = a.get(3, 3)
 Return the size of the array.
 
 ```python
-a = rl.array(5, 7)
+a = rl.Array(5, 7)
 print(a.width()) # should print 5
 ```
 
@@ -346,7 +367,7 @@ to the symbol printed for value of the array equals to its index.
 The colors are denoted by characters '1-9a-f' corresponding to basic 16 ANSI terminal colors.
 
 ```python
-a = rl.array(3, 5)
+a = rl.Array(3, 5)
 a[1, 1] = 1
 a.print_ascii('.#', '12', 'ba')
 ```
@@ -356,7 +377,7 @@ a.print_ascii('.#', '12', 'ba')
 Print the content of an array using the standard python print. The array is presented as a list of lists.
 
 ```python
-a = rl.array(2, 2)
+a = rl.Array(2, 2)
 print(a)
 ```
 
@@ -383,7 +404,7 @@ a.copy_to(b)
 Copy the values of an array to another array, but only copy those values for which the mask array is equal to `keep`. All arrays must be the same size.
 
 ```python
-b = rl.array(a.width(), a.height())
+b = rl.Array(a.width(), a.height())
 a.copy_masked(b, mask)
 print(b)
 ```
@@ -401,7 +422,7 @@ walls = level.equals(1)
 Fill an array with a given integer value.
 
 ```python
-a = rl.array(10, 10)
+a = rl.Array(10, 10)
 a.fill(5)
 ```
 
@@ -549,7 +570,7 @@ rl.draw_array(x, y, mapping=[1,2,3], fg=[rl.RED, rl.BLUE, rl.GREEN])
 Fill the image at index `image` with the values of an array intepreted as RGBA colors.
 
 ```python
-a = rl.array(320, 240)
+a = rl.Array(320, 240)
 a.fill(rl.RED)
 rl.array_to_image(a, 0)
 ```

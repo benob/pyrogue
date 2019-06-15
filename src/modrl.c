@@ -218,7 +218,7 @@ STATIC void mod_rl_font_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest) {
 
 const mp_obj_type_t mp_type_rl_font = {
 	{ &mp_type_type },
-	.name = MP_QSTR_rl_font,
+	.name = MP_QSTR_Font,
 	.make_new = mod_rl_font_make_new,
 	.attr = mod_rl_font_attr,
 };
@@ -307,7 +307,7 @@ STATIC void mod_rl_image_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest) {
 
 const mp_obj_type_t mp_type_rl_image = {
 	{ &mp_type_type },
-	.name = MP_QSTR_rl_image,
+	.name = MP_QSTR_Image,
 	.make_new = mod_rl_image_make_new,
 	.attr = mod_rl_image_attr,
 	//.locals_dict = (mp_obj_dict_t*)&mod_rl_image_locals_dict,
@@ -783,7 +783,7 @@ STATIC mp_obj_t mod_rl_array_make_new(const mp_obj_type_t *type_in, size_t n_arg
 
 const mp_obj_type_t mp_type_rl_array = {
 	{ &mp_type_type },
-	.name = MP_QSTR_rl_array,
+	.name = MP_QSTR_Array,
 	.print = mod_rl_array_print,
 	.make_new = mod_rl_array_make_new,
 	//.unary_op = list_unary_op,
@@ -1486,11 +1486,11 @@ STATIC const mp_rom_map_elem_t mp_module_rl_globals_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR_load_pref), MP_ROM_PTR(&mod_fs_load_pref_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_save_pref), MP_ROM_PTR(&mod_fs_save_pref_obj) },
 	/************* font ********************/
-	{ MP_ROM_QSTR(MP_QSTR_font), MP_ROM_PTR(&mp_type_rl_font) },
+	{ MP_ROM_QSTR(MP_QSTR_Font), MP_ROM_PTR(&mp_type_rl_font) },
 	/************* image ********************/
-	{ MP_ROM_QSTR(MP_QSTR_image), MP_ROM_PTR(&mp_type_rl_image) },
+	{ MP_ROM_QSTR(MP_QSTR_Image), MP_ROM_PTR(&mp_type_rl_image) },
 	/************* rogue_array ********************/
-	{ MP_ROM_QSTR(MP_QSTR_array), MP_ROM_PTR(&mp_type_rl_array) },
+	{ MP_ROM_QSTR(MP_QSTR_Array), MP_ROM_PTR(&mp_type_rl_array) },
 	{ MP_ROM_QSTR(MP_QSTR_array_from_string), MP_ROM_PTR(&mod_rl_array_from_string_obj) },
 	/************* rogue_display ******************/
 	{ MP_ROM_QSTR(MP_QSTR_init_display), MP_ROM_PTR(&mod_td_init_display_obj) },

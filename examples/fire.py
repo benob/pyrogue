@@ -6,7 +6,7 @@ TILE_WIDTH = 9
 TILE_HEIGHT = 16
 
 rl.init_display('fire', WIDTH * TILE_WIDTH, HEIGHT * TILE_HEIGHT)
-tiles = rl.image('data/cp437.png', TILE_WIDTH, TILE_HEIGHT)
+tiles = rl.Image('data/cp437.png', TILE_WIDTH, TILE_HEIGHT)
 
 def gradient(start, stop, steps):
     r1 = rl.color_r(start)
@@ -20,7 +20,7 @@ def gradient(start, stop, steps):
 palette = list(reversed(gradient(rl.WHITE, rl.YELLOW, 3) + gradient(rl.YELLOW, rl.ORANGE, 5) + gradient(rl.ORANGE, rl.RED, 5) + gradient(rl.RED, rl.color(0, 0, 128), 9) + gradient(rl.color(0, 0, 128), rl.BLACK, 5)))
 chars = [ord(x) for x in reversed('ABCDEFGHIJKLMNOPQRSTUVWXYZ#')]
 
-fire = rl.array(WIDTH, HEIGHT)
+fire = rl.Array(WIDTH, HEIGHT)
 
 def redraw(event):
     for i in range(1, WIDTH - 1):

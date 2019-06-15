@@ -6,7 +6,7 @@ WIDTH, HEIGHT = 160, 120
 rl.set_seed(0)
 rl.init_display("Array image", WIDTH, HEIGHT)
 
-pixels = rl.array(WIDTH, HEIGHT)
+pixels = rl.Array(WIDTH, HEIGHT)
 angle = 0
 
 def update(event):

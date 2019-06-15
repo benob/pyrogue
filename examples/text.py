@@ -1,7 +1,7 @@
 import rl
 
 rl.init_display("Text example", 320, 240)
-font = rl.font('data/font.ttf', 8)
+font = rl.Font('data/font.ttf', 8)
 
 def update(event):
     rl.draw_text(font, 0, 0, 'Hello', rl.BLUE)

@@ -1,6 +1,6 @@
 import rl
 
-level = rl.array(320, 240)
+level = rl.Array(320, 240)
 
 rl.set_seed(0)
 

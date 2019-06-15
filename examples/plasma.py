@@ -7,12 +7,12 @@ TILE_WIDTH = 9
 TILE_HEIGHT = 16
 
 rl.init_display("plasma", WIDTH * TILE_WIDTH, HEIGHT * TILE_HEIGHT)
-tileset = rl.image("data/cp437.png", TILE_WIDTH, TILE_HEIGHT)
+tileset = rl.Image("data/cp437.png", TILE_WIDTH, TILE_HEIGHT)
 
 shift = 0.0
 colors = [rl.hsv_color(i, 255, 255, 255) for i in range(256)]
 
-array = rl.array(WIDTH, HEIGHT)
+array = rl.Array(WIDTH, HEIGHT)
 
 def redraw(event):
     global shift

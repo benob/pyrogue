@@ -7,9 +7,9 @@ TILE_WIDTH = 9
 TILE_HEIGHT = 16
 
 rl.init_display('Blob', WIDTH * TILE_WIDTH, HEIGHT * TILE_HEIGHT)
-tileset = rl.image('data/cp437.png', TILE_WIDTH, TILE_HEIGHT)
+tileset = rl.Image('data/cp437.png', TILE_WIDTH, TILE_HEIGHT)
 
-screen = rl.array(WIDTH, HEIGHT)
+screen = rl.Array(WIDTH, HEIGHT)
 
 class Blob:
     def __init__(self):

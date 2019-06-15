@@ -1,10 +1,13 @@
 import rl
 
-font1 = rl.font('data/font.ttf', 8)
-font2 = rl.font('data/font.ttf', 16)
-font3 = rl.font('data/font.ttf', 32)
-font4 = rl.image('data/cp437.png', 9, 16)
-font5 = rl.image('data/ascii_8x8.png', 8, 8)
+font1 = rl.Font('data/font.ttf', 8)
+font2 = rl.Font('data/font.ttf', 16)
+font3 = rl.Font('data/font.ttf', 32)
+font4 = rl.Image('data/cp437.png', 9, 16)
+font5 = rl.Image('data/ascii_8x8.png', 8, 8)
+
+print(font1)
+print(font4)
 
 def update(event):
     y = 0

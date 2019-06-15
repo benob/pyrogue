@@ -1,7 +1,7 @@
 import rl
 
 rl.init_display("Image", 512, 512)
-tileset = rl.image("data/kenney_1bit_16x16.png")
+tileset = rl.Image("data/kenney_1bit_16x16.png")
 tileset.tile_width = 16
 tileset.tile_height = 16
 print(tileset.tile_width, tileset.tile_height)
