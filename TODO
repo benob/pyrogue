@@ -1,39 +1,36 @@
-Needed for release:
-- full game example
-- 2d indexing functions
 
 ** General **
-port to web
-write doc and examples
 write tests
 
 ** examples **
 finish minimal example game
 
 ** pyrogue **
-investigate bug with loading py file on windows build
-load directory modules from assets 
 cleanup available modules 
 remove filesystem access (only assets shall be allowed)
 add REPL
 record screenshot, gif animation
 
 ** librogue **
-cleanup API
 rework event handling
-more color manipulation functions (at least access rgb components)
 expose line walking as iterator
-allow drawing to images (set draw target)
 add basic pixel font
-allow printing text from images
 finish and expose 2d indexing functions
-allow loading multiple fonts
 measure and draw single codepoint from font
-add noise generation
 add sound support
 add animation support
-add compression
+add compression of pref files
 
+DONE investigate bug with loading py file on windows build
+DONE load directory modules from assets 
+DONE cleanup API
+DONE more color manipulation functions (at least access rgb components)
+DONE allow drawing to images (through arrays)
+DONE allow printing text from images
+DONE allow loading multiple fonts
+DONE add noise generation
+DONE port to web
+DONE write doc and examples
 DONE rework embedding format
 DONE embed / extract from command line
 DONE segmantation fault with GC

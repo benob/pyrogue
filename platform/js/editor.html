@@ -48,10 +48,14 @@
 				width: 100%;
 				height: 200px;
 				overflow-y: scroll;
-				background: gray;
-				color: black;
+				background: #002b36;
+				-color: #d7d4f0;
+				color: #839496;
 				font-family: monospace;
 				font-size: 13px;
+			}
+			.stderr {
+				color: #cb4b16;
 			}
 			.CodeMirror {
 				height: auto;
@@ -84,6 +88,9 @@ def update(event):
 rl.run(update)</textarea></div>
 		<div style="display: none" id="stdout"></div>
     <script type='text/javascript'>
+			function escape_text(str) {
+				return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+			}
 			var stdout = document.getElementById('stdout');
       var Module = {
           canvas: document.getElementById('canvas'),
@@ -92,12 +99,16 @@ rl.run(update)</textarea></div>
 						ENV.SDL_EMSCRIPTEN_KEYBOARD_ELEMENT = '#canvas';
 					}],
 					print: function(text) {
-						stdout.innerText += text + '\n';
-						update_console_button(1);
+						if(running) {
+							stdout.innerHTML += escape_text(text) + '<br>';
+							update_console_button(1);
+						}
 					},
 					printErr: function(text) {
-						stdout.innerText += text + '\n';
-						update_console_button(1);
+						if(running) {
+							stdout.innerHTML += '<span class="stderr">'+ escape_text(text) + '</span><br>';
+							update_console_button(1);
+						}
 					},
       };
 			var running = false;
@@ -113,6 +124,8 @@ rl.run(update)</textarea></div>
 					let code = codeEditor.getValue();
 					document.getElementById('canvas').focus();
 					console.log('starting');
+					showing_console = false;
+					update_console_button(0);
 					pyrogue_run_string(code);
 					pyrogue_quit();
 					console.log('finished');
@@ -134,7 +147,7 @@ rl.run(update)</textarea></div>
 				alert('Copied url to clipboard.');
 			}
     </script>
-    <script async type="text/javascript" src="pyrogue.preload.js"></script>
+    <script async type="text/javascript" src="pyrogue.preload.editor.js"></script>
     <script async type="text/javascript" src="pyrogue.js"></script>
 		<script>
 			let was_init = false;
@@ -181,7 +194,7 @@ rl.run(update)</textarea></div>
 					editor.style.display = '';
 					stdout.style.display = 'none';
 				} else {
-					element.innerText = 'Code';
+					element.innerText = 'Editor';
 					editor.style.display = 'none';
 					stdout.style.display = '';
 				}

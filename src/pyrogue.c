@@ -102,7 +102,9 @@ STATIC int handle_uncaught_exception(mp_obj_base_t *exc) {
 // except if FORCED_EXIT bit is set then script raised SystemExit and the
 // value of the exit is in the lower 8 bits of the return value
 STATIC int execute_from_lexer(int source_kind, const void *source, uint32_t size, mp_parse_input_kind_t input_kind, bool is_repl, const char* name) {
+#ifndef __EMSCRIPTEN__
     mp_hal_set_interrupt_char('c');
+#endif
 
     nlr_buf_t nlr;
     if (nlr_push(&nlr) == 0) {
@@ -156,7 +158,9 @@ STATIC int execute_from_lexer(int source_kind, const void *source, uint32_t size
 
     } else {
         // uncaught exception
+#ifndef __EMSCRIPTEN__
         mp_hal_set_interrupt_char(-1);
+#endif
         return handle_uncaught_exception(nlr.ret_val);
     }
 }
@@ -240,7 +244,7 @@ int main(int argc, char** argv) {
 }
 #endif
 
-MP_NOINLINE void pyrogue_init() {
+MP_NOINLINE void pyrogue_init(const char* resource_path) {
 #ifdef __EMSCRIPTEN__
 	int stack_dummy;
 	stack_top = (char*)&stack_dummy;
@@ -272,6 +276,7 @@ MP_NOINLINE void pyrogue_init() {
 	mp_obj_list_init(MP_OBJ_TO_PTR(mp_sys_argv), 0);
 
 	rl_set_allocator(m_malloc, m_realloc, m_free);
+	if(resource_path != NULL) fs_open_resources(resource_path);
 
 }
 
@@ -333,7 +338,7 @@ MP_NOINLINE void pyrogue_quit() {
 
 // main for command line invocation
 MP_NOINLINE int cmdline_main(int argc, char** argv) {
-	pyrogue_init();
+	pyrogue_init(NULL);
 
 	if(argc == 1) {
 		if(!pyrogue_run(argv[0])) usage(argv[0]);

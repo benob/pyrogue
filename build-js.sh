@@ -12,5 +12,5 @@ make -j 4
 
 mkdir dist
 for example in fire.zip plasma.zip blob.zip game.zip tileset.zip; do
-../platform/js/export-game.sh ../examples/$example dist/
+../platform/js/export-game.sh ../examples/zip/$example dist/
 done

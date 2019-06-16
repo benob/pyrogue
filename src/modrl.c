@@ -685,6 +685,21 @@ STATIC mp_obj_t mod_rl_array_place_random(size_t n_args, const mp_obj_t *args) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_rl_array_place_random_obj, 2, 3, mod_rl_array_place_random);
 
+STATIC mp_obj_t mod_rl_array_view(size_t n_args, const mp_obj_t *args) {
+	mp_check_self(mp_obj_is_type(args[0], &mp_type_rl_array));
+	mp_obj_rl_array_t *self = MP_OBJ_TO_PTR(args[0]);
+	mp_int_t x = mp_obj_get_int(args[1]);
+	mp_int_t y = mp_obj_get_int(args[2]);
+	mp_int_t w = mp_obj_get_int(args[3]);
+	mp_int_t h = mp_obj_get_int(args[4]);
+
+	mp_obj_rl_array_t* output = m_new_obj(mp_obj_rl_array_t);
+	output->base.type = &mp_type_rl_array;
+	output->array = rl_array_view(self->array, x, y, w, h);
+	return MP_OBJ_FROM_PTR(output);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_rl_array_view_obj, 5, 5, mod_rl_array_view);
+
 STATIC mp_obj_t mod_rl_array_copy(mp_obj_t self_in) {
 	mp_check_self(mp_obj_is_type(self_in, &mp_type_rl_array));
 	mp_obj_rl_array_t *self = MP_OBJ_TO_PTR(self_in);
@@ -735,9 +750,8 @@ STATIC mp_obj_t mod_rl_array_equals(mp_obj_t self_in, mp_obj_t value_in) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(mod_rl_array_equals_obj, mod_rl_array_equals);
 
 STATIC const mp_rom_map_elem_t mod_rl_array_locals_dict_table[] = {
-	//{ MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&mod_rl_array_free_obj) },
-	//{ MP_ROM_QSTR(MP_QSTR_free), MP_ROM_PTR(&mod_rl_array_free_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_to_string), MP_ROM_PTR(&mod_rl_array_to_string_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_view), MP_ROM_PTR(&mod_rl_array_view_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_get), MP_ROM_PTR(&mod_rl_array_get_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_set), MP_ROM_PTR(&mod_rl_array_set_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_width), MP_ROM_PTR(&mod_rl_array_width_obj) },

@@ -463,7 +463,7 @@ void rl_array_dijkstra(array_t* a) {
             }
           }
         }
-        if(min + 1 < array_value(a, x, y)) {
+        if(min != INT_MAX && min + 1 < array_value(a, x, y)) {
 					array_value(a, x, y) = min + 1;
           converged = 0;
         }
