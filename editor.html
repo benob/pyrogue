@@ -23,14 +23,20 @@ body {
 	font-family: monospace;
 }
 
-.pane {
+.pyrogue-row {
 	display: flex;
-	flex-direction: column;
-	max-height: 538px;
-	width: 650px;
+	flex-wrap: wrap;
+	justify-content: center;
+	align-items: stretch;
+}
+.pyrogue-col {
+	margin: 5px;
+	width: 640px;
+	height: 480px;
 	max-width: 100%;
-	height: 528px;
-	padding: 5px;
+	display:flex;
+	align-items: flex-start;
+	flex-direction: column;
 }
 #display {
 	width: 100%;
@@ -48,6 +54,7 @@ body {
 	background: black;
 	overflow: hidden;
 	flex-grow: 1;
+	width: 100%;
 }
 .controls {
 	flex-grow: 0;
@@ -86,13 +93,14 @@ body {
 		<header class="masthead mb-auto">
 			<div class="inner">
 				<h3 class="masthead-brand text-center">Pyrogue</h3>
+				<p class="text-center">Embedded micropython for making roguelikes</p>
 			</div>
 		</header>
 
 		<main role="main" class="inner cover">
-			<div class="container">
-				<div class="row">
-					<div class="pane col-xs-12 col-lg-6">
+			<!--<div class="container">-->
+				<div class="pyrogue-row">
+					<div class="pyrogue-col">
 						<div class="result">
 							<div id="display"><canvas width="320" height="240" id="canvas"></canvas></div>
 							<div id="stdout" style="display: none">Ready</div>
@@ -103,7 +111,7 @@ body {
 							<button class="btn btn-outline-secondary">Fullscreen</button>
 						</div>
 					</div>
-					<div class="pane col-xs-12 col-lg-6">
+					<div class="pyrogue-col">
 						<textarea id="editor">
 import rl
 
@@ -123,7 +131,7 @@ rl.run(update)</textarea>
 						</div>
 					</div>
 				</div>
-			</div>
+				<!--</div>-->
 
 			<!-- Modal -->
 			<div class="modal" id="share-modal" tabindex="-1" role="dialog" aria-labelledby="share-modal-title" aria-hidden="true">
