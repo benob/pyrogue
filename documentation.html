@@ -1,13 +1,18 @@
 <html>
 	<head>
+		<meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 		<link rel="stylesheet" href="https://highlightjs.org/static/demo/styles/default.css">
 		<script
 			charset="UTF-8"
 			src="https://highlightjs.org/static/highlight.site.pack.js"></script>
 		<script>hljs.initHighlightingOnLoad();</script>
+		<style>
+		pre { max-width: 100%; overflow: scroll }
+		</style>
 	</head>
 	<body>
-<h1>Pyrogue documentation</h1>
+<h1>Pyrogue docs</h1>
 <p>Pyrogue is a python interpreter based on <a href="https://www.micropython.org">micropython</a> with a minimalist library for making roguelikes.</p>
 <p>Pyrogue comes with the <code>rl</code> module which covers basic roguelike functionalities.
 In addition, it comes with the following micropython modules: <a href="https://docs.micropython.org/en/latest/library/math.html">math</a>, <a href="https://docs.micropython.org/en/latest/library/sys.html">sys</a>, <a href="https://docs.micropython.org/en/latest/library/ujson.html">ujson</a>, <a href="https://docs.micropython.org/en/latest/library/ure.html">ure</a>. Other micropython modules are not available and the python language implemented by micropython <a href="https://docs.micropython.org/en/latest/genrst/index.html">differs</a> a bit from standard python. For efficiency, most functions in the <code>rl</code> module do not support keyword arguments.</p>
