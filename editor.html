@@ -1,54 +1,69 @@
-<!doctype HTML>
-<html lang="en-us">
+<!DOCTYPE html>
+<html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>Pyrogue</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <title>Editor</title>
+
+    <link rel="canonical" href="https://getbootstrap.com/docs/4.3/examples/cover/">
+		<!-- Bootstrap core CSS -->
+		<link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+		<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+
 		<script src="https://codemirror.net/lib/codemirror.js"></script>
 		<link rel="stylesheet" href="https://codemirror.net/lib/codemirror.css">
 		<link rel="stylesheet" href="https://codemirror.net/theme/solarized.css">
 		<script src="https://codemirror.net/mode/python/python.js"></script>
-    <style>
-			body {
-				margin-left: auto;
-				margin-right: auto;
-				margin-bottom: 2em;
-				width: 800px;
-			}
-			#canvas-container {
-				text-align: center;
-				width: 100%;
-				background: black;
-				border-radius: 10px 10px 0px 0px;
-				margin: 0px;
-				padding: 0px;
-			}
-			#buttons-container {
-				background: black;
-				color: white;
-				padding: .3em 1em;
-				font-family: monospace;
-				font-size: 13px;
-			}
-			#buttons-container a, a:link, a:visited, a:active, a:hover {
-				color: dodgerblue;
-			}
-			#buttons-container button, select {
-				color: dodgerblue;
-				background: black;
-				border: 1px solid dodgerblue;
-				font-family: monospace;
-			}
+<style>
+body {
+	margin: 1em;
+	font-family: monospace;
+}
+
+.pane {
+	display: flex;
+	flex-direction: column;
+	max-height: 490px;
+}
+#editor {
+	flex-grow: 1;
+	overflow: hidden;
+}
+
+.result {
+	background: black;
+	overflow: hidden;
+	flex-grow: 1;
+}
+.controls {
+	flex-grow: 0;
+	padding-top: 5px;
+}
+
+.col-box {
+	width: 650px;
+	height: 490px;
+	padding: 5px;
+}
+.CodeMirror {
+	width: 100%;
+	height: 100%;
+}
+.btn {
+	border-radius: 0px;
+	padding: 1px 6px;
+}
 			#canvas {
-				background: rgb(16, 16, 32);
-			}
-			#script {
 				width: 100%;
+				height: 100%;
 			}
 			#stdout {
 				width: 100%;
-				height: 200px;
+				height: 100%;
 				overflow-y: scroll;
-				background: #002b36;
 				-color: #d7d4f0;
 				color: #839496;
 				font-family: monospace;
@@ -57,26 +72,34 @@
 			.stderr {
 				color: #cb4b16;
 			}
-			.CodeMirror {
-				height: auto;
-			}
-		</style>
-	</head>
+
+</style>
+
+  </head>
+
 	<body>
-		<div id="canvas-container"><canvas width="320" height="240" id="canvas"></canvas></div>
-		<div id="buttons-container">
-		Pyrogue: <button onclick="press_run(this)">▶</button>
-		<button id="console-button" onclick="toggle_console(this)">Console</button>
-		<!--<select>
-			<option selected disabled>Snippet</option>
-			<option>Plasma</option>
-			<option>Tileset</option>
-		</select>-->
-		<button onclick="get_link()">Get link</button>
-		<a href="documentation.html" target='documentation'>Documentation</a> 
-		<a href="assets.html" target='assets'>Assets</a> 
-		</div>
-		<div id="script-container"><textarea id="script" rows="8">
+		<header class="masthead mb-auto">
+			<div class="inner">
+				<h3 class="masthead-brand text-center">Pyrogue</h3>
+			</div>
+		</header>
+
+		<main role="main" class="inner cover">
+			<div class="container">
+				<div class="row">
+					<div class="pane col-xs-12 col-lg-6 col-box">
+						<div class="result">
+							<div id="display"><canvas width="320" height="240" id="canvas"></canvas></div>
+							<div id="stdout" style="display: none">Ready</div>
+						</div>
+						<div class="controls">
+							<button class="btn btn-primary" onclick="press_run(this)">Run</button>
+							<button id="console-button" class="btn btn-outline-secondary" onclick="toggle_console(this)">Console</button>
+							<button class="btn btn-outline-secondary">Fullscreen</button>
+						</div>
+					</div>
+					<div class="pane col-xs-12 col-lg-6 col-box">
+						<textarea id="editor">
 import rl
 
 WIDTH, HEIGHT = 320, 240
@@ -86,9 +109,41 @@ def update(event):
     color = rl.random_color()
     rl.fill_rect(rl.random_int(0, WIDTH - 1), rl.random_int(0, HEIGHT - 1), 50, 50, color)
 
-rl.run(update)</textarea></div>
-		<div style="display: none" id="stdout"></div>
-    <script type='text/javascript'>
+rl.run(update)</textarea>
+						<div class="controls">
+							<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#share-modal" onclick="share_code()">Share</button>
+							<a class="btn btn-outline-secondary" href="documentation.html" target='documentation'>Documentation</a> 
+							<a class="btn btn-outline-secondary" href="assets.html" target='assets'>Assets</a> 
+							<a class="btn btn-outline-secondary" href="https://github.com/benob/pyrogue" target='github'>Github</a> 
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Modal -->
+			<div class="modal" id="share-modal" tabindex="-1" role="dialog" aria-labelledby="share-modal-title" aria-hidden="true">
+				<div class="modal-dialog modal-dialog-centered" role="document">
+					<div class="modal-content">
+						<div class="modal-header">
+							<h5 class="modal-title" id="share-modal-title">Share script</h5>
+							<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+								<span aria-hidden="true">&times;</span>
+							</button>
+						</div>
+						<div class="modal-body">
+							<p>URL copied to clipboard.</p>
+							<p><textarea id="share-url" rows="10" cols="40"></textarea></p>
+						</div>
+						<div class="modal-footer">
+							<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+						</div>
+					</div>
+				</div>
+			</div>
+
+		</main>
+
+		<script>
 			function escape_text(str) {
 				return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 			}
@@ -103,12 +158,14 @@ rl.run(update)</textarea></div>
 						if(running) {
 							stdout.innerHTML += escape_text(text) + '<br>';
 							update_console_button(1);
+							stdout.scrollTop = stdout.scrollHeight;
 						}
 					},
 					printErr: function(text) {
 						if(running) {
 							stdout.innerHTML += '<span class="stderr">'+ escape_text(text) + '</span><br>';
-							update_console_button(1);
+							update_console_button(2);
+							stdout.scrollTop = stdout.scrollHeight;
 						}
 					},
       };
@@ -117,25 +174,25 @@ rl.run(update)</textarea></div>
 				if(running) {
 					pyrogue_quit();
 					running = false;
-					button.innerText = '▶';
+					button.innerText = 'Run';
 				} else {
 					stdout.innerText = '';
 					running = true;
-					button.innerText = '◼';
+					button.innerText = 'Stop';
 					let code = codeEditor.getValue();
 					document.getElementById('canvas').focus();
 					console.log('starting');
-					showing_console = false;
+					showing_console = true;
 					update_console_button(0);
 					pyrogue_run_string(code);
 					pyrogue_quit();
 					console.log('finished');
 					running = false;
-					button.innerText = '▶';
+					button.innerText = 'Run';
 					//update_console_button(0);
 				}
 			}
-			function get_link() {
+			function share_code() {
 				let code = codeEditor.getValue();
 				let url = window.location.href.split("#", 1)[0] + '#' + escape(code);
 
@@ -145,7 +202,9 @@ rl.run(update)</textarea></div>
 				dummy.select();
 				document.execCommand('copy');
 				document.body.removeChild(dummy);
-				alert('Copied url to clipboard.');
+
+				let input = document.getElementById('share-url');
+				input.value = url;
 			}
     </script>
     <script async type="text/javascript" src="pyrogue.preload.editor.js"></script>
@@ -171,33 +230,41 @@ rl.run(update)</textarea></div>
 			function pyrogue_quit() {
 				Module.ccall('pyrogue_quit', null, []);
 			}
-			let script = document.getElementById('script');
-			var codeEditor = CodeMirror.fromTextArea(script, {
+			let editor = document.getElementById('editor');
+			var codeEditor = CodeMirror.fromTextArea(editor, {
 				mode: 'python',
 				lineNumbers: true,
 				theme: 'solarized dark',
-				viewportMargin: Infinity,
+				extraKeys: {
+					Tab: (cm) => cm.execCommand("indentMore"),
+					"Shift-Tab": (cm) => cm.execCommand("indentLess"),
+				},
 			});
 			let url_parts = document.location.href.split('#');
 			if(url_parts.length == 2) {
 				let code = unescape(url_parts[1]);
 				console.log('code=', code);
-				codeEditor.setValue(code);
+				if(code.length > 0) codeEditor.setValue(code);
 			}
 			var showing_console = true;
 			function update_console_button(flag) {
 				let element = document.getElementById('console-button');
-				let editor = document.getElementById('script-container');
+				let display = document.getElementById('display');
 				let stdout = document.getElementById('stdout');
 				if(showing_console) {
 					if(flag) element.innerText = 'Console*';
 					else element.innerText = 'Console';
-					editor.style.display = '';
+					display.style.display = '';
 					stdout.style.display = 'none';
 				} else {
-					element.innerText = 'Editor';
-					editor.style.display = 'none';
+					element.innerText = 'Display';
+					display.style.display = 'none';
 					stdout.style.display = '';
+				}
+				if(flag == 2) {
+					$(element).addClass('btn-outline-danger').removeClass('btn-outline-secondary');
+				} else {
+					$(element).removeClass('btn-outline-danger').addClass('btn-outline-secondary');
 				}
 			}
 			function toggle_console(element) {

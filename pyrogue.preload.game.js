@@ -173,6 +173,6 @@ Module.expectedDataFileDownloads++;
   }
 
  }
- loadPackage({"files": [{"filename": "/game.zip", "start": 0, "end": undefined, "audio": 0}], "remote_package_size": 148782, "package_uuid": "a2774c5f-ce49-4f09-8b56-d819b932b7ca"});
+ loadPackage({"files": [{"filename": "/game.zip", "start": 0, "end": undefined, "audio": 0}], "remote_package_size": 148767, "package_uuid": "a2774c5f-ce49-4f09-8b56-d819b932b7ca"});
 
 })();

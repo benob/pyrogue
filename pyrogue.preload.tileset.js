@@ -18,8 +18,8 @@ Module.expectedDataFileDownloads++;
     } else {
       throw 'using preloaded data can only be done on a web page or in a web worker';
     }
-    var PACKAGE_NAME = 'plasma.zip';
-    var REMOTE_PACKAGE_BASE = 'plasma.zip';
+    var PACKAGE_NAME = 'tileset.zip';
+    var REMOTE_PACKAGE_BASE = 'tileset.zip';
     if (typeof Module['locateFilePackage'] === 'function' && !Module['locateFile']) {
       Module['locateFile'] = Module['locateFilePackage'];
       err('warning: you defined Module.locateFilePackage, that has been renamed to Module.locateFile (using your locateFilePackage for now)');
@@ -149,10 +149,10 @@ Module.expectedDataFileDownloads++;
           for (var i = 0; i < files.length; ++i) {
             DataRequest.prototype.requests[files[i].filename].onload();
           }
-              Module['removeRunDependency']('plasma.zip');
+              Module['removeRunDependency']('tileset.zip');
 
     };
-    Module['addRunDependency']('plasma.zip');
+    Module['addRunDependency']('tileset.zip');
   
     if (!Module.preloadResults) Module.preloadResults = {};
   
@@ -173,6 +173,6 @@ Module.expectedDataFileDownloads++;
   }
 
  }
- loadPackage({"files": [{"filename": "/plasma.zip", "start": 0, "end": undefined, "audio": 0}], "remote_package_size": 23211, "package_uuid": "a2774c5f-ce49-4f09-8b56-d819b932b7ca"});
+ loadPackage({"files": [{"filename": "/tileset.zip", "start": 0, "end": undefined, "audio": 0}], "remote_package_size": 73510, "package_uuid": "a2774c5f-ce49-4f09-8b56-d819b932b7ca"});
 
 })();
