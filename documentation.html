@@ -35,9 +35,9 @@ rl.run(update)
 <li><a href="#utils">Utils</a></li>
 </ul>
 <h2><a name="input"></a> Input</h2>
-<h3><code>rl.run(update_callback, event_filter=rl.CONTINUOUSLY)</code></h3>
-<p>Pyrogue's display functions are only honored if called from an update callback which is called every time events occur and the screen needs to be repainted. <code>rl.run()</code> is a blocking function which calls the update function repeatedly according to the given event filter.</p>
-<p>Valid values for the filter are <code>rl.CONTINUOUSLY</code> to recieve updates continuously, <code>rl.ON_KEY</code> to recieve updates when a key is pressed, and <code>rl.ON_MOUSE</code> to receive updates on mouse events. The last two can be combined (<code>rl.ON_KEYS|rl.ON_MOUSE</code>) to recieve both kinds of events.</p>
+<h3><code>rl.run(update_callback, when=rl.CONTINUOUSLY)</code></h3>
+<p>Pyrogue's display functions are only honored if called from an update callback which is called every time events occur and the screen needs to be repainted. <code>rl.run()</code> is a blocking function which calls the update function repeatedly according to the <code>when</code> parameter.</p>
+<p>Valid values for <code>when</code> are <code>rl.CONTINUOUSLY</code> to recieve updates continuously, <code>rl.ON_KEY</code> to recieve updates when a key is pressed, and <code>rl.ON_MOUSE</code> to receive updates on mouse events. The last two can be combined (<code>rl.ON_KEYS|rl.ON_MOUSE</code>) to recieve both kinds of events.</p>
 <p>The update callback is a function taking one parameter which represents the event that triggered it. Events can be:</p>
 <ul>
 <li>a value &gt; 0 is recieved when a key is pressed. The constants for key identities are the same than <a href="https://wiki.libsdl.org/SDL_Keycode">SDL</a> without the <code>SDL_</code> prefix.</li>
