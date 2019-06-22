@@ -102,13 +102,13 @@ body {
 				<div class="pyrogue-row">
 					<div class="pyrogue-col">
 						<div class="result">
-							<div id="display"><canvas width="320" height="240" id="canvas"></canvas></div>
+							<div id="display"><canvas tabindex="0" width="320" height="240" id="canvas"></canvas></div>
 							<div id="stdout" style="display: none">Ready</div>
 						</div>
 						<div class="controls">
-							<button class="btn btn-primary" onclick="press_run(this)">Run</button>
+							<button id="run-button" class="btn btn-primary" onclick="press_run(this)">Run</button>
 							<button id="console-button" class="btn btn-outline-secondary" onclick="toggle_console(this)">Console</button>
-							<button class="btn btn-outline-secondary">Fullscreen</button>
+							<button class="btn btn-outline-secondary" onclick="document.getElementById('canvas').requestFullscreen()">Fullscreen</button>
 						</div>
 					</div>
 					<div class="pyrogue-col">
@@ -184,6 +184,10 @@ rl.run(update)</textarea>
 					},
       };
 			var running = false;
+			var canvas = document.getElementById('canvas');
+			canvas.addEventListener('click', function() {
+				if(document.activeElement != canvas) canvas.focus();
+			});
 			function press_run(button) {
 				if(running) {
 					pyrogue_quit();
@@ -194,7 +198,7 @@ rl.run(update)</textarea>
 					running = true;
 					button.innerText = 'Stop';
 					let code = codeEditor.getValue();
-					document.getElementById('canvas').focus();
+					canvas.focus();
 					console.log('starting');
 					showing_console = true;
 					update_console_button(0);
@@ -252,14 +256,26 @@ rl.run(update)</textarea>
 				extraKeys: {
 					Tab: (cm) => cm.execCommand("indentMore"),
 					"Shift-Tab": (cm) => cm.execCommand("indentLess"),
+					"Ctrl-Enter": (cm) => press_run(document.getElementById('run-button')),
 				},
 			});
 			let url_parts = document.location.href.split('#');
+			let code_was_set = false;
 			if(url_parts.length == 2) {
 				let code = unescape(url_parts[1]);
 				console.log('code=', code);
-				if(code.length > 0) codeEditor.setValue(code);
+				if(code.length > 0) {
+					codeEditor.setValue(code);
+					code_was_set = true;
+				}
 			}
+			if(!code_was_set) {
+				let code = localStorage.getItem('pyrogue-code');
+				if(code) codeEditor.setValue(code);
+			}
+			codeEditor.on('change', function() {
+				localStorage.setItem('pyrogue-code', codeEditor.getValue());
+			});
 			var showing_console = true;
 			function update_console_button(flag) {
 				let element = document.getElementById('console-button');
