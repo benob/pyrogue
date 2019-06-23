@@ -7,20 +7,28 @@
 			charset="UTF-8"
 			src="https://highlightjs.org/static/highlight.site.pack.js"></script>
 		<script>hljs.initHighlightingOnLoad();</script>
+		<style>
+		code {
+			color: dimgray;
+		}
+		h3 code {
+			color: black;
+		}
+		</style>
 	</head>
 	<body>
 <h1>Pyrogue documentation</h1>
 <p>Pyrogue is a python interpreter based on <a href="https://www.micropython.org">micropython</a> with a minimalist library for making roguelikes.</p>
 <p>Pyrogue comes with the <code>rl</code> module which covers basic roguelike functionalities.
 In addition, it comes with the following micropython modules: <a href="https://docs.micropython.org/en/latest/library/math.html">math</a>, <a href="https://docs.micropython.org/en/latest/library/sys.html">sys</a>, <a href="https://docs.micropython.org/en/latest/library/ujson.html">ujson</a>, <a href="https://docs.micropython.org/en/latest/library/ure.html">ure</a>. Other micropython modules are not available and the python language implemented by micropython <a href="https://docs.micropython.org/en/latest/genrst/index.html">differs</a> a bit from standard python. For efficiency, most functions in the <code>rl</code> module do not support keyword arguments.</p>
-<p>A typical roguelike programs first imports the <code>rl</code> module, setups a display and invokes run with an update callback.</p>
+<p>A typical pyrogue program first imports the <code>rl</code> module, setups a display and invokes run with an update callback.</p>
 <pre><code class="language-python">import rl
 
 WIDTH, HEIGHT = 320, 240
 
 def update(event):
-	x, y = rl.random_int(0, WIDTH - 1), rl.random_int(0, HEIGHT - 1)
-	rl.fill_rect(x, y, 50, 50, rl.random_color())
+    x, y = rl.random_int(0, WIDTH - 1), rl.random_int(0, HEIGHT - 1)
+    rl.fill_rect(x, y, 50, 50, rl.random_color())
 
 rl.init_display('example', WIDTH, HEIGHT)
 rl.run(update)
@@ -50,34 +58,34 @@ rl.run(update)
 x, y = 50, 50
 
 def update(event):
-	global x, y
+    global x, y
 
-	# move rectangle by 10 pixels in the direction of the pressed key
-	if event == rl.LEFT:
-		x -= 10
-	elif event == rl.RIGHT:
-		x += 10
-	elif event == rl.UP:
-		y -= 10
-	elif event == rl.DOWN:
-		y += 10
-	# or use mouse to move the rectangle
-	elif event == rl.MOUSE:
-		x, y, button = rl.mouse()
+    # move rectangle by 10 pixels in the direction of the pressed key
+    if event == rl.LEFT:
+        x -= 10
+    elif event == rl.RIGHT:
+        x += 10
+    elif event == rl.UP:
+        y -= 10
+    elif event == rl.DOWN:
+        y += 10
+    # or use mouse to move the rectangle
+    elif event == rl.MOUSE:
+        x, y, button = rl.mouse()
 
-	rl.clear()
-	rl.fill_rect(x, y, 50, 50, rl.GREEN)
+    rl.clear()
+    rl.fill_rect(x, y, 50, 50, rl.GREEN)
 
 rl.run(update)
 </code></pre>
 <h3><code>rl.quit()</code></h3>
 <p>Terminates a <code>rl.run()</code> call.</p>
 <pre><code class="language-python">def update(event):
-	if event &gt; 0:
-		rl.quit() # quit on any key
+    if event &gt; 0:
+        rl.quit() # quit on any key
 rl.run(update, rl.ON_KEY)
 </code></pre>
-<h3><code>rl.mouse()</code></h3>
+<h3><code>x, y, button = rl.mouse()</code></h3>
 <p>Returns the coordinates of the mouse, as well as the button being pressed. The coordinates are in pixels according to the resolution of the display (see <code>rl.init_display()</code>). The button can be <code>left = 1</code>, <code>middle = 2</code>, <code>right = 3</code>.</p>
 <pre><code class="language-python">x, y, button = rl.mouse()
 </code></pre>
@@ -90,13 +98,13 @@ rl.run(update, rl.ON_KEY)
 Coordinates follow the standard in graphics: (0, 0) is at the top-left corner, (width, height) is as the bottom-right corner. The display is a 32bit RGB surface which is automatically resized to fit the window.</p>
 <pre><code class="language-python">rl.init_display('snake', 320, 240)
 </code></pre>
-<h3><code>rl.Font(filename, size)</code></h3>
+<h3><code>font = rl.Font(filename, size)</code></h3>
 <p>Load a TTF font for writing text on the display. The returned font can be passed to the <code>rl.draw_text()</code> function. Note that only ascii characters in range 32-127 can be drawn. The font object has two read-only attributes: <code>size</code> which is the size passed to the constructor, and <code>line_height</code> which is the line height stored in the font.</p>
 <pre><code class="language-python">font = rl.Font('monospace.ttf', 14)
 print(font.line_height)
 </code></pre>
 <p>Note that system resources behind a font (such as the character atlas) are only disposed when the garbage collector is run after memory gets low. When manipulating many fonts, it is a good idea to call <code>del font</code>, where <code>font</code> is a variable holding the font, to explicitly release the resources.</p>
-<h3><code>rl.Image(filename, tile_width=8, tile_height=8)</code></h3>
+<h3><code>image = rl.Image(filename, tile_width=8, tile_height=8)</code></h3>
 <p>Load a png/jpg image from resources and return an image object. Optionnaly, the size of tiles can be specified. It defaults to 8x8. The returned image object can be passed to drawing functions such as <code>rl.draw_image()</code>. It has two read-only members: <code>width</code> and <code>height</code> and two read-write members: <code>tile_width</code> and <code>tile_height</code>.</p>
 <pre><code class="language-python">image = rl.Image('tiles.png', 16, 16)
 print(image.width, image.height)
@@ -134,7 +142,7 @@ image = rl.Image('font.png', 10, 10)
 rl.draw_text(font, 0, 0, 'Hello world')
 rl.draw_text(image, 0, 20, 'Hello world')
 </code></pre>
-<h3><code>rl.size_text(font, text)</code></h3>
+<h3><code>width, height = rl.size_text(font, text)</code></h3>
 <p>Compute the width and height of text according to a TTF font.</p>
 <pre><code class="language-python">width, height = rl.size_text(font, 'hello world')
 </code></pre>
@@ -150,56 +158,60 @@ rl.draw_text(image, 0, 20, 'Hello world')
 <p>Draw a stright line between <code>(x1, y1)</code> and <code>(x2, y2)</code> with the given color.</p>
 <pre><code class="language-python">rl.draw_line(5, 13, 120, 92, rl.PINK)
 </code></pre>
-<h3><code>rl.color(r, g, b, a=255)</code></h3>
-<p>Make an integer representing an RGBA color from 8-bit components. The values for red (<code>r</code>), green (<code>g</code>), blue (<code>b</code>) and alpha (<code>a</code>) must be between 0 and 255 inclusive. The alpha channel represents the opacity of the color, with 255 the most opaque, and 0 transparent.</p>
+<h3><code>color = rl.color(r, g, b, a=255)</code>, <code>color = rl.color(hex_color)</code></h3>
+<p>Make an integer representing an RGBA color from 8-bit components or an hexadecimal string. The values for red (<code>r</code>), green (<code>g</code>), blue (<code>b</code>) and alpha (<code>a</code>) must be between 0 and 255 inclusive. The alpha channel represents the opacity of the color, with 255 the most opaque, and 0 transparent. If only one argument is given to the function, it is interpreted as a string representing a hex color, starting with a <code>#</code> and followed by 3, 6 or 8 hexadecimal digits (<code>0-9a-f</code>). The specification can be found <a href="https://www.quackit.com/css/color/values/css_hex_color_notation_3_digits.cfm">here</a>. 8-digit colors are the same as 6-digits, prefixed with two digits for the alpha channel.</p>
 <pre><code class="language-python">blue = rl.color(0, 0, 255)
 magenta = rl.color(255, 0, 255)
 transparent_green = rl.color(0, 255, 0, 128)
+red = rl.color('#ff0000') # 6-digit hex color
+green = rl.color('#0f0') # 3-digit hex color
+transparent_blue = rl.color('#1f0000ff') # 6-digit with transparency
 </code></pre>
-<p>In addition, pyrogue defines constants for the pico8 palette:</p>
+<p>In addition, pyrogue defines constants for the <a href="https://www.romanzolotarev.com/pico-8-color-palette/">pico8 palette</a>:</p>
 <pre><code class="language-python">pico8_colors = [rl.BLACK, rl.DARKBLUE, rl.DARKPURPLE, rl.DARKGREEN,
-	rl.BROWN, rl.DARKGRAY, rl.LIGHTGRAY, rl.WHITE,
-	rl.RED, rl.ORANGE, rl.YELLOW, rl.GREEN, 
-	rl.BLUE, rl.INDIGO, rl.PINK, rl.PEACH,
+    rl.BROWN, rl.DARKGRAY, rl.LIGHTGRAY, rl.WHITE,
+    rl.RED, rl.ORANGE, rl.YELLOW, rl.GREEN, 
+    rl.BLUE, rl.INDIGO, rl.PINK, rl.PEACH,
 ]
 </code></pre>
-<h3><code>rl.hsv_color(h, s, v, a=255)</code></h3>
+<h3><code>color = rl.hsv_color(h, s, v, a=255)</code></h3>
 <p>Make an integer representing an RGBA color from HSV components. This function is similar to <code>rl.color()</code> but it takes a hue, saturation and value components. Unlike typical implementations, the hue component is not in degrees, but rather sits between 0 and 255 (corresponding to a 2PI angle).</p>
 <pre><code class="language-python">red = rl.hsv_color(0, 255, 255)
 </code></pre>
-<h3><code>rl.color_r(c)</code>, <code>rl.color_g(c)</code>, <code>rl.color_b(c)</code>, <code>rl.color_a(c)</code></h3>
+<h3><code>r, g, b, a = rl.color_components(color)</code></h3>
 <p>Return indvidual components from an RGBA color.</p>
-<pre><code class="language-python">c = rl.color(255, 0, 0)
-print(rl.color_r(c) == 255)
+<pre><code class="language-python">color = rl.color(255, 128, 64, 32)
+r, g, b, a = rl.color_components(color)
+print(r == 255, g == 128, b == 64, a == 32)
 </code></pre>
 <h2><a name="random"></a>Random</h2>
 <p>The random generator in pyrogue is a <a href="http://www.pcg-random.org/">PCG</a> with a single 64-bit state.
 Setting the seed changes the state to a given value. Drawing a random number with any of the functions below changes the state.</p>
-<h3><code>rl.random()</code></h3>
+<h3><code>number = rl.random()</code></h3>
 <p>Generate a random floating point number between 0 and 1.</p>
 <pre><code class="language-python">x = rl.random()
 </code></pre>
-<h3><code>rl.random_int(a, b)</code></h3>
+<h3><code>number = rl.random_int(a, b)</code></h3>
 <p>Generate a random integer between <code>a</code> and <code>b</code> inclusive.</p>
 <p>For example, to generate <code>5 &lt;= x &lt;= 7</code>:</p>
 <pre><code class="language-python">x = rl.random_int(5, 7)
 </code></pre>
-<h3><code>rl.roll(dice)</code></h3>
+<h3><code>number = rl.roll(dice)</code></h3>
 <p>Roll <code>n</code> dices with <code>m</code> faces according to the <code>dice</code> string specification.
 The specification the number of rolls followed by 'd' or 'D', followed by the number of faces of the dice. The result is the sum of all rolls. 0 is returned if the specification is invalid.</p>
 <pre><code class="language-python">x = rl.roll('3d5')
 x = rl.roll('1d12')
 </code></pre>
-<h3><code>rl.set_seed(s)</code></h3>
-<p>Set the random number state to the 64-bit integer <code>s</code>. If <code>s</code> is 0, then the state is set according to the current time.</p>
+<h3><code>rl.set_seed(seed)</code></h3>
+<p>Set the random number state to the 64-bit integer <code>seed</code>. If <code>seed</code> is 0, then the state is set according to the current time.</p>
 <pre><code class="language-python">rl.set_seed(123) # set a fixed seed
 rl.set_seed(0)   # seed randomly
 </code></pre>
-<h3><code>rl.get_seed()</code></h3>
+<h3><code>seed = rl.get_seed()</code></h3>
 <p>Get the 64-bit state of the random generator. Is useful to resume generation after, for example, loading a level.</p>
 <pre><code class="language-python">x = rl.get_seed()
 </code></pre>
-<h3><code>rl.random_color()</code></h3>
+<h3><code>color = rl.random_color()</code></h3>
 <p>Generate a random RGB color.</p>
 <pre><code class="language-python">c = rl.random_color()
 </code></pre>
@@ -215,11 +227,11 @@ x = rl.random_3d(5, 42, 33)
 <p>Arrays are fixed-size 2D data structures which allow access to individual elements and have a number of facilities for performing bulk operations. The class also has a few roguelike-focused methods such as computation of field of vision or path finding.</p>
 <p>The underlying data type for each cell of the array is a 32-bit signed integer. It can therefore accommodate RGB colors.</p>
 <p>Two useful constants are defined, <code>rl.INT_MAX</code> and <code>rl.INT_MIN</code>, which correspond to the largest and smallest values that can be stored in an array.</p>
-<h3><code>rl.Array(width, height)</code></h3>
+<h3><code>array = rl.Array(width, height)</code></h3>
 <p>Create a new array of a given size filled with zeros.</p>
 <pre><code class="language-python">a = rl.Array(80, 25)
 </code></pre>
-<h3><code>rl.array_from_string(text)</code>, <code>array.to_string()</code></h3>
+<h3><code>array = rl.array_from_string(text)</code>, <code>text = array.to_string()</code></h3>
 <p>Deserialize and serialize and array from and to a string. Useful for saving and restoring array data.</p>
 <pre><code class="language-python">a = rl.Array(10, 10)
 text = a.to_string()
@@ -227,13 +239,33 @@ print(text)
 b = rl.array_from_string(text)
 print(b)
 </code></pre>
-<h3><code>array.get(i, j)</code>, <code>array.set(i, j, value)</code>, <code>array[i, j]</code></h3>
-<p>Access individual elements of the array. The bracket operator is a shortcut.</p>
-<pre><code class="language-python">a = rl.Array(5, 5)
-a.set(3, 3, 42)
-a[2, 1] = a.get(3, 3)
+<h3><code>array = array.view(x, y, width, height)</code></h3>
+<p>Create a new array (a view) which refers to values from another array.
+Modifying the new array also modifies the old array. Other than that,
+a view can be used as a regular array.</p>
+<pre><code class="language-python">a = rl.Array(80, 25)
+b = a.view(10, 10, 20, 30)
+b[0, 0] = 1
+print(a[10, 10]) # prints 1
 </code></pre>
-<h3><code>array.width()</code>, <code>array.height()</code></h3>
+<h3><code>array[i, j]</code></h3>
+<p>Access individual elements of the array for reading or writing.</p>
+<pre><code class="language-python">a = rl.Array(5, 5)
+a[1, 3] = 42
+a[2, 1] = a[1, 3]
+</code></pre>
+<h3>Unary and binary operators</h3>
+<p>Arrays support the following unary operators: <code>+</code> (does nothing), <code>-</code> (negative), <code>~</code> (bitwise complement of values). In addition, in boolean context, arrays are <code>True</code> if they contain any non-zero value, <code>False</code> otherwise.</p>
+<p>Arrays support the following binary opeartors with arrays and integers as operands: <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, <code>&amp;</code> (bitwise and), <code>|</code> (bitwise or), <code>^</code> (bitwise xor), <code>&lt;&lt;</code> (left bitshift), <code>&gt;&gt;</code> (right bitshift). They work on each integer values of the array following C conventions (so division is like // in python) and return an array with the result. Inplace operators such as <code>+=</code> work too.</p>
+<p>Arrays support the following operators with arrays and integers as operands: <code>a.equals(b)</code>, <code>a.not_equals(b)</code>, <code>&gt;</code>, <code>&gt;=</code>, <code>&lt;</code>, <code>&lt;=</code>. They return an array of truth value encoded as integers (1 is true, 0 is false).</p>
+<pre><code class="language-python">a = rl.Array(2, 2)
+a.random_int(2, 6)
+b = a.equals(2)
+c = b * 2 + 3
+print(c &lt;&lt; 1)
+</code></pre>
+<p>Note that <code>==</code> and <code>!=</code> are not supported due to a bug in micropython.</p>
+<h3><code>number = array.width()</code>, <code>number = array.height()</code></h3>
 <p>Return the size of the array.</p>
 <pre><code class="language-python">a = rl.Array(5, 7)
 print(a.width()) # should print 5
@@ -253,25 +285,21 @@ a.print_ascii('.#', '12', 'ba')
 <pre><code class="language-python">a = rl.Array(2, 2)
 print(a)
 </code></pre>
-<h3><code>array.copy()</code></h3>
-<p>Return a copy of the array which can be modified independently.</p>
+<h3><code>array = array.copy(mask=None)</code></h3>
+<p>Return a copy of the array which can be modified independently. If a <code>mask</code> array is specified, only values where the mask is non-null are copied, the rest are zeroed.</p>
 <pre><code class="language-python">b = a.copy()
 b[1, 1] = 2
 print(a, b) # prints different content for a and b
 </code></pre>
-<h3><code>array.copy_to(dest)</code></h3>
-<p>Copy the values of an array to another array.</p>
-<pre><code class="language-python">a.copy_to(b)
-</code></pre>
-<h3><code>array.copy_masked(dest, mask, keep=1)</code></h3>
-<p>Copy the values of an array to another array, but only copy those values for which the mask array is equal to <code>keep</code>. All arrays must be the same size.</p>
-<pre><code class="language-python">b = rl.Array(a.width(), a.height())
-a.copy_masked(b, mask)
-print(b)
-</code></pre>
-<h3><code>array.equals(value)</code></h3>
-<p>Returns a new array with 1 in every cell containing the value in the original array, 0 otherwise.</p>
-<pre><code class="language-python">walls = level.equals(1)
+<h3><code>array.copy_to(dest, mask=None)</code></h3>
+<p>Copy the values of an array to another array. Both arrays must have the same size. If a <code>mask</code> array is specified, only values where the mask is non-null are copied, the rest are left unchanged.</p>
+<pre><code class="language-python">a = rl.Array(2, 2)
+a.random_int(0, 1)
+b = rl.Array(2, 2)
+mask = rl.Array(2, 2)
+mask[0, 0] = 1
+mask[1, 1] = 1
+a.copy_to(b, mask) # only copy values on the diagonal of a to b.
 </code></pre>
 <h3><code>array.fill(value)</code></h3>
 <p>Fill an array with a given integer value.</p>
@@ -282,18 +310,12 @@ a.fill(5)
 <p>Replace a value by another in an array.</p>
 <pre><code class="language-python">a.replace(5, 7) # replaces all occurrences of 5 with 7.
 </code></pre>
-<h3><code>array.add(value, blocking=INT_MAX)</code>, <code>array.mul(value, blocking=INT_MAX)</code></h3>
-<p>Add (respectively multiply) a scalar value to each cell of an array.
-Values which equal <code>blocking</code> are not modified.</p>
-<pre><code class="language-python">a.add(3) 
-a.mul(2)
-</code></pre>
-<h3><code>array.min()</code>, <code>array.max()</code></h3>
+<h3><code>value = array.min()</code>, <code>value = array.max()</code></h3>
 <p>Return the mininum (respectively maximum) value of an array.</p>
 <pre><code class="language-python">min = a.min()
 max = a.max()
 </code></pre>
-<h3><code>array.argmin()</code>, <code>array.argmax()</code></h3>
+<h3><code>x, y = array.argmin()</code>, <code>x, y = array.argmax()</code></h3>
 <p>Returns the location of the first encountered smallest (respectively largest) value in the array.</p>
 <pre><code class="language-python">x_min, y_min = a.argmin()
 x_max, y_max = a.argmax()
@@ -311,20 +333,20 @@ See <code>rl.random_2d()</code> for more information.</p>
 <p>Fill an array with random 32-bit values.</p>
 <pre><code class="language-python">a.random()
 </code></pre>
-<h3><code>array.line(x1, y1, x2, y2, value)</code></h3>
-<p>Set all elements of an array on a straight line with a given value. Coordinates of the line ends are cell indices in the array.</p>
-<pre><code class="language-python">a.line(1, 3, 5, 7, -2) # draw a line with the value -2
+<h3><code>array.draw_line(x1, y1, x2, y2, value)</code></h3>
+<p>Set all elements of an array on a straight line with a given value. Coordinates of the line ends are cell indices in the array. Note that lines are not symmetric, so <code>line(a, b)</code> will not necessary modify the same cells as <code>line(b, a)</code>.</p>
+<pre><code class="language-python">a.draw_line(1, 3, 5, 7, -2) # draw a line with the value -2
 </code></pre>
-<h3><code>array.rect(x, y, width, height, value)</code></h3>
-<p>Fill a rectangular area in a rectangle with a given value.</p>
-<pre><code class="language-python">a.rect(0, 0, 2, 3, 42) # fill a retangle with value 42
+<h3><code>array.draw_rect(x, y, width, height, value=1)</code>, <code>array.fill_rect(x, y, width, height, value=1)</code></h3>
+<p>Draw or fill a rectangular area with a given value.</p>
+<pre><code class="language-python">a.fill_rect(0, 0, 2, 3, 42) # fill a rectangule with value 42
 </code></pre>
 <h3><code>array.can_see(x1, y1, x2, y2, blocking=1)</code></h3>
 <p>Tests whether cell (x1, y1) has line of sight to cell (x2, y2) in the given array, using <code>blocking</code> as wall value. Note that the algorithm used for computing lines is not symmetric, that is <code>array.can_see(x1, y1, x2, y2)</code> is not necessarily the same as <code>array.can_see(x2, y2, x1, y1)</code>. Returns <code>True</code> if the destination can be seen from the source, <code>False</code> otherwise.</p>
 <pre><code class="language-python">if level.can_see(player.x, player.y, monster.x, monster.y):
-	print('I can see a monster.')
+    print('I can see a monster.')
 </code></pre>
-<h3><code>array.field_of_view(x, y, radius, blocking=1)</code></h3>
+<h3><code>fov = array.field_of_view(x, y, radius, blocking=1)</code></h3>
 <p>Computes the field of view around a point in an array, considering that all cells with value <code>blocking</code>, and returns an array where all cells with value 1 are visible, other cells have value 0.</p>
 <pre><code class="language-python">fov = level.field_of_view(player.x, player.y, 10)
 </code></pre>
@@ -344,45 +366,45 @@ a.random_int(0, 1)
 
 # 10 steps of the game of life automaton
 for i in range(10):
-	a.cell_automaton('B3/S23') 
+    a.cell_automaton('B3/S23') 
 </code></pre>
-<h3><code>array.shortest_path(x1, y1, x2, y2, blocking=1)</code></h3>
+<h3><code>path = array.shortest_path(x1, y1, x2, y2, blocking=1)</code></h3>
 <p>Computes the shortest path between two points in an array, considering that cells containing the <code>blocking</code> value cannot be moved through. Diagonal movements are authorized. If a path cannot be found, <code>None</code> is returned.</p>
 <pre><code class="language-python">for x, y in a.shortest_path(3, 2, 5, 6):
-	print(x, y)
+    print(x, y)
 </code></pre>
-<h3><code>array.find_random(needle, tries=100)</code></h3>
-<p>Return the location of a value (the needle) in an array. Locations are tested randomly until one is found up to the number of specified tries.</p>
+<h3><code>x, y = array.find_random(needle, tries=100)</code></h3>
+<p>Return the location of a value (the needle) in an array. Locations are tested randomly until one is found up to the number of specified tries. Returns (-1, -1) when unsuccessful.</p>
 <pre><code class="language-python">x, y = a.find_random(1)
-</code></pre>
-<h3><code>array.place_random(needle, value, tries=100)</code></h3>
-<p>Replace an occurrence of the needle with the given value in an array. Works similarly to <code>array.find_random()</code>.</p>
-<pre><code class="language-python">a.place_random(1, 42)
 </code></pre>
 <h3><code>rl.draw_array(image, x, y, x_shift=0, y_shift=0, mapping=None, fg=None, bg=None)</code></h3>
 <p>Draw an array of tiles on the screen at coordinates x, y. By default, coordinates are shifted by the <code>tile_width</code> and <code>tile_height</code> of the image, but other values can be specified in <code>x_shift</code> and <code>y_shift</code>. Optionaly, values can be mapped for selecting tiles and coloring them with foreground (<code>fg</code>) and background (<code>bg</code>) colors.</p>
 <pre><code class="language-python">rl.draw_array(tileset, x, y, mapping=[1,2,3], fg=[rl.RED, rl.BLUE, rl.GREEN])
 </code></pre>
-<h3><code>rl.array_to_image(array, tile_width=8, tile_height=8)</code></h3>
-<p>Create an image from the values of an array intepreted as RGBA colors.</p>
+<h3><code>image = rl.array_to_image(array, tile_width=8, tile_height=8, palette=None)</code></h3>
+<p>Create an image from the values of an array intepreted as RGBA colors. The <code>tile_width</code> and <code>tile_height</code> properties of the image are set according to the given arguments. Optionally, a list of colors can be given as argument to convert array values with the corresponding colors in the palette.</p>
 <pre><code class="language-python">a = rl.Array(320, 240)
 a.fill(rl.RED)
-image = rl.array_to_image(a)
+image1 = rl.array_to_image(a)
+a = rl.Array(320, 240)
+a.random_int(0, 1)
+image2 = rl.array_to_image(a, palette=[rl.BLACK, rl.RED])
 </code></pre>
-<h3><code>rl.image_to_array(image)</code></h3>
+<h3><code>array = rl.image_to_array(image)</code></h3>
 <p>Create an array from the pixels of an image. Each value of the array represents an RGBA color.</p>
 <pre><code class="language-python">image = rl.load_image('tileset.png')
 a = rl.image_to_array(image)
+print(a[42, 31]) # color of pixel at (41, 31)
 </code></pre>
 <h2><a name="files"></a>Files</h2>
 <p>Pyrogue assumes two locations for storing files. The &quot;ressources&quot; location is a bundle of read-only assets such as images, fonts, game data and python scripts. It can be a directory, a zip or can be embedded in the pyrogue executable. The &quot;preferences&quot; location is a directory where game saves or high-scores can be saved and loaded later. It sits in the user directory returned by <code>SDL_GetPrefPath()</code> under a <code>pyrogue</code> directory.</p>
-<h3><code>rl.load_asset(filename)</code></h3>
+<h3><code>data = rl.load_asset(filename)</code></h3>
 <p>Load asset from resources. Filename can be a path including directories. Returns a bytes object with the loaded data or <code>None</code> if the asset could not be loaded.</p>
 <pre><code class="language-python">data = rl.load_asset('data.txt')
 </code></pre>
 <p>Note that assets cannot be written.</p>
 <h3><code>rl.set_app_name(name)</code></h3>
-<p>Set the name of the app for loading and saving preferences in the user directory.</p>
+<p>Set the name of the app for loading and saving preferences in the user directory. Special characters such as '/' are mapped to '_'.</p>
 <pre><code class="language-python">rl.set_app_name('my-game')
 </code></pre>
 <h3><code>rl.load_pref(filename)</code></h3>
@@ -401,11 +423,11 @@ rl.save_pref('high_scores.txt', ujson.dumps(scores))
 <p>Iterate over a straight line from (x1, y1) to (x2, y2). <code>rl.walk_line_next()</code> returns a tuple of coordinates for each point and <code>None</code> when it is finished iterating.</p>
 <pre><code class="language-python">rl.walk_line_start(10, 10, 20, 30)
 while True:
-	result = rl.walk_line_next()
-	if result is None:
-		break
-	x, y = result
-	# use (x, y)
+    result = rl.walk_line_next()
+    if result is None:
+        break
+    x, y = result
+    # use (x, y)
 </code></pre>
 <p>The same algorithm as in <code>array.line()</code> is used.</p>
 	</body>
