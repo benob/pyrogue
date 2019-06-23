@@ -202,10 +202,10 @@ The specification the number of rolls followed by 'd' or 'D', followed by the nu
 <pre><code class="language-python">x = rl.roll('3d5')
 x = rl.roll('1d12')
 </code></pre>
-<h3><code>rl.set_seed(seed)</code></h3>
+<h3><code>rl.set_seed(seed=0)</code></h3>
 <p>Set the random number state to the 64-bit integer <code>seed</code>. If <code>seed</code> is 0, then the state is set according to the current time.</p>
 <pre><code class="language-python">rl.set_seed(123) # set a fixed seed
-rl.set_seed(0)   # seed randomly
+rl.set_seed()   # seed randomly
 </code></pre>
 <h3><code>seed = rl.get_seed()</code></h3>
 <p>Get the 64-bit state of the random generator. Is useful to resume generation after, for example, loading a level.</p>
