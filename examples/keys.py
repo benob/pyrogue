@@ -12,4 +12,4 @@ def update(event):
     rl.draw_text(font, 0, 0, 'events> ' + str(keys))
     rl.draw_text(font, 0, 24, 'text> ' + ''.join([chr(x) if x >= 32 and x < 128 else '#' for x in keys]))
 
-rl.run(update, rl.UPDATE_KEY)
+rl.run(update, rl.ON_KEY)

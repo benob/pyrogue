@@ -237,7 +237,14 @@ static void __attribute__((destructor)) _fs_cleanup() {
 static char* pref_dir = NULL;
 
 void fs_set_app_name(const char* app_name) {
-  pref_dir = SDL_GetPrefPath("pyrogue", app_name);
+	// replace forbidden characters (based on linux and windows restrictions)
+	char* name = strdup(app_name);
+	char* forbidden = "<>:\"/\\|?*";
+	for(int i = 0; name[i]; i++)
+		for(int j = 0; forbidden[j]; j++)
+			if(name[i] == forbidden[j]) name[i] = '_';
+  pref_dir = SDL_GetPrefPath("pyrogue", name);
+	free(name);
 }
 
 char* fs_load_asset(const char* path, uint32_t* size) {

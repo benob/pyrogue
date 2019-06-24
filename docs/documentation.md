@@ -3,9 +3,9 @@
 Pyrogue is a python interpreter based on [micropython](https://www.micropython.org) with a minimalist library for making roguelikes.
 
 Pyrogue comes with the `rl` module which covers basic roguelike functionalities.
-In addition, it comes with the following micropython modules: [math](https://docs.micropython.org/en/latest/library/math.html), [sys](https://docs.micropython.org/en/latest/library/sys.html), [ujson](https://docs.micropython.org/en/latest/library/ujson.html), [ure](https://docs.micropython.org/en/latest/library/ure.html). Other micropython modules are not available and the python language implemented by micropython [differs](https://docs.micropython.org/en/latest/reference/index.html) a bit from python. 
+In addition, it comes with the following micropython modules: [math](https://docs.micropython.org/en/latest/library/math.html), [sys](https://docs.micropython.org/en/latest/library/sys.html), [ujson](https://docs.micropython.org/en/latest/library/ujson.html), [ure](https://docs.micropython.org/en/latest/library/ure.html). Other micropython modules are not available and the python language implemented by micropython [differs](https://docs.micropython.org/en/latest/genrst/index.html) a bit from standard python. For efficiency, most functions in the `rl` module do not support keyword arguments.
 
-A typical roguelike programs first imports the `rl` module, setups a display and invokes run with an update callback.
+A typical pyrogue program first imports the `rl` module, setups a display and invokes run with an update callback.
 
 ```python
 import rl
@@ -30,11 +30,11 @@ rl.run(update)
 
 ## <a name="input"></a> Input
 
-### `rl.run(update_callback, event_filter=rl.UPDATE_LOOP)`
+### `rl.run(update_callback, when=rl.CONTINUOUSLY)`
 
-Pyrogue's display functions are only honored if called from an update callback which is called every time events occur and the screen needs to be repainted. `rl.run()` is a blocking function which calls the update function repeatedly according to the given event filter.
+Pyrogue's display functions are only honored if called from an update callback which is called every time events occur and the screen needs to be repainted. `rl.run()` is a blocking function which calls the update function repeatedly according to the `when` parameter.
 
-Valid values for the filter are `rl.UPDATE_LOOP` to recieve update continuously, `rl.UPDATE_KEY` to recieve updates when a key is pressed, and `rl.UPDATE_MOUSE` to receive updates on mouse events. The last two can be combined (`rl.UPDATE_KEYS|rl.UPDATE_MOUSE`) to recieve both kinds of events.
+Valid values for `when` are `rl.CONTINUOUSLY` to recieve updates continuously, `rl.ON_KEY` to recieve updates when a key is pressed, and `rl.ON_MOUSE` to receive updates on mouse events. The last two can be combined (`rl.ON_KEYS|rl.ON_MOUSE`) to recieve both kinds of events.
 
 The update callback is a function taking one parameter which represents the event that triggered it. Events can be:
 * a value > 0 is recieved when a key is pressed. The constants for key identities are the same than [SDL](https://wiki.libsdl.org/SDL_Keycode) without the `SDL_` prefix.
@@ -77,10 +77,10 @@ Terminates a `rl.run()` call.
 def update(event):
 	if event > 0:
 		rl.quit() # quit on any key
-rl.run(update, rl.UPDATE_KEY)
+rl.run(update, rl.ON_KEY)
 ```
 
-### `rl.mouse()`
+### `x, y, button = rl.mouse()`
 
 Returns the coordinates of the mouse, as well as the button being pressed. The coordinates are in pixels according to the resolution of the display (see `rl.init_display()`). The button can be `left = 1`, `middle = 2`, `right = 3`.
 
@@ -105,9 +105,9 @@ Coordinates follow the standard in graphics: (0, 0) is at the top-left corner, (
 rl.init_display('snake', 320, 240)
 ```
 
-### `rl.Font(filename, size)`
+### `font = rl.Font(filename, size)`
 
-Load a TTF font for writing text on the display. The text renderer is fast but does not support sub-pixel positionning of letters, which sometimes leads to weird kernings. The returned font can be passed to the `rl.draw_text()` function. Note that only ascii characters in range 32-127 can be drawn. The font object has two read-only attributes: `size` which is the size passed to the constructor, and `line_height` which is the line height stored in the font.
+Load a TTF font for writing text on the display. The returned font can be passed to the `rl.draw_text()` function. Note that only ascii characters in range 32-127 can be drawn. The font object has two read-only attributes: `size` which is the size passed to the constructor, and `line_height` which is the line height stored in the font.
 
 ```python
 font = rl.Font('monospace.ttf', 14)
@@ -116,7 +116,7 @@ print(font.line_height)
 
 Note that system resources behind a font (such as the character atlas) are only disposed when the garbage collector is run after memory gets low. When manipulating many fonts, it is a good idea to call `del font`, where `font` is a variable holding the font, to explicitly release the resources.
 
-### `rl.Image(filename, tile_width=8, tile_height=8)`
+### `image = rl.Image(filename, tile_width=8, tile_height=8)`
 
 Load a png/jpg image from resources and return an image object. Optionnaly, the size of tiles can be specified. It defaults to 8x8. The returned image object can be passed to drawing functions such as `rl.draw_image()`. It has two read-only members: `width` and `height` and two read-write members: `tile_width` and `tile_height`.
 
@@ -127,7 +127,7 @@ image.tile_width = 8
 print(image.tile_width)
 ```
 
-Note that system resources behind an image (such as the pixels uploaded to the GPU) are only disposed when the garbage collector kicks in when memory gets low. When using many images, it is a good idea to call `del image` when it is not used anymore.
+Note that system resources behind an image (such as the pixels uploaded to the GPU) are only disposed when the garbage collector kicks in when memory gets low. When using many images, it is a good idea to call `del image` when the image is not used anymore.
 
 ### `rl.clear()`
 
@@ -154,10 +154,11 @@ tile.x = image.tile_width * (tile % tiles_per_line)
 tile.y = image.tile_height * (tile / tiles_per_line)
 ```
 The retangle `(tile.x, tile.y, image.tile_width, image.tile_height)` is then copied at coordinates (x, y) on the screen.
-In addition, if specified, the tile background is first painted with `bg` color, and the non-transparent pixels of the tile are colorized with `fg` color. Each can be `0` to skip colorization. 
+In addition, if specified, the tile background is first painted with `bg` color, and the non-transparent pixels of the tile are colorized with `fg` color. Either can be `0` to skip colorization. 
 
 ```python
-rl.draw_tile(0, 32, 55, 3) # draw tile number 3 at coord (32, 55) from image 0
+tileset = rl.Image('tileset.png', 16, 16)
+rl.draw_tile(tileset, 32, 55, 3) # draw tile number 3 at coord (32, 55)
 rl.draw_tile(tileset, 5, 5, 17, fg=rl.BLUE, bg=rl.RED) # colorize in addition
 ```
 
@@ -169,7 +170,7 @@ Draw text on the screen at coordinates (x, y) using the given color. The font ca
 
 The align parameter selects the anchoring point of the text compared to the coordinates (x, y). Valid values are `rl.ALIGN_LEFT`, `rl.ALIGN_RIGHT` and `rl.ALIGN_CENTER`.
 
-Note that only characters from 32 to 127 can be printed (both when using a TTF font or a tileset).
+Note that only characters from 32 to 127 can be printed from TTF fonts. All tiles from 1 to 255 can be printed from a tileset (except `\n`).
 
 ```python
 font = rl.Font('font.ttf', 10)
@@ -178,9 +179,9 @@ rl.draw_text(font, 0, 0, 'Hello world')
 rl.draw_text(image, 0, 20, 'Hello world')
 ```
 
-### `rl.size_text(font, text)`
+### `width, height = rl.size_text(font, text)`
 
-Compute the width and height of text according to the TTF font.
+Compute the width and height of text according to a TTF font.
 
 ```python
 width, height = rl.size_text(font, 'hello world')
@@ -208,17 +209,20 @@ Draw a stright line between `(x1, y1)` and `(x2, y2)` with the given color.
 rl.draw_line(5, 13, 120, 92, rl.PINK)
 ```
 
-### `rl.color(r, g, b, a=255)`
+### `color = rl.color(r, g, b, a=255)`, `color = rl.color(hex_color)`
 
-Make an integer representing an RGBA color from 8-bit components. The values for red (`r`), green (`g`), blue (`b`) and alpha (`a`) must be between 0 and 255 inclusive. The alpha channel represents the opacity of the color, with 255 the most opaque, and 0 transparent.
+Make an integer representing an RGBA color from 8-bit components or an hexadecimal string. The values for red (`r`), green (`g`), blue (`b`) and alpha (`a`) must be between 0 and 255 inclusive. The alpha channel represents the opacity of the color, with 255 the most opaque, and 0 transparent. If only one argument is given to the function, it is interpreted as a string representing a hex color, starting with a `#` and followed by 3, 6 or 8 hexadecimal digits (`0-9a-f`). The specification can be found [here](https://www.quackit.com/css/color/values/css_hex_color_notation_3_digits.cfm). 8-digit colors are the same as 6-digits, prefixed with two digits for the alpha channel.
 
 ```python
 blue = rl.color(0, 0, 255)
 magenta = rl.color(255, 0, 255)
 transparent_green = rl.color(0, 255, 0, 128)
+red = rl.color('#ff0000') # 6-digit hex color
+green = rl.color('#0f0') # 3-digit hex color
+transparent_blue = rl.color('#1f0000ff') # 6-digit with transparency
 ```
 
-In addition, pyrogue defines constants for the pico8 palette:
+In addition, pyrogue defines constants for the [pico8 palette](https://www.romanzolotarev.com/pico-8-color-palette/):
 ```python
 pico8_colors = [rl.BLACK, rl.DARKBLUE, rl.DARKPURPLE, rl.DARKGREEN,
 	rl.BROWN, rl.DARKGRAY, rl.LIGHTGRAY, rl.WHITE,
@@ -227,7 +231,7 @@ pico8_colors = [rl.BLACK, rl.DARKBLUE, rl.DARKPURPLE, rl.DARKGREEN,
 ]
 ```
 
-### `rl.hsv_color(h, s, v, a=255)`
+### `color = rl.hsv_color(h, s, v, a=255)`
 
 Make an integer representing an RGBA color from HSV components. This function is similar to `rl.color()` but it takes a hue, saturation and value components. Unlike typical implementations, the hue component is not in degrees, but rather sits between 0 and 255 (corresponding to a 2PI angle).
 
@@ -235,13 +239,14 @@ Make an integer representing an RGBA color from HSV components. This function is
 red = rl.hsv_color(0, 255, 255)
 ```
 
-### `rl.color_r(c)`, `rl.color_g(c)`, `rl.color_b(c)`, `rl.color_a(c)`
+### `r, g, b, a = rl.color_components(color)`
 
 Return indvidual components from an RGBA color.
 
 ```python
-c = rl.color(255, 0, 0)
-print(rl.color_r(c) == 255)
+color = rl.color(255, 128, 64, 32)
+r, g, b, a = rl.color_components(color)
+print(r == 255, g == 128, b == 64, a == 32)
 ```
 
 ## <a name="random"></a>Random
@@ -249,7 +254,7 @@ print(rl.color_r(c) == 255)
 The random generator in pyrogue is a [PCG](http://www.pcg-random.org/) with a single 64-bit state.
 Setting the seed changes the state to a given value. Drawing a random number with any of the functions below changes the state.
 
-### `rl.random()`
+### `number = rl.random()`
 
 Generate a random floating point number between 0 and 1.
 
@@ -257,7 +262,7 @@ Generate a random floating point number between 0 and 1.
 x = rl.random()
 ```
 
-### `rl.random_int(a, b)`
+### `number = rl.random_int(a, b)`
 
 Generate a random integer between `a` and `b` inclusive.
 
@@ -266,7 +271,7 @@ For example, to generate `5 <= x <= 7`:
 x = rl.random_int(5, 7)
 ```
 
-### `rl.roll(dice)`
+### `number = rl.roll(dice)`
 
 Roll `n` dices with `m` faces according to the `dice` string specification.
 The specification the number of rolls followed by 'd' or 'D', followed by the number of faces of the dice. The result is the sum of all rolls. 0 is returned if the specification is invalid.
@@ -276,16 +281,35 @@ x = rl.roll('3d5')
 x = rl.roll('1d12')
 ```
 
-### `rl.set_seed(s)`
+### `element = rl.random_choice(list)`
 
-Set the random number state to the 64-bit integer `s`. If `s` is 0, then the state is set according to the current time.
+Choose a random element from a list and return it. 
+
+```python
+chosen = rl.random_choice([1, 2, 3])
+print(chosen)
+```
+
+### `element = rl.shuffle(list)`
+
+Shuffle elements from a list, modifying it inplace.
+
+```python
+numbers = [1, 2, 3]
+rl.shuffle(numbers)
+print(numbers)
+```
+
+### `rl.set_seed(seed=0)`
+
+Set the random number state to the 64-bit integer `seed`. If `seed` is 0, then the state is set according to the current time.
 
 ```python
 rl.set_seed(123) # set a fixed seed
-rl.set_seed(0)   # seed randomly
+rl.set_seed()   # seed randomly
 ```
 
-### `rl.get_seed()`
+### `seed = rl.get_seed()`
 
 Get the 64-bit state of the random generator. Is useful to resume generation after, for example, loading a level.
 
@@ -293,7 +317,7 @@ Get the 64-bit state of the random generator. Is useful to resume generation aft
 x = rl.get_seed()
 ```
 
-### `rl.random_color()`
+### `color = rl.random_color()`
 
 Generate a random RGB color.
 ```python
@@ -319,15 +343,15 @@ The underlying data type for each cell of the array is a 32-bit signed integer. 
 
 Two useful constants are defined, `rl.INT_MAX` and `rl.INT_MIN`, which correspond to the largest and smallest values that can be stored in an array.
 
-### `rl.Array(width, height)`
+### `array = rl.Array(width, height)`
 
-Create a new array filled with zeros.
+Create a new array of a given size filled with zeros.
 
 ```python
 a = rl.Array(80, 25)
 ```
 
-### `rl.array_from_string(text)`, `array.to_string()`
+### `array = rl.array_from_string(text)`, `text = array.to_string()`
 
 Deserialize and serialize and array from and to a string. Useful for saving and restoring array data.
 
@@ -339,17 +363,66 @@ b = rl.array_from_string(text)
 print(b)
 ```
 
-### `array.get(i, j)`, `array.set(i, j, value)`, `array[i, j]`
+### `array = array.view(x, y, width, height)`
 
-Access individual elements of the array. The bracket operator is a shortcut.
+Create a new array (a view) which refers to values from another array. 
+Modifying the new array also modifies the old array. Other than that,
+a view can be used as a regular array.
+
+```python
+a = rl.Array(80, 25)
+b = a.view(10, 10, 20, 30)
+b[0, 0] = 1
+print(a[10, 10]) # prints 1
+```
+
+### `array[i, j]`
+
+Access individual elements of the array for reading or writing. 
 
 ```python
 a = rl.Array(5, 5)
-a.set(3, 3, 42)
-a[2, 1] = a.get(3, 3)
+a[1, 3] = 42
+a[2, 1] = a[1, 3]
 ```
 
-### `array.width()`, `array.height()`
+### `array[start: end, start: end]` 
+
+Slice indexing is supported similarly to numpy and yields a view into the
+array.  Either or both indexes can be a slice which result in a view to the
+corresponding indices. Note that slices of step != 1 are not supported. This
+kind of indexing supports assignment from an integer or an appropriately shaped
+array.
+
+```python
+a = rl.Array(80, 25)
+b = a[10: 30, 10: 40] # identical to previous view
+print(a[:,-1]) # last row
+a[:2, :2] = 42 # fill slice with value
+b = rl.Array(2, 2)
+b.fill(33)
+a[:2, :2] = b # fill slice with other array
+```
+
+### Unary and binary operators
+
+Arrays support the following unary operators: `+` (does nothing), `-` (negative), `~` (bitwise complement of values), abs(x) (absolute value of elements). In addition, in boolean context, arrays are `True` if they contain any non-zero value, `False` otherwise.
+
+Arrays support the following binary opeartors with arrays and integers as operands: `+`, `-`, `*`, `/`, `&` (bitwise and), `|` (bitwise or), `^` (bitwise xor), `<<` (left bitshift), `>>` (right bitshift). They work on each integer values of the array following C conventions (so division is like // in python) and return an array with the result. Inplace operators such as `+=` work too.
+
+Arrays support the following operators with arrays and integers as operands: `a.equals(b)`, `a.not_equals(b)`, `>`, `>=`, `<`, `<=`. They return an array of truth value encoded as integers (1 is true, 0 is false). 
+
+```python
+a = rl.Array(2, 2)
+a.random_int(2, 6)
+b = a.equals(2)
+c = b * 2 + 3
+print(c << 1)
+```
+
+Note that `==` and `!=` are not supported due to a bug in micropython.
+
+### `number = array.width()`, `number = array.height()`
 
 Return the size of the array.
 
@@ -364,7 +437,7 @@ Print the content of an array to the terminal. Mainly useful for debugging.
 Only positive values are displayed. `chars` is a string where each character corresponds
 to the symbol printed for value of the array equals to its index.
 `bg` and `fg` are optional strings for selecting colors for the corresponding characters.
-The colors are denoted by characters '1-9a-f' corresponding to basic 16 ANSI terminal colors.
+The colors are denoted by characters '1-9a-f' corresponding to 16 basic ANSI terminal colors.
 
 ```python
 a = rl.Array(3, 5)
@@ -381,9 +454,9 @@ a = rl.Array(2, 2)
 print(a)
 ```
 
-### `array.copy()`
+### `array = array.copy(mask=None)`
 
-Return a copy of the array which can be modified independently.
+Return a copy of the array which can be modified independently. If a `mask` array is specified, only values where the mask is non-null are copied, the rest are zeroed.
 
 ```python
 b = a.copy()
@@ -391,30 +464,18 @@ b[1, 1] = 2
 print(a, b) # prints different content for a and b
 ```
 
-### `array.copy_to(dest)`
+### `array.copy_to(dest, mask=None)`
 
-Copy the values of an array to another array.
-
-```python
-a.copy_to(b)
-```
-
-### `array.copy_masked(dest, mask, keep=1)`
-
-Copy the values of an array to another array, but only copy those values for which the mask array is equal to `keep`. All arrays must be the same size.
+Copy the values of an array to another array. Both arrays must have the same size. If a `mask` array is specified, only values where the mask is non-null are copied, the rest are left unchanged.
 
 ```python
-b = rl.Array(a.width(), a.height())
-a.copy_masked(b, mask)
-print(b)
-```
-
-### `array.equals(value)`
-
-Returns a new array with 1 in every cell containing the value in the original array, 0 otherwise.
-
-```python
-walls = level.equals(1)
+a = rl.Array(2, 2)
+a.random_int(0, 1)
+b = rl.Array(2, 2)
+mask = rl.Array(2, 2)
+mask[0, 0] = 1
+mask[1, 1] = 1
+a.copy_to(b, mask) # only copy values on the diagonal of a to b.
 ```
 
 ### `array.fill(value)`
@@ -434,17 +495,7 @@ Replace a value by another in an array.
 a.replace(5, 7) # replaces all occurrences of 5 with 7.
 ```
 
-### `array.add(value, blocking=INT_MAX)`, `array.mul(value, blocking=INT_MAX)`
-
-Add (respectively multiply) a scalar value to each cell of an array.
-Values which equal `blocking` are not modified.
-
-```python
-a.add(3) 
-a.mul(2)
-```
-
-### `array.min()`, `array.max()`
+### `value = array.min()`, `value = array.max()`
 
 Return the mininum (respectively maximum) value of an array.
 
@@ -453,7 +504,7 @@ min = a.min()
 max = a.max()
 ```
 
-### `array.argmin()`, `array.argmax()`
+### `x, y = array.argmin()`, `x, y = array.argmax()`
 
 Returns the location of the first encountered smallest (respectively largest) value in the array.
 
@@ -461,6 +512,14 @@ Returns the location of the first encountered smallest (respectively largest) va
 x_min, y_min = a.argmin()
 x_max, y_max = a.argmax()
 ```
+
+### `result = array.sum()`
+
+Return the sum of the array elements.
+
+### `result = array.count(value)`
+
+Count the number of times a value appears in the array.
 
 ### `array.random_int(a, b)`
 
@@ -487,20 +546,20 @@ Fill an array with random 32-bit values.
 a.random()
 ```
 
-### `array.line(x1, y1, x2, y2, value)`
+### `array.draw_line(x1, y1, x2, y2, value)`
 
-Set all elements of an array on a straight line with a given value. Coordinates of the line ends are cell indices in the array.
+Set all elements of an array on a straight line with a given value. Coordinates of the line ends are cell indices in the array. Note that lines are not symmetric, so `line(a, b)` will not necessary modify the same cells as `line(b, a)`.
 
 ```python
-a.line(1, 3, 5, 7, -2) # draw a line with the value -2
+a.draw_line(1, 3, 5, 7, -2) # draw a line with the value -2
 ```
 
-### `array.rect(x, y, width, height, value)`
+### `array.draw_rect(x, y, width, height, value=1)`, `array.fill_rect(x, y, width, height, value=1)`
 
-Fill a rectangular area in a rectangle with a given value.
+Draw or fill a rectangular area with a given value.
 
 ```python
-a.rect(0, 0, 2, 3, 42) # fill a retangle with value 42
+a.fill_rect(0, 0, 2, 3, 42) # fill a rectangule with value 42
 ```
 
 ### `array.can_see(x1, y1, x2, y2, blocking=1)`
@@ -512,7 +571,7 @@ if level.can_see(player.x, player.y, monster.x, monster.y):
 	print('I can see a monster.')
 ```
 
-### `array.field_of_view(x, y, radius, blocking=1)`
+### `fov = array.field_of_view(x, y, radius, blocking=1)`
 
 Computes the field of view around a point in an array, considering that all cells with value `blocking`, and returns an array where all cells with value 1 are visible, other cells have value 0. 
 
@@ -522,7 +581,7 @@ fov = level.field_of_view(player.x, player.y, 10)
 
 ### `array.dijkstra()`
 
-Applies the [djikstra map](http://roguebasin.roguelikedevelopment.org/index.php?title=The_Incredible_Power_of_Dijkstra_Maps) algorithm to the array until convergence.
+Applies the [djikstra map](http://roguebasin.roguelikedevelopment.org/index.php?title=The_Incredible_Power_of_Dijkstra_Maps) algorithm to the array until convergence. Each cell is set to the value of its lowest neighbor plus one until convergence. Negative cells are ignored. To build a path finder, set targets to 0, walls to -1, and passable floor to `rl.INT_MAX`. 
 
 ```python
 a.fill(rl.MAX_INT)
@@ -532,76 +591,86 @@ a.djikstra()
 # cells to (5, 5) using nonblocking paths
 ```
 
-### `array.shortest_path(x1, y1, x2, y2, blocking=1)`
+This algorithm loops over the array as many times as there are steps in the longest path in the level.
 
-Computes the shortest path between two points in an array, considering that cells containing the `blocking` value cannot be moved through. Diagonal movements are authorized. If no path cannot be found, `None` is returned.
+### `array.cell_automaton(definition, warp=False)`
+
+Applies one step of a [cellular automaton](https://en.wikipedia.org/wiki/Life-like_cellular_automaton) to the array. The function assumes that the array is filled with 0 (dead) or 1 (alive). Then, for each cell it computes its new state (dead or alive) depending on the definition which states how the cell changes depending on its neighbors. It uses the Golly notation: `Bx/Sy` where `x` and `y` are strings of digits from 0 to 8. `B` stands for birth and `S` stands for survival. If a cell is dead and its number of alive neighbors is in `x`, then it is set to alive. If a cell is alive and its number of alive neighbors is not in `y`, then it is set to dead.
+
+```python
+a = rl.Array(100, 100)
+a.random_int(0, 1)
+
+# 10 steps of the game of life automaton
+for i in range(10):
+	a.cell_automaton('B3/S23') 
+```
+
+### `path = array.shortest_path(x1, y1, x2, y2, blocking=1)`
+
+Computes the shortest path between two points in an array, considering that cells containing the `blocking` value cannot be moved through. Diagonal movements are authorized. If a path cannot be found, `None` is returned.
 
 ```python
 for x, y in a.shortest_path(3, 2, 5, 6):
 	print(x, y)
 ```
 
-### `array.find_random(needle, tries=100)`
+### `result = array.apply_kernel(kernel)`
 
-Return the location of a value (the needle) in an array. Locations are tested randomly until one is found up to the number of specified tries.
+Apply a kernel to each cell of the array (sum of kernel elements multiplied by array elements shifted by position in kernel, and divide by the sum of kernel elements).
+
+```python
+a = rl.Array(10, 10)
+a.random_int(0, 10)
+kernel = rl.Array(3, 3)
+kernel.fill(1) # blur kernel, average of element and neighbors
+b = a.apply_kernel(kernel)
+```
+
+### `x, y = array.find_random(needle, tries=100)`
+
+Return the location of a value (the needle) in an array. Locations are tested randomly until one is found up to the number of specified tries. Returns (-1, -1) when unsuccessful.
 
 ```python
 x, y = a.find_random(1)
 ```
 
-### `array.place_random(needle, value, tries=100)`
-
-Replace an occurrence of the needle with the given value in an array. Works similarly to `array.find_random()`.
-
-```python
-a.place_random(1, 42)
-```
-
-### `rl.draw_array(x, y, image=0, x_shift=0, y_shift=0, mapping=None, fg=None, bg=None)`
+### `rl.draw_array(image, x, y, x_shift=0, y_shift=0, mapping=None, fg=None, bg=None)`
 
 Draw an array of tiles on the screen at coordinates x, y. By default, coordinates are shifted by the `tile_width` and `tile_height` of the image, but other values can be specified in `x_shift` and `y_shift`. Optionaly, values can be mapped for selecting tiles and coloring them with foreground (`fg`) and background (`bg`) colors.
 
 ```python
-rl.draw_array(x, y, mapping=[1,2,3], fg=[rl.RED, rl.BLUE, rl.GREEN])
+rl.draw_array(tileset, x, y, mapping=[1,2,3], fg=[rl.RED, rl.BLUE, rl.GREEN])
 ```
 
-### `rl.array_to_image(array, image, tile_width=8, tile_height=8)`
+### `image = rl.array_to_image(array, tile_width=8, tile_height=8, palette=None)`
 
-Fill the image at index `image` with the values of an array intepreted as RGBA colors.
+Create an image from the values of an array intepreted as RGBA colors. The `tile_width` and `tile_height` properties of the image are set according to the given arguments. Optionally, a list of colors can be given as argument to convert array values with the corresponding colors in the palette.
 
 ```python
 a = rl.Array(320, 240)
 a.fill(rl.RED)
-rl.array_to_image(a, 0)
+image1 = rl.array_to_image(a)
+a = rl.Array(320, 240)
+a.random_int(0, 1)
+image2 = rl.array_to_image(a, palette=[rl.BLACK, rl.RED])
 ```
 
-### `rl.image_to_array(image)`
+### `array = rl.image_to_array(image)`
 
-Create an array with the pixels of an image. Each value of the array represents an RGBA color. 
-The image index must contain an image.
+Create an array from the pixels of an image. Each value of the array represents an RGBA color. 
 
 ```python
-rl.load_image(0, 'tileset.png')
-a = rl.image_to_array(0)
+image = rl.load_image('tileset.png')
+a = rl.image_to_array(image)
+print(a[42, 31]) # color of pixel at (41, 31)
 ```
 
 ## <a name="files"></a>Files
 
 Pyrogue assumes two locations for storing files. The "ressources" location is a bundle of read-only assets such as images, fonts, game data and python scripts. It can be a directory, a zip or can be embedded in the pyrogue executable. The "preferences" location is a directory where game saves or high-scores can be saved and loaded later. It sits in the user directory returned by `SDL_GetPrefPath()` under a `pyrogue` directory.
 
-### `rl.open_resources(location)`
-
-Set the location of resources for loading scripts and assets. Generally, the interpreter already sets that correct value according to how the script was loaded. Currently supports directories and zips and the main exe. Directories must end with a '/', zips must end with '.zip', otherwise resources are looked for at the end of the specified exe.
-
-```python
-rl.open_resources('data.zip')
-rl.open_resources('directory/')
-rl.open_resources('pyrogue.exe')
-```
-
-It is generally not required to call this function.
-
-### `rl.load_asset(filename)`
+### `data = rl.load_asset(filename)`
 
 Load asset from resources. Filename can be a path including directories. Returns a bytes object with the loaded data or `None` if the asset could not be loaded.
 
@@ -609,11 +678,11 @@ Load asset from resources. Filename can be a path including directories. Returns
 data = rl.load_asset('data.txt')
 ```
 
-Note that assets from the resources file are read-only.
+Note that assets cannot be written.
 
 ### `rl.set_app_name(name)`
 
-Set the name of the app for loading and saving preferences in the user directory.
+Set the name of the app for loading and saving preferences in the user directory. Special characters such as '/' are mapped to '_'.
 
 ```python
 rl.set_app_name('my-game')
@@ -655,3 +724,4 @@ while True:
 	# use (x, y)
 ```
 
+The same algorithm as in `array.line()` is used.

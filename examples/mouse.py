@@ -17,4 +17,4 @@ def update(event):
         else:
             prev_x = prev_y = None
 
-rl.run(update, rl.UPDATE_MOUSE)
+rl.run(update, rl.ON_MOUSE)

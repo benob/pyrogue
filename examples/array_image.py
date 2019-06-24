@@ -14,10 +14,10 @@ def update(event):
 
     pixels.random_2d(int(math.cos(angle) * 128), int(math.sin(angle) * 128))
 
-    image = rl.array_to_image(pixels, 0)
+    image = rl.array_to_image(pixels)
     rl.draw_image(image, 0, 0)
 
     angle += 0.01
 
 
-rl.run(update, rl.UPDATE_LOOP)
+rl.run(update)

@@ -112,12 +112,13 @@ class Level:
         self.bsp(0, 0, WIDTH, HEIGHT, Tile.FLOOR, Tile.WALL)
         self.memory = rl.Array(width, height)
 
-        self.array.line(0, 0, WIDTH - 1, 0, Tile.WALL)
-        self.array.line(0, HEIGHT - 1, WIDTH, HEIGHT - 1, Tile.WALL)
-        self.array.line(0, 0, 0, HEIGHT - 1, Tile.WALL)
-        self.array.line(WIDTH - 1, 0, WIDTH - 1, HEIGHT - 1, Tile.WALL)
+        self.array.draw_line(0, 0, WIDTH - 1, 0, Tile.WALL)
+        self.array.draw_line(0, HEIGHT - 1, WIDTH, HEIGHT - 1, Tile.WALL)
+        self.array.draw_line(0, 0, 0, HEIGHT - 1, Tile.WALL)
+        self.array.draw_line(WIDTH - 1, 0, WIDTH - 1, HEIGHT - 1, Tile.WALL)
 
-        self.array.place_random(Tile.FLOOR, Tile.STAIRS) # place stairs
+        x, y = self.array.find_random(Tile.STAIRS) # place stairs
+        self.array[x, y] = Tile.STAIRS
         self.width = width
         self.height = height
 
@@ -290,7 +291,7 @@ class Game:
         actors.place(Item(name='potion', tile=12))
 
         fov = level.array.field_of_view(player.x, player.y, 10, Tile.WALL, True)
-        level.array.copy_masked(level.memory, fov)
+        level.array.copy_to(level.memory, fov)
 
         self.state = 'playing'
         self.theme = 0
@@ -369,7 +370,7 @@ def handle_input(key):
     if dx != 0 or dy != 0:
         player.move(dx, dy)
         fov = level.array.field_of_view(player.x, player.y, 10, Tile.WALL, True)
-        level.array.copy_masked(level.memory, fov)
+        level.array.copy_to(level.memory, fov)
     return key
 
 def update():
@@ -391,7 +392,7 @@ def redraw():
             fg=[rl.color(255, 255, 255, 192) for tile in Tile.mapping])
     # draw level masked with fov
     to_draw = rl.Array(WIDTH, HEIGHT)
-    level.array.copy_masked(to_draw, fov)
+    level.array.copy_to(to_draw, fov)
     rl.draw_array(to_draw, tileset, 0, 0, 
             mapping=[tile.num for tile in Tile.mapping],
             fg=[tile.fg for tile in Tile.mapping],
@@ -417,5 +418,5 @@ def handler(event):
         update()
     redraw()
 
-rl.run(handler, rl.UPDATE_KEY)
+rl.run(handler, rl.ON_KEY)
 game.save()

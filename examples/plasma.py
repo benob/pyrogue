@@ -28,4 +28,4 @@ def redraw(event):
     rl.draw_array(array, tileset, 0, 0, fg=colors)
     shift += 10
 
-rl.run(redraw, rl.UPDATE_LOOP)
+rl.run(redraw)

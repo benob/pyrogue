@@ -94,12 +94,13 @@ STATIC mp_obj_t mod_rl_roll(mp_obj_t obj) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_rl_roll_obj, mod_rl_roll);
 
-STATIC mp_obj_t mod_rl_set_seed(mp_obj_t seed_in) {
-	mp_uint_t seed = mp_obj_get_int(seed_in);
+STATIC mp_obj_t mod_rl_set_seed(size_t n_args, const mp_obj_t *args) {
+	mp_uint_t seed = 0;
+	if(n_args > 0) mp_obj_get_int(args[0]);
 	rl_set_seed(seed);
 	return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_rl_set_seed_obj, mod_rl_set_seed);
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_rl_set_seed_obj, 0, 1, mod_rl_set_seed);
 
 STATIC mp_obj_t mod_rl_get_seed() {
 	mp_uint_t result = rl_get_seed();
@@ -107,15 +108,39 @@ STATIC mp_obj_t mod_rl_get_seed() {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_rl_get_seed_obj, mod_rl_get_seed);
 
+// TODO: weighted choice
+STATIC mp_obj_t mod_rl_random_choice(mp_obj_t list) {
+	mp_int_t length = mp_obj_get_int(mp_obj_len(list));
+	mp_int_t index = rl_random_int(0, length - 1);
+	mp_obj_t item = mp_obj_subscr(list, mp_obj_new_int(index), MP_OBJ_SENTINEL); 
+	return item;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_rl_random_choice_obj, mod_rl_random_choice);
+
+STATIC mp_obj_t mod_rl_shuffle(mp_obj_t list) {
+	mp_int_t length = mp_obj_get_int(mp_obj_len(list));
+	for(int i = 0; i < length; i++) {
+		mp_int_t j = rl_random_int(0, length - 1);
+		mp_obj_t obj_i = mp_obj_new_int(i);
+		mp_obj_t obj_j = mp_obj_new_int(j);
+		mp_obj_t a = mp_obj_subscr(list, obj_i, MP_OBJ_SENTINEL); 
+		mp_obj_t b = mp_obj_subscr(list, obj_j, MP_OBJ_SENTINEL); 
+		mp_obj_subscr(list, obj_j, b); 
+		mp_obj_subscr(list, obj_i, a); 
+	}
+	return list;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_rl_shuffle_obj, mod_rl_shuffle);
+
 /************** rogue_filesystem *********************/
 
-STATIC mp_obj_t mod_fs_open_resources(mp_obj_t path_in) {
+/*STATIC mp_obj_t mod_fs_open_resources(mp_obj_t path_in) {
 	size_t len;
 	const char *path = mp_obj_str_get_data(path_in, &len);
 	mp_int_t result = fs_open_resources(path);
 	return mp_obj_new_bool(result);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_fs_open_resources_obj, mod_fs_open_resources);
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_fs_open_resources_obj, mod_fs_open_resources);*/
 
 STATIC mp_obj_t mod_fs_set_app_name(mp_obj_t app_name_in) {
 	size_t len;
@@ -344,7 +369,32 @@ STATIC mp_obj_t mod_rl_array_from_string(mp_obj_t string_in) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_rl_array_from_string_obj, mod_rl_array_from_string);
 
-STATIC mp_obj_t mod_rl_array_get(mp_obj_t self_in, mp_obj_t i_in, mp_obj_t j_in) {
+STATIC mp_obj_t mod_rl_array_from_list(mp_obj_t list) {
+	mp_int_t height = mp_obj_get_int(mp_obj_len(list));
+	if(height == 0)
+		mp_raise_msg(&mp_type_IndexError, "len(list) == 0");
+	mp_obj_t row = mp_obj_subscr(list, mp_obj_new_int(0), MP_OBJ_SENTINEL); 
+	mp_int_t width = mp_obj_get_int(mp_obj_len(row));
+	if(width == 0)
+		mp_raise_msg(&mp_type_IndexError, "len(list[0]) == 0");
+
+	mp_obj_rl_array_t* output = m_new_obj(mp_obj_rl_array_t);
+	output->base.type = &mp_type_rl_array;
+	output->array = rl_array_new(width, height);
+
+	for(int j = 0; j < height; j++) {
+		row = mp_obj_subscr(list, mp_obj_new_int(j), MP_OBJ_SENTINEL); 
+		for(int i = 0; i < width; i++) {
+			mp_obj_t item = mp_obj_subscr(row, mp_obj_new_int(i), MP_OBJ_SENTINEL); 
+			rl_array_value(output->array, i, j) = mp_obj_get_int(item);
+		}
+	}
+
+	return MP_OBJ_FROM_PTR(output);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_rl_array_from_list_obj, mod_rl_array_from_list);
+
+/*STATIC mp_obj_t mod_rl_array_get(mp_obj_t self_in, mp_obj_t i_in, mp_obj_t j_in) {
 	mp_check_self(mp_obj_is_type(self_in, &mp_type_rl_array));
 	mp_obj_rl_array_t *self = MP_OBJ_TO_PTR(self_in);
 	mp_int_t i = mp_obj_get_int(i_in);
@@ -363,7 +413,7 @@ STATIC mp_obj_t mod_rl_array_set(size_t n_args, const mp_obj_t *args) {
 	rl_array_set(self->array, i, j, value);
 	return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_rl_array_set_obj, 4, 4, mod_rl_array_set);
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_rl_array_set_obj, 4, 4, mod_rl_array_set);*/
 
 /*STATIC mp_obj_t mod_rl_array_free(mp_obj_t self_in) {
 	mp_check_self(mp_obj_is_type(self_in, &mp_type_rl_array));
@@ -373,6 +423,34 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_rl_array_set_obj, 4, 4, mod_rl_ar
 	return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_rl_array_free_obj, mod_rl_array_free);*/
+
+STATIC mp_obj_t mod_rl_array_equals(mp_obj_t self_in, mp_obj_t other_in) {
+	mp_obj_rl_array_t* self = MP_OBJ_TO_PTR(self_in);
+	mp_obj_rl_array_t* output = m_new_obj(mp_obj_rl_array_t);
+	output->base.type = &mp_type_rl_array;
+	if(mp_obj_is_type(other_in, &mp_type_rl_array)) {
+		mp_obj_rl_array_t* other = MP_OBJ_TO_PTR(other_in);
+		output->array = rl_array_left_equal_other(self->array, other->array);
+	} else {
+		output->array = rl_array_left_equal_value(self->array, mp_obj_get_int(other_in));
+	}
+	return MP_OBJ_FROM_PTR(output);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_2(mod_rl_array_equals_obj, mod_rl_array_equals);
+
+STATIC mp_obj_t mod_rl_array_not_equals(mp_obj_t self_in, mp_obj_t other_in) {
+	mp_obj_rl_array_t* self = MP_OBJ_TO_PTR(self_in);
+	mp_obj_rl_array_t* output = m_new_obj(mp_obj_rl_array_t);
+	output->base.type = &mp_type_rl_array;
+	if(mp_obj_is_type(other_in, &mp_type_rl_array)) {
+		mp_obj_rl_array_t* other = MP_OBJ_TO_PTR(other_in);
+		output->array = rl_array_left_not_equal_other(self->array, other->array);
+	} else {
+		output->array = rl_array_left_not_equal_value(self->array, mp_obj_get_int(other_in));
+	}
+	return MP_OBJ_FROM_PTR(output);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_2(mod_rl_array_not_equals_obj, mod_rl_array_not_equals);
 
 STATIC void mod_rl_array_print(const mp_print_t *print, mp_obj_t o_in, mp_print_kind_t kind) {
 	mp_obj_rl_array_t *o = MP_OBJ_TO_PTR(o_in);
@@ -399,15 +477,60 @@ STATIC mp_obj_t mod_rl_array_subscr(mp_obj_t self_in, mp_obj_t index_in, mp_obj_
 		mp_raise_msg(&mp_type_TypeError, "subscript index should be a tuple");
 	mp_obj_tuple_t* index = MP_OBJ_TO_PTR(index_in);
 	if(index->len == 2) {
-		mp_int_t i = mp_obj_get_int(index->items[0]);
-		mp_int_t j = mp_obj_get_int(index->items[1]);
-		if(value_in == MP_OBJ_SENTINEL) {
-			mp_int_t result = rl_array_get(self->array, i, j);
-			return mp_obj_new_int(result);
+		if(mp_obj_is_type(index->items[0], &mp_type_slice) || mp_obj_is_type(index->items[1], &mp_type_slice)) {
+			// support for making a view from slices
+			mp_bound_slice_t i, j;
+			if(mp_obj_is_type(index->items[0], &mp_type_slice))
+				mp_seq_get_fast_slice_indexes(self->array->width, index->items[0], &i);
+			else {
+				mp_int_t start = mp_obj_get_int(index->items[0]);
+				if(start < 0) start += self->array->width;
+				i.start = start;
+				i.stop = start + 1;
+				i.step = 1;
+			}
+			if(mp_obj_is_type(index->items[1], &mp_type_slice))
+				mp_seq_get_fast_slice_indexes(self->array->height, index->items[1], &j);
+			else {
+				mp_int_t start = mp_obj_get_int(index->items[1]);
+				if(start < 0) start += self->array->width;
+				j.start = start;
+				j.stop = start + 1;
+				j.step = 1;
+			}
+			if(i.step != 1 || j.step != 1)
+				mp_raise_msg(&mp_type_IndexError, "only slices of step 1 supported");
+			if(value_in == MP_OBJ_SENTINEL) { // get
+				mp_obj_rl_array_t* output = m_new_obj(mp_obj_rl_array_t);
+				output->base.type = &mp_type_rl_array;
+				output->array = rl_array_view(self->array, i.start, j.start, i.stop - i.start, j.stop - j.start);
+				return MP_OBJ_FROM_PTR(output);
+			} else { // set
+				array_t* view = rl_array_view(self->array, i.start, j.start, i.stop - i.start, j.stop - j.start);
+				if(mp_obj_is_type(value_in, &mp_type_rl_array)) {
+					mp_obj_rl_array_t* other = MP_OBJ_TO_PTR(value_in);
+					rl_array_copy_to(other->array, view, NULL);
+					rl_array_free(view);
+				} else {
+					mp_int_t value = mp_obj_get_int(value_in);
+					rl_array_fill(self->array, value);
+				}
+				return mp_const_none;
+			}
 		} else {
-			mp_int_t value = mp_obj_get_int(value_in);
-			rl_array_set(self->array, i, j, value);
-			return mp_const_none;
+			// regular indexing with integers
+			mp_int_t i = mp_obj_get_int(index->items[0]);
+			mp_int_t j = mp_obj_get_int(index->items[1]);
+			if(i < 0) i += self->array->width;
+			if(j < 0) j += self->array->height;
+			if(value_in == MP_OBJ_SENTINEL) { // get
+				mp_int_t result = rl_array_get(self->array, i, j);
+				return mp_obj_new_int(result);
+			} else { // set
+				mp_int_t value = mp_obj_get_int(value_in);
+				rl_array_set(self->array, i, j, value);
+				return mp_const_none;
+			}
 		}
 	} else {
 		mp_raise_msg(&mp_type_IndexError, "rl_array subscripts only supports 2-dim indexing");
@@ -492,7 +615,7 @@ STATIC mp_obj_t mod_rl_array_print_ascii(size_t n_args, const mp_obj_t *args) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_rl_array_print_ascii_obj, 2, 4, mod_rl_array_print_ascii);
 
-STATIC mp_obj_t mod_rl_array_line(size_t n_args, const mp_obj_t *args) {
+STATIC mp_obj_t mod_rl_array_draw_line(size_t n_args, const mp_obj_t *args) {
 	mp_check_self(mp_obj_is_type(self_in, &mp_type_rl_array));
 	mp_obj_rl_array_t *self = MP_OBJ_TO_PTR(args[0]);
 	mp_int_t x1 = mp_obj_get_int(args[1]);
@@ -501,12 +624,12 @@ STATIC mp_obj_t mod_rl_array_line(size_t n_args, const mp_obj_t *args) {
 	mp_int_t y2 = mp_obj_get_int(args[4]);
 	mp_int_t value = 1;
 	if(n_args > 5) value = mp_obj_get_int(args[5]);
-	rl_array_line(self->array, x1, y1, x2, y2, value);
+	rl_array_draw_line(self->array, x1, y1, x2, y2, value);
 	return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_rl_array_line_obj, 5, 6, mod_rl_array_line);
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_rl_array_draw_line_obj, 5, 6, mod_rl_array_draw_line);
 
-STATIC mp_obj_t mod_rl_array_rect(size_t n_args, const mp_obj_t *args) {
+STATIC mp_obj_t mod_rl_array_draw_rect(size_t n_args, const mp_obj_t *args) {
 	mp_check_self(mp_obj_is_type(self_in, &mp_type_rl_array));
 	mp_obj_rl_array_t *self = MP_OBJ_TO_PTR(args[0]);
 	mp_int_t x1 = mp_obj_get_int(args[1]);
@@ -515,10 +638,24 @@ STATIC mp_obj_t mod_rl_array_rect(size_t n_args, const mp_obj_t *args) {
 	mp_uint_t h = mp_obj_get_int(args[4]);
 	mp_int_t value = 1;
 	if(n_args > 5) value = mp_obj_get_int(args[5]);
-	rl_array_rect(self->array, x1, y1, w, h, value);
+	rl_array_draw_rect(self->array, x1, y1, w, h, value);
 	return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_rl_array_rect_obj, 5, 6, mod_rl_array_rect);
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_rl_array_draw_rect_obj, 5, 6, mod_rl_array_draw_rect);
+
+STATIC mp_obj_t mod_rl_array_fill_rect(size_t n_args, const mp_obj_t *args) {
+	mp_check_self(mp_obj_is_type(self_in, &mp_type_rl_array));
+	mp_obj_rl_array_t *self = MP_OBJ_TO_PTR(args[0]);
+	mp_int_t x1 = mp_obj_get_int(args[1]);
+	mp_int_t y1 = mp_obj_get_int(args[2]);
+	mp_uint_t w = mp_obj_get_int(args[3]);
+	mp_uint_t h = mp_obj_get_int(args[4]);
+	mp_int_t value = 1;
+	if(n_args > 5) value = mp_obj_get_int(args[5]);
+	rl_array_fill_rect(self->array, x1, y1, w, h, value);
+	return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_rl_array_fill_rect_obj, 5, 6, mod_rl_array_fill_rect);
 
 STATIC mp_obj_t mod_rl_array_can_see(size_t n_args, const mp_obj_t *args) {
 	mp_check_self(mp_obj_is_type(self_in, &mp_type_rl_array));
@@ -586,28 +723,6 @@ STATIC mp_obj_t mod_rl_array_shortest_path(size_t n_args, const mp_obj_t *args) 
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_rl_array_shortest_path_obj, 5, 6, mod_rl_array_shortest_path);
 
-STATIC mp_obj_t mod_rl_array_add(size_t n_args, const mp_obj_t *args) {
-	mp_check_self(mp_obj_is_type(self_in, &mp_type_rl_array));
-	mp_obj_rl_array_t *self = MP_OBJ_TO_PTR(args[0]);
-	mp_int_t value = mp_obj_get_int(args[1]);
-	mp_int_t blocking = VALUE_MAX;
-	if(n_args > 2) blocking = mp_obj_get_int(args[2]);
-	rl_array_add(self->array, value, blocking);
-	return mp_const_none;
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_rl_array_add_obj, 2, 3, mod_rl_array_add);
-
-STATIC mp_obj_t mod_rl_array_mul(size_t n_args, const mp_obj_t *args) {
-	mp_check_self(mp_obj_is_type(self_in, &mp_type_rl_array));
-	mp_obj_rl_array_t *self = MP_OBJ_TO_PTR(args[0]);
-	mp_int_t value = mp_obj_get_int(args[1]);
-	mp_int_t blocking = VALUE_MAX;
-	if(n_args > 2) blocking = mp_obj_get_int(args[2]);
-	rl_array_mul(self->array, value, blocking);
-	return mp_const_none;
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_rl_array_mul_obj, 2, 3, mod_rl_array_mul);
-
 STATIC mp_obj_t mod_rl_array_min(size_t n_args, const mp_obj_t *args) {
 	mp_check_self(mp_obj_is_type(self_in, &mp_type_rl_array));
 	mp_obj_rl_array_t *self = MP_OBJ_TO_PTR(args[0]);
@@ -669,22 +784,6 @@ STATIC mp_obj_t mod_rl_array_find_random(size_t n_args, const mp_obj_t *args) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_rl_array_find_random_obj, 2, 3, mod_rl_array_find_random);
 
-STATIC mp_obj_t mod_rl_array_place_random(size_t n_args, const mp_obj_t *args) {
-	mp_check_self(mp_obj_is_type(self_in, &mp_type_rl_array));
-	mp_obj_rl_array_t *self = MP_OBJ_TO_PTR(args[0]);
-	mp_int_t needle = mp_obj_get_int(args[1]);
-	mp_int_t value = mp_obj_get_int(args[2]);
-	mp_int_t tries = 100;
-	if(n_args > 3) tries = mp_obj_get_int(args[3]);
-	int rx = -1, ry = -1;
-	rl_array_place_random(self->array, needle, value, tries, &rx, &ry);
-	mp_obj_tuple_t *tuple = MP_OBJ_TO_PTR(mp_obj_new_tuple(2, NULL));
-	tuple->items[0] = mp_obj_new_int(rx);
-	tuple->items[1] = mp_obj_new_int(ry);
-	return tuple;
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_rl_array_place_random_obj, 2, 3, mod_rl_array_place_random);
-
 STATIC mp_obj_t mod_rl_array_view(size_t n_args, const mp_obj_t *args) {
 	mp_check_self(mp_obj_is_type(args[0], &mp_type_rl_array));
 	mp_obj_rl_array_t *self = MP_OBJ_TO_PTR(args[0]);
@@ -700,60 +799,87 @@ STATIC mp_obj_t mod_rl_array_view(size_t n_args, const mp_obj_t *args) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_rl_array_view_obj, 5, 5, mod_rl_array_view);
 
-STATIC mp_obj_t mod_rl_array_copy(mp_obj_t self_in) {
-	mp_check_self(mp_obj_is_type(self_in, &mp_type_rl_array));
-	mp_obj_rl_array_t *self = MP_OBJ_TO_PTR(self_in);
+STATIC mp_obj_t mod_rl_array_copy(size_t n_args, const mp_obj_t *args) {
+	mp_obj_rl_array_t *self = MP_OBJ_TO_PTR(args[0]);
+	array_t* mask = NULL;
+	if(n_args > 1) {
+		if(!mp_obj_is_type(args[1], &mp_type_rl_array)) 
+			mp_raise_msg(&mp_type_TypeError, "mask should be of type array");
+		mp_obj_rl_array_t* obj_mask = MP_OBJ_TO_PTR(args[1]);
+		mask = obj_mask->array;
+	}
 	mp_obj_rl_array_t* output = m_new_obj(mp_obj_rl_array_t);
 	output->base.type = &mp_type_rl_array;
-	output->array = rl_array_copy(self->array);
+	output->array = rl_array_copy(self->array, mask);
 	return MP_OBJ_FROM_PTR(output);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_rl_array_copy_obj, mod_rl_array_copy);
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_rl_array_copy_obj, 1, 2, mod_rl_array_copy);
 
 STATIC mp_obj_t mod_rl_array_copy_to(size_t n_args, const mp_obj_t *args) {
-	mp_check_self(mp_obj_is_type(args[0], &mp_type_rl_array));
-	if(!mp_obj_is_type(args[1], &mp_type_rl_array)) mp_raise_msg(&mp_type_TypeError, "arg 1 should be of type array");
-
-	mp_obj_rl_array_t *src = MP_OBJ_TO_PTR(args[0]);
+	mp_obj_rl_array_t *self = MP_OBJ_TO_PTR(args[0]);
+	if(!mp_obj_is_type(args[1], &mp_type_rl_array)) 
+		mp_raise_msg(&mp_type_TypeError, "dest should be of type array");
 	mp_obj_rl_array_t *dest = MP_OBJ_TO_PTR(args[1]);
-
-	rl_array_copy_masked(src->array, dest->array, NULL, 0);
+	array_t* mask = NULL;
+	if(n_args > 2) {
+		if(!mp_obj_is_type(args[2], &mp_type_rl_array)) 
+			mp_raise_msg(&mp_type_TypeError, "mask should be of type array");
+		mp_obj_rl_array_t* obj_mask = MP_OBJ_TO_PTR(args[2]);
+		mask = obj_mask->array;
+	}
+	rl_array_copy_to(self->array, dest->array, mask);
 	return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_rl_array_copy_to_obj, 2, 2, mod_rl_array_copy_to);
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_rl_array_copy_to_obj, 2, 3, mod_rl_array_copy_to);
 
-STATIC mp_obj_t mod_rl_array_copy_masked(size_t n_args, const mp_obj_t *args) {
+STATIC mp_obj_t mod_rl_array_cell_automaton(size_t n_args, const mp_obj_t *args) {
 	mp_check_self(mp_obj_is_type(args[0], &mp_type_rl_array));
-	if(!mp_obj_is_type(args[1], &mp_type_rl_array)) mp_raise_msg(&mp_type_TypeError, "arg 1 should be of type array");
-	if(!mp_obj_is_type(args[2], &mp_type_rl_array)) mp_raise_msg(&mp_type_TypeError, "arg 2 should be of type array");
-
-	mp_obj_rl_array_t *src = MP_OBJ_TO_PTR(args[0]);
-	mp_obj_rl_array_t *dest = MP_OBJ_TO_PTR(args[1]);
-	mp_obj_rl_array_t *mask = MP_OBJ_TO_PTR(args[2]);
-
-	mp_int_t keep = 1;
-	if(n_args > 3) keep = mp_obj_get_int(args[3]);
-	rl_array_copy_masked(src->array, dest->array, mask->array, keep);
+	mp_obj_rl_array_t *self = MP_OBJ_TO_PTR(args[0]);
+	size_t len;
+	const char *definition = mp_obj_str_get_data(args[1], &len);
+	mp_int_t wrap = 0;
+	if(n_args > 2) wrap = mp_obj_get_int(args[2]);
+  rl_array_cell_automaton(self->array, definition, wrap);
 	return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_rl_array_copy_masked_obj, 3, 4, mod_rl_array_copy_masked);
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_rl_array_cell_automaton_obj, 2, 3, mod_rl_array_cell_automaton);
 
-STATIC mp_obj_t mod_rl_array_equals(mp_obj_t self_in, mp_obj_t value_in) {
+STATIC mp_obj_t mod_rl_array_count(mp_obj_t self_in, mp_obj_t value_in) {
 	mp_check_self(mp_obj_is_type(self_in, &mp_type_rl_array));
 	mp_obj_rl_array_t *self = MP_OBJ_TO_PTR(self_in);
 	mp_int_t value = mp_obj_get_int(value_in);
+	mp_int_t result = rl_array_count(self->array, value);
+	return mp_obj_new_int(result);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_2(mod_rl_array_count_obj, mod_rl_array_count);
+
+STATIC mp_obj_t mod_rl_array_sum(mp_obj_t self_in) {
+	mp_check_self(mp_obj_is_type(self_in, &mp_type_rl_array));
+	mp_obj_rl_array_t *self = MP_OBJ_TO_PTR(self_in);
+	mp_int_t result = rl_array_sum(self->array);
+	return mp_obj_new_int(result);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_rl_array_sum_obj, mod_rl_array_sum);
+
+STATIC mp_obj_t mod_rl_array_apply_kernel(mp_obj_t self_in, mp_obj_t kernel_in) {
+	mp_check_self(mp_obj_is_type(self_in, &mp_type_rl_array));
+	mp_obj_rl_array_t *self = MP_OBJ_TO_PTR(self_in);
+	if(!mp_obj_is_type(kernel_in, &mp_type_rl_array))
+		mp_raise_msg(&mp_type_TypeError, "expected array");
+	mp_obj_rl_array_t *kernel = MP_OBJ_TO_PTR(kernel_in);
+
 	mp_obj_rl_array_t* output = m_new_obj(mp_obj_rl_array_t);
 	output->base.type = &mp_type_rl_array;
-	output->array = rl_array_equals(self->array, value);
+	output->array = rl_array_apply_kernel(self->array, kernel->array);
 	return MP_OBJ_FROM_PTR(output);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(mod_rl_array_equals_obj, mod_rl_array_equals);
+STATIC MP_DEFINE_CONST_FUN_OBJ_2(mod_rl_array_apply_kernel_obj, mod_rl_array_apply_kernel);
 
 STATIC const mp_rom_map_elem_t mod_rl_array_locals_dict_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR_to_string), MP_ROM_PTR(&mod_rl_array_to_string_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_view), MP_ROM_PTR(&mod_rl_array_view_obj) },
-	{ MP_ROM_QSTR(MP_QSTR_get), MP_ROM_PTR(&mod_rl_array_get_obj) },
-	{ MP_ROM_QSTR(MP_QSTR_set), MP_ROM_PTR(&mod_rl_array_set_obj) },
+	/*{ MP_ROM_QSTR(MP_QSTR_get), MP_ROM_PTR(&mod_rl_array_get_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_set), MP_ROM_PTR(&mod_rl_array_set_obj) },*/
 	{ MP_ROM_QSTR(MP_QSTR_width), MP_ROM_PTR(&mod_rl_array_width_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_height), MP_ROM_PTR(&mod_rl_array_height_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_print_ascii), MP_ROM_PTR(&mod_rl_array_print_ascii_obj) },
@@ -762,24 +888,26 @@ STATIC const mp_rom_map_elem_t mod_rl_array_locals_dict_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR_random_int), MP_ROM_PTR(&mod_rl_array_random_int_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_random_2d), MP_ROM_PTR(&mod_rl_array_random_2d_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_random), MP_ROM_PTR(&mod_rl_array_random_obj) },
-	{ MP_ROM_QSTR(MP_QSTR_line), MP_ROM_PTR(&mod_rl_array_line_obj) },
-	{ MP_ROM_QSTR(MP_QSTR_rect), MP_ROM_PTR(&mod_rl_array_rect_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_draw_line), MP_ROM_PTR(&mod_rl_array_draw_line_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_draw_rect), MP_ROM_PTR(&mod_rl_array_draw_rect_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_fill_rect), MP_ROM_PTR(&mod_rl_array_fill_rect_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_can_see), MP_ROM_PTR(&mod_rl_array_can_see_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_field_of_view), MP_ROM_PTR(&mod_rl_array_field_of_view_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_dijkstra), MP_ROM_PTR(&mod_rl_array_dijkstra_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_cell_automaton), MP_ROM_PTR(&mod_rl_array_cell_automaton_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_shortest_path), MP_ROM_PTR(&mod_rl_array_shortest_path_obj) },
-	{ MP_ROM_QSTR(MP_QSTR_add), MP_ROM_PTR(&mod_rl_array_add_obj) },
-	{ MP_ROM_QSTR(MP_QSTR_mul), MP_ROM_PTR(&mod_rl_array_mul_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_min), MP_ROM_PTR(&mod_rl_array_min_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_max), MP_ROM_PTR(&mod_rl_array_max_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_argmin), MP_ROM_PTR(&mod_rl_array_argmin_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_argmax), MP_ROM_PTR(&mod_rl_array_argmax_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_find_random), MP_ROM_PTR(&mod_rl_array_find_random_obj) },
-	{ MP_ROM_QSTR(MP_QSTR_place_random), MP_ROM_PTR(&mod_rl_array_place_random_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_copy), MP_ROM_PTR(&mod_rl_array_copy_obj) },
-	{ MP_ROM_QSTR(MP_QSTR_copy_masked), MP_ROM_PTR(&mod_rl_array_copy_masked_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_copy_to), MP_ROM_PTR(&mod_rl_array_copy_to_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_equals), MP_ROM_PTR(&mod_rl_array_equals_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_not_equals), MP_ROM_PTR(&mod_rl_array_not_equals_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_count), MP_ROM_PTR(&mod_rl_array_count_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_sum), MP_ROM_PTR(&mod_rl_array_sum_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_apply_kernel), MP_ROM_PTR(&mod_rl_array_apply_kernel_obj) },
 };
 
 STATIC MP_DEFINE_CONST_DICT(mod_rl_array_locals_dict, mod_rl_array_locals_dict_table);
@@ -795,13 +923,90 @@ STATIC mp_obj_t mod_rl_array_make_new(const mp_obj_type_t *type_in, size_t n_arg
 	return MP_OBJ_FROM_PTR(output);
 }
 
+STATIC mp_obj_t mod_rl_array_unary_op(mp_unary_op_t op, mp_obj_t self_in) {
+	mp_obj_rl_array_t *self = MP_OBJ_TO_PTR(self_in);
+	switch (op) {
+		case MP_UNARY_OP_POSITIVE: {
+			return self_in;
+		}
+		case MP_UNARY_OP_NEGATIVE: {
+			mp_obj_rl_array_t* output = m_new_obj(mp_obj_rl_array_t);
+			output->base.type = &mp_type_rl_array;
+			output->array = rl_array_unary_minus(self->array);
+			return MP_OBJ_FROM_PTR(output);
+		}
+		case MP_UNARY_OP_INVERT: {
+			mp_obj_rl_array_t* output = m_new_obj(mp_obj_rl_array_t);
+			output->base.type = &mp_type_rl_array;
+			output->array = rl_array_unary_minus(self->array);
+			return MP_OBJ_FROM_PTR(output);
+		}
+		case MP_UNARY_OP_BOOL:
+			return mp_obj_new_bool(!rl_array_all_equal(self->array, 0));
+		case MP_UNARY_OP_ABS: {
+			mp_obj_rl_array_t* output = m_new_obj(mp_obj_rl_array_t);
+			output->base.type = &mp_type_rl_array;
+			output->array = rl_array_abs(self->array);
+			return MP_OBJ_FROM_PTR(output);
+	  }
+		default: return MP_OBJ_NULL; // op not supported
+  }
+}
+
+#define mod_rl_array_op_side(MP_OP, side, name) \
+        case MP_OP: { \
+						mp_obj_rl_array_t* output = m_new_obj(mp_obj_rl_array_t); \
+						output->base.type = &mp_type_rl_array; \
+						if(rhs_is_array) { \
+							mp_obj_rl_array_t *rhs = MP_OBJ_TO_PTR(rhs_in); \
+              output->array = rl_array_##side##_##name##_other(lhs->array, rhs->array); \
+            } else { \
+              output->array = rl_array_##side##_##name##_value(lhs->array, mp_obj_get_int(rhs_in)); \
+						} \
+						return MP_OBJ_FROM_PTR(output); \
+        }
+#define mod_rl_array_op(OP, name) \
+	mod_rl_array_op_side(MP_BINARY_OP_##OP, right, name)
+
+#define mod_rl_array_op_inplace(OP, name) \
+	mod_rl_array_op_side(MP_BINARY_OP_##OP, right, name) \
+	mod_rl_array_op_side(MP_BINARY_OP_REVERSE_##OP, left, name) \
+	mod_rl_array_op_side(MP_BINARY_OP_INPLACE_##OP, right, name)
+
+STATIC mp_obj_t mod_rl_array_binary_op(mp_binary_op_t op, mp_obj_t lhs_in, mp_obj_t rhs_in) {
+    mp_obj_rl_array_t *lhs = MP_OBJ_TO_PTR(lhs_in);
+    int rhs_is_array = mp_obj_is_type(rhs_in, &mp_type_rl_array);
+		//printf("op: %d %p %p\n", op, lhs_in, rhs_in);
+    switch (op) {
+			// not supported due to bug in micropython
+			/*mod_rl_array_op(EQUAL, equal);
+			mod_rl_array_op(NOT_EQUAL, not_equal);*/
+			mod_rl_array_op(MORE, greater_than);
+			mod_rl_array_op(LESS, less_than);
+			mod_rl_array_op(MORE_EQUAL, greater_or_equal_than);
+			mod_rl_array_op(LESS_EQUAL, less_or_equal_than);
+			mod_rl_array_op_inplace(AND, and);
+			mod_rl_array_op_inplace(OR, or);
+			mod_rl_array_op_inplace(XOR, xor);
+			mod_rl_array_op_inplace(LSHIFT, lshift);
+			mod_rl_array_op_inplace(RSHIFT, rshift);
+			mod_rl_array_op_inplace(ADD, add);
+			mod_rl_array_op_inplace(SUBTRACT, sub);
+			mod_rl_array_op_inplace(MULTIPLY, mul);
+			mod_rl_array_op_inplace(TRUE_DIVIDE, div);
+			mod_rl_array_op_inplace(MODULO, mod);
+			default:
+				return MP_OBJ_NULL; // op not supported
+    }
+}
+
 const mp_obj_type_t mp_type_rl_array = {
 	{ &mp_type_type },
 	.name = MP_QSTR_Array,
 	.print = mod_rl_array_print,
 	.make_new = mod_rl_array_make_new,
-	//.unary_op = list_unary_op,
-	//.binary_op = list_binary_op,
+	.unary_op = mod_rl_array_unary_op,
+	.binary_op = mod_rl_array_binary_op,
 	.subscr = mod_rl_array_subscr,
 	//.getiter = list_getiter,
 	.locals_dict = (mp_obj_dict_t*)&mod_rl_array_locals_dict,
@@ -819,19 +1024,43 @@ STATIC mp_obj_t mod_td_init_display(mp_obj_t title_in, mp_obj_t width_in, mp_obj
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_3(mod_td_init_display_obj, mod_td_init_display);
 
-STATIC mp_obj_t mod_td_array_to_image(size_t n_args, const mp_obj_t *args) {
-	mp_check_self(mp_obj_is_type(args[0], &mp_type_rl_array));
-	mp_obj_rl_array_t *array = MP_OBJ_TO_PTR(args[0]);
-	mp_int_t tile_width = 8;
-	if(n_args > 2) tile_width = mp_obj_get_int(args[1]);
-	mp_int_t tile_height = 8;
-	if(n_args > 3) tile_height = mp_obj_get_int(args[2]);
+STATIC mp_obj_t mod_td_array_to_image(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+	static const mp_arg_t allowed_args[] = {
+		{ MP_QSTR_array, MP_ARG_OBJ | MP_ARG_REQUIRED, {.u_obj = MP_OBJ_NULL}},
+		{ MP_QSTR_tile_width, MP_ARG_INT, {.u_int = 0} },
+		{ MP_QSTR_tile_height, MP_ARG_INT, {.u_int = 0} },
+		{ MP_QSTR_palette, MP_ARG_OBJ, {.u_rom_obj = MP_ROM_PTR(&mp_const_none_obj)} },
+	};
+	struct {
+		mp_arg_val_t array, tile_width, tile_height, palette;
+	} args;
+
+	mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, (mp_arg_val_t*)&args);
+
+	mp_check_self(mp_obj_is_type(args.array.u_obj, &mp_type_rl_array));
+	mp_obj_rl_array_t *array = MP_OBJ_TO_PTR(args.array.u_obj);
+	mp_int_t tile_width = args.tile_width.u_int;
+	mp_int_t tile_height = args.tile_height.u_int;
+	mp_int_t palette_size = 0;
+	uint32_t* palette = NULL;
+	if(args.palette.u_obj != mp_const_none) {
+		palette_size = mp_obj_get_int(mp_obj_len(args.palette.u_obj));
+		palette = malloc(palette_size * sizeof(uint32_t));
+		mp_obj_t iterable = mp_getiter(args.palette.u_obj, NULL);
+		mp_obj_t item;
+		int i = 0;
+		while ((item = mp_iternext(iterable)) != MP_OBJ_STOP_ITERATION) {
+			palette[i++] = mp_obj_get_int(item);
+		}
+	}
+
 	mp_obj_rl_image_t* output = m_new_obj_with_finaliser(mp_obj_rl_image_t);
 	output->base.type = &mp_type_rl_image;
-	output->image = td_array_to_image(array->array, tile_width, tile_height);
+	output->image = td_array_to_image(array->array, tile_width, tile_height, palette_size, palette);
+	if(palette != NULL) free(palette);
 	return MP_OBJ_FROM_PTR(output);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_td_array_to_image_obj, 1, 3, mod_td_array_to_image);
+STATIC MP_DEFINE_CONST_FUN_OBJ_KW(mod_td_array_to_image_obj, 1, mod_td_array_to_image);
 
 STATIC mp_obj_t mod_td_image_to_array(mp_obj_t image_in) {
 	mp_obj_rl_image_t* image = MP_OBJ_TO_PTR(image_in);
@@ -1072,15 +1301,22 @@ STATIC mp_obj_t mod_td_random_color() {
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_td_random_color_obj, mod_td_random_color);
 
 STATIC mp_obj_t mod_td_color(size_t n_args, const mp_obj_t *args) {
-	unsigned char r = (unsigned char) mp_obj_get_int(args[0]);
-	unsigned char g = (unsigned char) mp_obj_get_int(args[1]);
-	unsigned char b = (unsigned char) mp_obj_get_int(args[2]);
-	unsigned char a = 0xff;
-	if(n_args > 3) a = (unsigned char) mp_obj_get_int(args[3]);
-	uint32_t result = td_color_rgba(r, g, b, a);
-	return mp_obj_new_int(result);
+	if(n_args == 1) {
+		size_t len;
+		const char *color = mp_obj_str_get_data(args[0], &len);
+		uint32_t result = td_hex_color(color);
+		return mp_obj_new_int(result);
+	} else {
+		unsigned char r = (unsigned char) mp_obj_get_int(args[0]);
+		unsigned char g = (unsigned char) mp_obj_get_int(args[1]);
+		unsigned char b = (unsigned char) mp_obj_get_int(args[2]);
+		unsigned char a = 0xff;
+		if(n_args > 3) a = (unsigned char) mp_obj_get_int(args[3]);
+		uint32_t result = td_color_rgba(r, g, b, a);
+		return mp_obj_new_int(result);
+	}
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_td_color_obj, 3, 4, mod_td_color);
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_td_color_obj, 1, 4, mod_td_color);
 
 STATIC mp_obj_t mod_td_hsv_color(size_t n_args, const mp_obj_t *args) {
 	unsigned char h = (unsigned char) mp_obj_get_int(args[0]);
@@ -1093,7 +1329,18 @@ STATIC mp_obj_t mod_td_hsv_color(size_t n_args, const mp_obj_t *args) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_td_hsv_color_obj, 3, 4, mod_td_hsv_color);
 
-STATIC mp_obj_t mod_td_color_r(mp_obj_t color_in) {
+STATIC mp_obj_t mod_td_color_components(mp_obj_t color_in) {
+	uint32_t color = (uint32_t) mp_obj_get_int(color_in);
+	mp_obj_tuple_t *result = MP_OBJ_TO_PTR(mp_obj_new_tuple(4, NULL));
+	result->items[0] = mp_obj_new_int(td_color_r(color));
+	result->items[1] = mp_obj_new_int(td_color_g(color));
+	result->items[2] = mp_obj_new_int(td_color_b(color));
+	result->items[3] = mp_obj_new_int(td_color_a(color));
+	return result;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_td_color_components_obj, mod_td_color_components);
+
+/*STATIC mp_obj_t mod_td_color_r(mp_obj_t color_in) {
 	uint32_t color = (uint32_t) mp_obj_get_int(color_in);
 	uint8_t result = td_color_r(color);
 	return mp_obj_new_int(result);
@@ -1119,25 +1366,7 @@ STATIC mp_obj_t mod_td_color_a(mp_obj_t color_in) {
 	uint8_t result = td_color_a(color);
 	return mp_obj_new_int(result);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_td_color_a_obj, mod_td_color_a);
-
-/*STATIC mp_obj_t mod_td_mouse_x() {
-	mp_int_t result = td_mouse_x();
-	return mp_obj_new_int(result);
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_td_mouse_x_obj, mod_td_mouse_x);
-
-STATIC mp_obj_t mod_td_mouse_y() {
-	mp_int_t result = td_mouse_y();
-	return mp_obj_new_int(result);
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_td_mouse_y_obj, mod_td_mouse_y);
-
-STATIC mp_obj_t mod_td_mouse_button() {
-	mp_int_t result = td_mouse_button();
-	return mp_obj_new_int(result);
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_td_mouse_button_obj, mod_td_mouse_button);*/
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_td_color_a_obj, mod_td_color_a);*/
 
 STATIC mp_obj_t mod_td_mouse() {
 	mp_int_t x = td_mouse_x();
@@ -1182,7 +1411,7 @@ static void run_callback(int key) {
 
 STATIC mp_obj_t mod_td_run(size_t n_args, const mp_obj_t *args) {
 	event_callback = args[0];
-	mp_int_t update_filter = TD_UPDATE_LOOP;
+	mp_int_t update_filter = TD_CONTINUOUSLY;
 	if(n_args > 1) update_filter = mp_obj_get_int(args[1]);
 	td_run(run_callback, update_filter);
 	return mp_const_none;
@@ -1214,6 +1443,16 @@ STATIC mp_obj_t mod_rl_walk_line_next() {
 	}
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_rl_walk_line_next_obj, mod_rl_walk_line_next);
+
+STATIC mp_obj_t mod_rl_distance(size_t n_args, const mp_obj_t *args) {
+	mp_float_t x1 = mp_obj_get_float(args[0]);
+	mp_float_t y1 = mp_obj_get_float(args[1]);
+	mp_float_t x2 = mp_obj_get_float(args[2]);
+	mp_float_t y2 = mp_obj_get_float(args[3]);
+	mp_float_t result = rl_distance(x1, y1, x2, y2);
+	return mp_obj_new_float(result);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_rl_distance_obj, 4, 4, mod_rl_distance);
 
 // WARNING: declaring const long intenger requires to use of MICROPY_LONGINT_IMPL_LONGLONG
 
@@ -1491,10 +1730,12 @@ STATIC const mp_rom_map_elem_t mp_module_rl_globals_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR_random_1d), MP_ROM_PTR(&mod_rl_random_1d_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_random), MP_ROM_PTR(&mod_rl_random_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_roll), MP_ROM_PTR(&mod_rl_roll_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_random_choice), MP_ROM_PTR(&mod_rl_random_choice_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_shuffle), MP_ROM_PTR(&mod_rl_shuffle_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_get_seed), MP_ROM_PTR(&mod_rl_get_seed_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_set_seed), MP_ROM_PTR(&mod_rl_set_seed_obj) },
 	/************* rogue_filesystem ***************/
-	{ MP_ROM_QSTR(MP_QSTR_open_resources), MP_ROM_PTR(&mod_fs_open_resources_obj) },
+	//{ MP_ROM_QSTR(MP_QSTR_open_resources), MP_ROM_PTR(&mod_fs_open_resources_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_set_app_name), MP_ROM_PTR(&mod_fs_set_app_name_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_load_asset), MP_ROM_PTR(&mod_fs_load_asset_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_load_pref), MP_ROM_PTR(&mod_fs_load_pref_obj) },
@@ -1506,6 +1747,7 @@ STATIC const mp_rom_map_elem_t mp_module_rl_globals_table[] = {
 	/************* rogue_array ********************/
 	{ MP_ROM_QSTR(MP_QSTR_Array), MP_ROM_PTR(&mp_type_rl_array) },
 	{ MP_ROM_QSTR(MP_QSTR_array_from_string), MP_ROM_PTR(&mod_rl_array_from_string_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_array_from_list), MP_ROM_PTR(&mod_rl_array_from_list_obj) },
 	/************* rogue_display ******************/
 	{ MP_ROM_QSTR(MP_QSTR_init_display), MP_ROM_PTR(&mod_td_init_display_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_array_to_image), MP_ROM_PTR(&mod_td_array_to_image_obj) },
@@ -1522,10 +1764,11 @@ STATIC const mp_rom_map_elem_t mp_module_rl_globals_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR_quit), MP_ROM_PTR(&mod_td_quit_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_color), MP_ROM_PTR(&mod_td_color_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_hsv_color), MP_ROM_PTR(&mod_td_hsv_color_obj) },
-	{ MP_ROM_QSTR(MP_QSTR_color_r), MP_ROM_PTR(&mod_td_color_r_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_color_components), MP_ROM_PTR(&mod_td_color_components_obj) },
+	/*{ MP_ROM_QSTR(MP_QSTR_color_r), MP_ROM_PTR(&mod_td_color_r_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_color_g), MP_ROM_PTR(&mod_td_color_g_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_color_b), MP_ROM_PTR(&mod_td_color_b_obj) },
-	{ MP_ROM_QSTR(MP_QSTR_color_a), MP_ROM_PTR(&mod_td_color_a_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_color_a), MP_ROM_PTR(&mod_td_color_a_obj) },*/
 	{ MP_ROM_QSTR(MP_QSTR_random_color), MP_ROM_PTR(&mod_td_random_color_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_mouse), MP_ROM_PTR(&mod_td_mouse_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_shift_pressed), MP_ROM_PTR(&mod_td_shift_pressed_obj) },
@@ -1536,6 +1779,7 @@ STATIC const mp_rom_map_elem_t mp_module_rl_globals_table[] = {
 	/************** utils ******************/
 	{ MP_ROM_QSTR(MP_QSTR_walk_line_start), MP_ROM_PTR(&mod_rl_walk_line_start_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_walk_line_next), MP_ROM_PTR(&mod_rl_walk_line_next_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_distance), MP_ROM_PTR(&mod_rl_distance_obj) },
 	/*************** constants **************/
 	// text alignment
 	{ MP_ROM_QSTR(MP_QSTR_ALIGN_LEFT), MP_ROM_INT(TD_ALIGN_LEFT) },
@@ -1547,9 +1791,9 @@ STATIC const mp_rom_map_elem_t mp_module_rl_globals_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR_MOUSE), MP_ROM_INT(TD_MOUSE) },
 	{ MP_ROM_QSTR(MP_QSTR_REDRAW), MP_ROM_INT(TD_REDRAW) },
 	// update filters
-	{ MP_ROM_QSTR(MP_QSTR_UPDATE_KEY), MP_ROM_INT(TD_UPDATE_KEY) },
-	{ MP_ROM_QSTR(MP_QSTR_UPDATE_MOUSE), MP_ROM_INT(TD_UPDATE_MOUSE) },
-	{ MP_ROM_QSTR(MP_QSTR_UPDATE_LOOP), MP_ROM_INT(TD_UPDATE_LOOP) },
+	{ MP_ROM_QSTR(MP_QSTR_CONTINUOUSLY), MP_ROM_INT(TD_CONTINUOUSLY) },
+	{ MP_ROM_QSTR(MP_QSTR_ON_KEY), MP_ROM_INT(TD_ON_KEY) },
+	{ MP_ROM_QSTR(MP_QSTR_ON_MOUSE), MP_ROM_INT(TD_ON_MOUSE) },
 
 	// math
   { MP_ROM_QSTR(MP_QSTR_INT_MAX), MP_ROM_PTR(&mod_rl_INT_MAX) },

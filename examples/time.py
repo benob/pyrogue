@@ -142,5 +142,5 @@ def update(key):
     for actor in game.actors:
         actor.draw()
 
-rl.run(update, rl.UPDATE_KEY)
+rl.run(update, rl.ON_KEY)
 

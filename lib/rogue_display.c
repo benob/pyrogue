@@ -210,13 +210,13 @@ void td_free_image(image_t* image) {
 	rl_free(image, sizeof(image_t));
 }
 
-image_t* td_array_to_image(array_t* a, int tile_width, int tile_height) {
+image_t* td_array_to_image(array_t* a, int tile_width, int tile_height, int palette_size, uint32_t* palette) {
 	image_t* image = rl_malloc(sizeof(image_t));
 	image->tile_width = tile_width;
 	image->tile_height = tile_height;
 	image->width = a->width;
 	image->height = a->height;
-	image->tiles_per_line = image->width / image->tile_width;
+	image->tiles_per_line = image->tile_width != 0 ? image->width / image->tile_width : 1; // prevent divide by zero
 	int row_size = sizeof(uint32_t) * (a->width + a->stride);
 
 #ifdef USE_SDLGPU
@@ -229,7 +229,20 @@ image_t* td_array_to_image(array_t* a, int tile_width, int tile_height) {
 		rl_free(image, sizeof(image_t));
 		rl_error("cannot create texture");
 	}
-	GPU_UpdateImageBytes(image->texture, NULL, (const unsigned char*)a->values, row_size);
+	if(palette_size > 0 && palette != NULL) {
+		uint32_t* colors = malloc(sizeof(uint32_t) * a->width * a->height);
+		for(int j = 0; j < a->height; j++) {
+			for(int i = 0; i < a->width; i++) {
+				VALUE value = rl_array_value(a, i, j);
+				if(value >= 0 && value < palette_size) colors[j * a->width + i] = palette[value];
+				else colors[j * a->width + i] = 0;
+			}
+		}
+		GPU_UpdateImageBytes(image->texture, NULL, (const unsigned char*)colors, sizeof(uint32_t) * a->width);
+		free(colors);
+	} else {
+		GPU_UpdateImageBytes(image->texture, NULL, (const unsigned char*)a->values, row_size);
+	}
 #else
 	image->texture = SDL_CreateTexture(display.renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STATIC, a->width, a->height);
 	image->surface = SDL_CreateRGBSurfaceWithFormat(0, a->width, a->height, 32, SDL_PIXELFORMAT_RGBA32);
@@ -519,6 +532,7 @@ void td_present() {
 	display.window_height = (int) (display.window_height * display.device_pixel_ratio);
 #endif
 	int width = display.window_width, height = display.window_height, x = 0, y = 0;
+	if(width == 0 || height == 0) return;
 	if(width * display.height / height < display.width) {
 		int new_height = (int) display.height * width / display.width;
 		y = (height - new_height) / 2;
@@ -630,9 +644,9 @@ static void process_events() {
 				break;
 		}
 	}
-	if((key == TD_MOUSE && (display.update_filter & TD_UPDATE_MOUSE)) 
-			|| (key != TD_PASS && key != TD_MOUSE && (display.update_filter & TD_UPDATE_KEY)) 
-			|| (display.update_filter & TD_UPDATE_LOOP)) {
+	if((key == TD_MOUSE && (display.update_filter & TD_ON_MOUSE)) 
+			|| (key != TD_PASS && key != TD_MOUSE && (display.update_filter & TD_ON_KEY)) 
+			|| (display.update_filter & TD_CONTINUOUSLY)) {
 		display.update_callback(key);
 		td_present();
 	}
@@ -655,6 +669,35 @@ void td_run(void (*update_callback)(int key), int update_filter) {
 
 uint32_t td_color(unsigned char r, unsigned char g, unsigned char b, unsigned char a) {
 	return td_color_rgba(r, g, b, a);
+}
+
+#define hex2int(ch) \
+	((ch >= '0' && ch <= '9') ? (ch - '0') : \
+	( (ch >= 'A' && ch <= 'F') ? (ch - 'A' + 10) : \
+	( (ch >= 'a' && ch <= 'f') ? (ch - 'a' + 10) : \
+		(-1) )))
+
+uint32_t td_hex_color(const char* color) {
+	if(*color != '#') rl_error("invalid hex color");
+	int length = strlen(color);
+	int r, g, b, a = 255;
+	if(length == 4) {
+		r = hex2int(color[1]) << 4 | hex2int(color[1]);
+		g = hex2int(color[2]) << 4 | hex2int(color[2]);
+		b = hex2int(color[3]) << 4 | hex2int(color[3]);
+	} else if(length == 7) {
+		r = hex2int(color[1]) << 4 | hex2int(color[2]);
+		g = hex2int(color[3]) << 4 | hex2int(color[4]);
+		b = hex2int(color[5]) << 4 | hex2int(color[6]);
+	} else if(length == 9) {
+		a = hex2int(color[1]) << 4 | hex2int(color[2]);
+		r = hex2int(color[3]) << 4 | hex2int(color[4]);
+		g = hex2int(color[5]) << 4 | hex2int(color[6]);
+		b = hex2int(color[7]) << 4 | hex2int(color[8]);
+	} else rl_error("invalid hex color");
+	if(r < 0 || g < 0 || b < 0 || a < 0) rl_error("invalid hex color");
+	uint32_t result = td_color_rgba(r, g, b, a);
+	return result;
 }
 
 uint32_t td_hsv_color(unsigned int h, unsigned char s, unsigned char v, unsigned char a) {

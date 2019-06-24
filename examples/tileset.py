@@ -16,4 +16,4 @@ def update(event):
     bg = [rl.color(rl.random_int(0, 255), rl.random_int(0, 255), rl.random_int(0, 255)) for i in range(1024)]
     rl.draw_array(a, tileset, 0, 0, fg=fg, bg=bg)
 
-rl.run(update, rl.UPDATE_KEY)
+rl.run(update, rl.ON_KEY)

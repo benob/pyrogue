@@ -19,4 +19,8 @@ extern void* (*rl_malloc)(size_t size);
 extern void* (*rl_realloc)(void* mem, size_t old_size, size_t new_size);
 extern void (*rl_free)(void* mem, size_t size);
 
+float rl_distance(float x1, float y1, float x2, float y2);
+void rl_walk_line_start(int x1, int y1, int x2, int y2);
+int rl_walk_line_next(int *x, int *y);
+
 #endif

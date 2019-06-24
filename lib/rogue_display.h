@@ -32,16 +32,16 @@ enum {TD_ALIGN_LEFT, TD_ALIGN_RIGHT, TD_ALIGN_CENTER};
 // events
 enum {TD_QUIT = -3, TD_MOUSE = -2, TD_REDRAW = -1, TD_PASS = 0};
 // event types
-enum {TD_UPDATE_KEY=1, TD_UPDATE_MOUSE=2, TD_UPDATE_LOOP=4};
+enum {TD_CONTINUOUSLY = 1, TD_ON_KEY = 2, TD_ON_MOUSE = 4};
 
 #define TD_NUM_IMAGES 32
 #define TD_NUM_BUFFERS 4
 
-#define td_color_r(color) ((color >> 24) & 255)
-#define td_color_g(color) ((color >> 16) & 255)
-#define td_color_b(color) ((color >> 8) & 255)
-#define td_color_a(color) ((color >> 0) & 255)
-#define td_color_rgba(r, g, b, a) ((r) << 24 | (g) << 16 | (b) << 8 | (a))
+#define td_color_r(color) ((color >> 0) & 255)
+#define td_color_g(color) ((color >> 8) & 255)
+#define td_color_b(color) ((color >> 16) & 255)
+#define td_color_a(color) ((color >> 24) & 255)
+#define td_color_rgba(r, g, b, a) ((r) << 0 | (g) << 8 | (b) << 16 | (a) << 24)
 #define td_color_rgb(r, g, b) td_color_rgba(r, g, b, 255)
 
 // TODO: set images as render targets
@@ -50,7 +50,7 @@ font_t* td_load_font(const char* font_path, float font_size);
 void td_free_font(font_t* font);
 image_t* td_load_image(const char* filename, int tile_width, int tile_height);
 void td_free_image(image_t* image);
-image_t* td_array_to_image(array_t* a, int tile_width, int tile_height);
+image_t* td_array_to_image(array_t* a, int tile_width, int tile_height, int palette_size, uint32_t* palette);
 array_t* td_image_to_array(image_t* image);
 void td_draw_image(image_t* image, int x, int y);
 void td_draw_tile(image_t* image, int x, int y, int tile);
@@ -67,6 +67,7 @@ void td_clear();
 void td_quit();
 void td_run(void (*update_callback)(int key), int update_filter);
 uint32_t td_color(unsigned char r, unsigned char g, unsigned char b, unsigned char a);
+uint32_t td_hex_color(const char* color);
 uint32_t td_random_color();
 uint32_t td_hsv_color(unsigned int h, unsigned char s, unsigned char v, unsigned char a);
 int td_mouse_x();

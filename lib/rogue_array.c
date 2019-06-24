@@ -13,8 +13,6 @@ static int hex2int(char ch) {
 	return 7;
 }
 
-#define array_value(a, x, y) ((a)->values[((a)->stride + (a)->width) * (y) + (x)])
-
 array_t* rl_array_new(uint32_t width, uint32_t height) {
   array_t *a = rl_malloc(sizeof(array_t));
 	a->values = rl_malloc(sizeof(VALUE) * width * height);
@@ -57,14 +55,14 @@ char* rl_array_to_string(array_t* a) {
 }
 
 array_t* rl_array_view(array_t* b, int x, int y, uint32_t width, uint32_t height) {
-	if(x >= (int) b->width || y >= (int) b->height) return NULL; // won't allow an empty view
+	if(x >= (int) b->width || y >= (int) b->height) rl_error("empty view");
 	if(x < 0) { width -= -x; x = 0; }
 	if(y < 0) { height -= -y; y = 0; }
 	if(x + width > b->width) width = b->width - x;
 	if(y + height > b->height) height = b->height - y;
   array_t *a = rl_malloc(sizeof(array_t));
-	a->values = &array_value(b, x, y);
-	a->stride = b->width - width;
+	a->values = &rl_array_value(b, x, y);
+	a->stride = b->stride + b->width - width;
 	a->is_view = 1;
   a->width = width;
   a->height = height;
@@ -85,7 +83,7 @@ uint32_t rl_array_height(array_t* a) {
 
 VALUE rl_array_get(array_t* a, int x, int y) {
 	if(x >= 0 && x < a->width && y >= 0 && y < a->height) {
-		return array_value(a, x, y);
+		return rl_array_value(a, x, y);
 	}
 	fprintf(stderr, "invalid array get at (%d, %d)\n", x, y);
 	return VALUE_MIN;
@@ -93,7 +91,7 @@ VALUE rl_array_get(array_t* a, int x, int y) {
 
 void rl_array_set(array_t* a, int x, int y, VALUE value) {
 	if(x >= 0 && x < a->width && y >= 0 && y < a->height) {
-		array_value(a, x, y) = value;
+		rl_array_value(a, x, y) = value;
 	} else {
 		fprintf(stderr, "invalid array set at (%d, %d)\n", x, y);
 	}
@@ -102,38 +100,38 @@ void rl_array_set(array_t* a, int x, int y, VALUE value) {
 void rl_array_fill(array_t *a, VALUE value) {
 	for(int j = 0; j < a->height; j++)
 		for(int i = 0; i < a->width; i++)
-			array_value(a, i, j) = value;
+			rl_array_value(a, i, j) = value;
 }
 
 void rl_array_replace(array_t *a, VALUE value1, VALUE value2) {
 	for(int j = 0; j < a->height; j++)
 		for(int i = 0; i < a->width; i++)
-			if(array_value(a, i, j) == value1) array_value(a, i, j) = value2;
+			if(rl_array_value(a, i, j) == value1) rl_array_value(a, i, j) = value2;
 }
 
 void rl_array_random_int(array_t *a, int lower, int upper) {
 	if(lower > upper) lower = upper;
 	for(int j = 0; j < a->height; j++)
 		for(int i = 0; i < a->width; i++)
-			array_value(a, i, j) = rl_random_next() % (1 + upper - lower) + lower;
+			rl_array_value(a, i, j) = rl_random_next() % (1 + upper - lower) + lower;
 }
 
 void rl_array_random(array_t *a) {
 	for(int j = 0; j < a->height; j++)
 		for(int i = 0; i < a->width; i++)
-			array_value(a, i, j) = (VALUE) rl_random_next(); // / UINT_MAX;
+			rl_array_value(a, i, j) = (VALUE) rl_random_next(); // / UINT_MAX;
 }
 
 void rl_array_random_2d(array_t *a, int32_t x, int32_t y) {
 	for(int j = 0; j < a->height; j++)
 		for(int i = 0; i < a->width; i++)
-			array_value(a, i, j) = (VALUE) rl_random_2d(x + i, y + j); // / UINT_MAX;
+			rl_array_value(a, i, j) = (VALUE) rl_random_2d(x + i, y + j); // / UINT_MAX;
 }
 
 void rl_array_print(array_t *a) {
   for(int y = 0; y < a->height; y++) {
     for(int x = 0; x < a->width; x++) {
-			VALUE value = array_value(a, x, y);
+			VALUE value = rl_array_value(a, x, y);
 			if(value == VALUE_MAX) printf("∞ ");
 			else if(value == VALUE_MIN) printf("-∞ ");
 			else printf(VALUE_FORMAT " ", value);
@@ -142,76 +140,41 @@ void rl_array_print(array_t *a) {
   }
 }
 
-// line walking based on libtcod/bresenham_c.c 
-typedef struct {
-	int x1, y1, x2, y2;
-	int dx, dy, sx, sy, e;
-} line_t;
-static line_t line;
-
-void rl_walk_line_start(int x1, int y1, int x2, int y2) {
-	line.x1=x1; line.y1=y1;
-	line.x2=x2; line.y2=y2;
-	line.dx=x2 - x1;
-	line.dy=y2 - y1;
-	if ( line.dx > 0 ) {
-		line.sx=1;
-	} else if ( line.dx < 0 ){
-		line.sx=-1;
-	} else line.sx=0;
-	if ( line.dy > 0 ) {
-		line.sy=1;
-	} else if ( line.dy < 0 ){
-		line.sy=-1;
-	} else line.sy = 0;
-	if ( line.sx*line.dx > line.sy*line.dy ) {
-		line.e = line.sx*line.dx;
-		line.dx *= 2;
-		line.dy *= 2;
-	} else {
-		line.e = line.sy*line.dy;
-		line.dx *= 2;
-		line.dy *= 2;
-	}
-}
-int rl_walk_line_next(int *x, int *y) {
-	if ( line.sx*line.dx > line.sy*line.dy ) {
-		if ( line.x1 == line.x2 ) return 0;
-		line.x1+=line.sx;
-		line.e -= line.sy*line.dy;
-		if ( line.e < 0) {
-			line.y1+=line.sy;
-			line.e+=line.sx*line.dx;
-		}
-	} else {
-		if ( line.y1 == line.y2 ) return 0;
-		line.y1+=line.sy;
-		line.e -= line.sx*line.dx;
-		if ( line.e < 0) {
-			line.x1+=line.sx;
-			line.e+=line.sy*line.dy;
-		}
-	}
-	*x=line.x1;
-	*y=line.y1;
-	return 1;
-}
-
-void rl_array_line(array_t* a, int x1, int y1, int x2, int y2, VALUE value) {
+void rl_array_draw_line(array_t* a, int x1, int y1, int x2, int y2, VALUE value) {
 	int x = x1, y = y1, has_next = 1;
 	for(rl_walk_line_start(x1, y1, x2, y2); has_next; has_next = rl_walk_line_next(&x, &y)) {
     if(x >= 0 && x < a->width && y >= 0 && y < a->height) {
-			array_value(a, x, y) = value;
+			rl_array_value(a, x, y) = value;
     }
 	}
 }
 
-// TODO: hollow rect (can be simulated with lines)
-void rl_array_rect(array_t *a, int x, int y, uint32_t width, uint32_t height, VALUE value) {
+void rl_array_draw_rect(array_t *a, int x, int y, uint32_t width, uint32_t height, VALUE value) {
+	if(x > a->width || y > a->height) return;
+	if(x < 0) { width += x; x = 0; }
+	if(y < 0) { height += y; y = 0; }
+	if(x + width >= a->width) width = a->width - x;
+	if(y + height >= a->height) height = a->height - y;
+  for(int j = y; j < y + height; j++) {
+		rl_array_value(a, x, j) = value;
+		rl_array_value(a, x + width, j) = value;
+	}
+	for(int i = x; i < x + width; i++) {
+		rl_array_value(a, i, y) = value;
+		rl_array_value(a, i, y + height) = value;
+  }
+}
+
+void rl_array_fill_rect(array_t *a, int x, int y, uint32_t width, uint32_t height, VALUE value) {
+	if(x > a->width || y > a->height) return;
+	if(x < 0) { width += x; x = 0; }
+	if(y < 0) { height += y; y = 0; }
+	if(x + width >= a->width) width = a->width - x;
+	if(y + height >= a->height) height = a->height - y;
   for(int j = y; j < y + height; j++) {
     for(int i = x; i < x + width; i++) {
       if(i >= 0 && i < a->width && j > 0 && j < a->height) {
-				array_value(a, i, j) = value;
+				rl_array_value(a, i, j) = value;
       }
     }
   }
@@ -222,10 +185,10 @@ int rl_array_can_see(array_t *a, int x1, int y1, int x2, int y2, VALUE blocking)
 	int x = x1, y = y1, has_next = 1;
 	for(rl_walk_line_start(x1, y1, x2, y2); has_next; has_next = rl_walk_line_next(&x, &y)) {
     if(x >= 0 && x < a->width && y >= 0 && y < a->height) {
-      if(array_value(a, x, y) == blocking) return 0;
+      if(rl_array_value(a, x, y) == blocking) return 0;
     } else return 0;
 	}
-  //if(x1 == x2 && y1 == y2 && array_value(a, x1, y1) != blocking) return 1;
+  //if(x1 == x2 && y1 == y2 && rl_array_value(a, x1, y1) != blocking) return 1;
   //if(x1 == x2 && y1 == y2) return 1;
 	return 1;
 
@@ -237,7 +200,7 @@ int rl_array_can_see(array_t *a, int x1, int y1, int x2, int y2, VALUE blocking)
 
   while(1) {
     if(x1 >= 0 && x1 < a->width && y1 >= 0 && y1 < a->height) {
-      if(array_value(a, x1, y1) == blocking) break;
+      if(rl_array_value(a, x1, y1) == blocking) break;
     } else break;
     if(x1 == x2 && y1 == y2) break;
     int e2 = 2 * err;
@@ -250,7 +213,7 @@ int rl_array_can_see(array_t *a, int x1, int y1, int x2, int y2, VALUE blocking)
       y1 += sy;
     }
   }
-  if(x1 == x2 && y1 == y2 && array_value(a, x1, y1) != blocking) return 1;
+  if(x1 == x2 && y1 == y2 && rl_array_value(a, x1, y1) != blocking) return 1;
   //if(x1 == x2 && y1 == y2) return 1;
   return 0;*/
 }
@@ -275,7 +238,7 @@ array_t* rl_array_field_of_view(array_t* a, int xc, int yc, int radius, VALUE bl
 			if(x >= 0 && x < result->width && y >= 0 && y < result->height) {
 				int distance = (x - xc) * (x - xc) + (y - yc) * (y - yc);
 				if(distance < radius * radius) {
-					array_value(result, x, y) = rl_array_can_see(a, xc, yc, x, y, blocking);
+					rl_array_value(result, x, y) = rl_array_can_see(a, xc, yc, x, y, blocking);
 				}
 			}
 		}
@@ -287,10 +250,10 @@ array_t* rl_array_field_of_view(array_t* a, int xc, int yc, int radius, VALUE bl
 		for(rl_walk_line_start(xc, yc, x2, yc - radius); has_next; has_next = rl_walk_line_next(&x, &y)) {
 			if(x >= 0 && x < a->width && y >= 0 && y < a->height) {
 				int distance = (x - xc) * (x - xc) + (y - yc) * (y - yc);
-				if(distance > radius_sqr || array_value(a, x, y) == blocking) {
+				if(distance > radius_sqr || rl_array_value(a, x, y) == blocking) {
 					break;
 				} else {
-					array_value(result, x, y) = 1;
+					rl_array_value(result, x, y) = 1;
 				}
 			} else break;
 		}
@@ -298,10 +261,10 @@ array_t* rl_array_field_of_view(array_t* a, int xc, int yc, int radius, VALUE bl
 		for(rl_walk_line_start(xc, yc, x2, yc + radius); has_next; has_next = rl_walk_line_next(&x, &y)) {
 			if(x >= 0 && x < a->width && y >= 0 && y < a->height) {
 				int distance = (x - xc) * (x - xc) + (y - yc) * (y - yc);
-				if(distance > radius_sqr || array_value(a, x, y) == blocking) {
+				if(distance > radius_sqr || rl_array_value(a, x, y) == blocking) {
 					break;
 				} else {
-					array_value(result, x, y) = 1;
+					rl_array_value(result, x, y) = 1;
 				}
 			} else break;
 		}
@@ -311,10 +274,10 @@ array_t* rl_array_field_of_view(array_t* a, int xc, int yc, int radius, VALUE bl
 		for(rl_walk_line_start(xc, yc, xc - radius, y2); has_next; has_next = rl_walk_line_next(&x, &y)) {
 			if(x >= 0 && x < a->width && y >= 0 && y < a->height) {
 				int distance = (x - xc) * (x - xc) + (y - yc) * (y - yc);
-				if(distance > radius_sqr || array_value(a, x, y) == blocking) {
+				if(distance > radius_sqr || rl_array_value(a, x, y) == blocking) {
 					break;
 				} else {
-					array_value(result, x, y) = 1;
+					rl_array_value(result, x, y) = 1;
 				}
 			} else break;
 		}
@@ -322,10 +285,10 @@ array_t* rl_array_field_of_view(array_t* a, int xc, int yc, int radius, VALUE bl
 		for(rl_walk_line_start(xc, yc, xc + radius, y2); has_next; has_next = rl_walk_line_next(&x, &y)) {
 			if(x >= 0 && x < a->width && y >= 0 && y < a->height) {
 				int distance = (x - xc) * (x - xc) + (y - yc) * (y - yc);
-				if(distance > radius_sqr || array_value(a, x, y) == blocking) {
+				if(distance > radius_sqr || rl_array_value(a, x, y) == blocking) {
 					break;
 				} else {
-					array_value(result, x, y) = 1;
+					rl_array_value(result, x, y) = 1;
 				}
 			} else break;
 		}
@@ -335,7 +298,7 @@ array_t* rl_array_field_of_view(array_t* a, int xc, int yc, int radius, VALUE bl
 		const int dy[8] = {-1, -1, -1, 0, 0, 1, 1, 1};
 		for(y = yc - radius; y <= yc + radius; y++) {
 			for(x = xc - radius; x <= xc + radius; x++) {
-				if(x >= 0 && x < result->width && y >= 0 && y < result->height && array_value(a, x, y) == blocking) {
+				if(x >= 0 && x < result->width && y >= 0 && y < result->height && rl_array_value(a, x, y) == blocking) {
 					int distance = (x - xc) * (x - xc) + (y - yc) * (y - yc);
 					if(distance < radius * radius) {
 						int sum = 0;
@@ -343,13 +306,13 @@ array_t* rl_array_field_of_view(array_t* a, int xc, int yc, int radius, VALUE bl
 							int i = x + dx[k];
 							int j = y + dy[k];
 							if(i >= 0 && i < result->width && j >= 0 && j < result->height) {
-								if(array_value(a, i, j) != blocking && array_value(result, i, j)) {
+								if(rl_array_value(a, i, j) != blocking && rl_array_value(result, i, j)) {
 									sum++;
 									break;
 								}
 							}
 						}
-						if(sum > 0) array_value(result, x, y) = 1;
+						if(sum > 0) rl_array_value(result, x, y) = 1;
 					}
 				}
 			}
@@ -404,7 +367,7 @@ path_t* rl_array_shortest_path(array_t* a, int x1, int y1, int x2, int y2, VALUE
 			}
 			if(next_x >= 0 && next_x < a->width && next_y >= 0 && next_y < a->height) {
 				VALUE new_cost = cost_so_far[current] + 1;
-				if(array_value(a, next_x, next_y) != blocking && new_cost < cost_so_far[next]) {
+				if(rl_array_value(a, next_x, next_y) != blocking && new_cost < cost_so_far[next]) {
 					cost_so_far[next] = new_cost;
 					int dx = x2 - next_x;
 					int dy = y2 - next_y;
@@ -452,19 +415,19 @@ void rl_array_dijkstra(array_t* a) {
     converged = 1;
     for(int y = 0; y < a->height; y++) {
       for(int x = 0; x < a->width; x++) {
-        if(array_value(a, x, y) <= 0) continue;
+        if(rl_array_value(a, x, y) <= 0) continue;
         VALUE min = VALUE_MAX;
         for(int i = 0; i < 8; i++) {
           if(x + offset_x[i] >= 0 && x + offset_x[i] < a->width
               && y + offset_y[i] >= 0 && y + offset_y[i] < a->height) {
-						VALUE value = array_value(a, x + offset_x[i], y + offset_y[i]);
+						VALUE value = rl_array_value(a, x + offset_x[i], y + offset_y[i]);
             if(value >= 0 && value < min) {
               min = value;
             }
           }
         }
-        if(min != INT_MAX && min + 1 < array_value(a, x, y)) {
-					array_value(a, x, y) = min + 1;
+        if(min != INT_MAX && min + 1 < rl_array_value(a, x, y)) {
+					rl_array_value(a, x, y) = min + 1;
           converged = 0;
         }
       }
@@ -472,23 +435,11 @@ void rl_array_dijkstra(array_t* a) {
   } while(!converged);
 }
 
-void rl_array_add(array_t* a, VALUE value, VALUE blocking) {
-	for(int j = 0; j < a->height; j++)
-		for(int i = 0; i < a->width; i++)
-			if(array_value(a, i, j) != blocking) array_value(a, i, j) += value;
-}
-
-void rl_array_mul(array_t *a, VALUE value, VALUE blocking) {
-	for(int j = 0; j < a->height; j++)
-		for(int i = 0; i < a->width; i++)
-			if(array_value(a, i, j) != blocking) array_value(a, i, j) *= value;
-}
-
 VALUE rl_array_min(array_t *a, VALUE blocking) {
   VALUE min = VALUE_MAX;
 	for(int j = 0; j < a->height; j++)
 		for(int i = 0; i < a->width; i++) {
-			VALUE value = array_value(a, i, j);
+			VALUE value = rl_array_value(a, i, j);
 			if(value != blocking && value < min) min = value;
 		}
 	return min;
@@ -498,7 +449,7 @@ VALUE rl_array_max(array_t* a, VALUE blocking) {
   VALUE max = VALUE_MIN;
 	for(int j = 0; j < a->height; j++)
 		for(int i = 0; i < a->width; i++) {
-			VALUE value = array_value(a, i, j);
+			VALUE value = rl_array_value(a, i, j);
 			if(value != blocking && value > max) max = value;
 		}
   return max;
@@ -509,7 +460,7 @@ point_t rl_array_argmin(array_t* a, VALUE blocking) {
 	int argmin_x = 0, argmin_y = 0;
 	for(uint32_t y = 0; y < a->height; y++) {
 		for(uint32_t x = 0; x < a->height; x++) {
-			VALUE value = array_value(a, x, y);
+			VALUE value = rl_array_value(a, x, y);
 			if(value != blocking && value < min) {
 				min = value; argmin_x = x; argmin_y = y;
 			}
@@ -525,7 +476,7 @@ point_t rl_array_argmax(array_t* a, VALUE blocking) {
 	int argmax_x = 0, argmax_y = 0;
 	for(uint32_t y = 0; y < a->height; y++) {
 		for(uint32_t x = 0; x < a->height; x++) {
-			VALUE value = array_value(a, x, y);
+			VALUE value = rl_array_value(a, x, y);
 			if(value != blocking && value > max) {
 				max = value; argmax_x = x; argmax_y = y;
 			}
@@ -539,7 +490,7 @@ int rl_array_find_random(array_t* a, VALUE needle, int tries, int* rx, int* ry) 
 	for(int i = 0; i < tries; i++) {
 		int x = rl_random_next() % a->width;
 		int y = rl_random_next() % a->height;
-		if(array_value(a, x, y) == needle) {
+		if(rl_array_value(a, x, y) == needle) {
 			*rx = x;
 			*ry = y;
 			return 1;
@@ -550,125 +501,271 @@ int rl_array_find_random(array_t* a, VALUE needle, int tries, int* rx, int* ry) 
 	return 0;
 }
 
-// TODO deprecate: can be obtained with find_random + set
-int rl_array_place_random(array_t* a, VALUE needle, VALUE value, int tries, int* rx, int *ry) {
-	for(int i = 0; i < tries; i++) {
-		int x = rl_random_next() % a->width;
-		int y = rl_random_next() % a->height;
-		if(array_value(a, x, y) == needle) {
-			array_value(a, x, y) = value;
-			*rx = x;
-			*ry = y;
-			return 1;
-		}
-	}
-	*rx = -1;
-	*ry = -1;
-	return 0;
-}
-
-// TODO deprecate: can be obtained with view + copy
-array_t* rl_array_get_sub(array_t* a, int x, int y, uint32_t width, uint32_t height, VALUE default_value) {
-  array_t *b = rl_array_new(width, height);
-
-  for(uint32_t j = 0; j < height; j++) {
-    for(uint32_t i = 0; i < width; i++) {
-      if(x + i >= 0 && x + i < a->width && y + j >= 0 && y + j < a->height) {
-				array_value(b, i, j) = array_value(a, x + i, y + j);
-      } else {
-				array_value(b, i, j) = default_value;
-      }
-    }
-  }
-
-  return b;
-}
-
-// TODO deprecate: can be obtained with view + assign
-void rl_array_set_sub(array_t *a, int x, int y, array_t* b) {
-  for(uint32_t j = 0; j < b->height; j++) {
-    for(uint32_t i = 0; i < b->width; i++) {
-      if(x + i >= 0 && x + i < a->width
-          && y + j >= 0 && y + j < a->height) {
-				array_value(a, x + i, y + j) = array_value(b, i, j);
-      }
-    }
-  }
-}
-
-array_t* rl_array_copy(array_t* a) {
-	if(a->is_view) {
-		return rl_array_view(a, 0, 0, a->width, a->height);
-	} else {
-		array_t *b = rl_array_new(a->width, a->height);
-		for(int i = 0; i < a->width * a->height; i++) b->values[i] = a->values[i];
-		return b;
-	}
-}
-
-int rl_array_copy_masked(array_t* src, array_t* dest, array_t* mask, VALUE keep) {
+array_t* rl_array_copy(array_t* src, array_t* mask) {
 	if(mask == NULL) {
-		if(src->width != dest->width || src->height != dest->height) {
-			printf("error: sizes mismatch");
-			return 0;
-		}
-		for(int i = 0; i < dest->width * dest->height; i++) {
-			dest->values[i] = src->values[i];
+		if(src->is_view) {
+			return rl_array_view(src, 0, 0, src->width, src->height);
+		} else {
+			array_t *dest = rl_array_new(src->width, src->height);
+			for(int i = 0; i < src->width * src->height; i++) dest->values[i] = src->values[i];
+			return dest;
 		}
 	} else {
-		if(src->width != dest->width || src->width != mask->width || src->height != dest->height || src->height != mask->height) {
-			printf("error: sizes mismatch");
-			return 0;
-		}
-		for(int i = 0; i < dest->width * dest->height; i++) {
-			if(mask->values[i] == keep) dest->values[i] = src->values[i];
-		}
+		if(src->width != mask->width || src->height != mask->height)
+			rl_error("size mismatch");
+		array_t* dest = rl_array_new(src->width, src->height);
+		for(int j = 0; j < src->height; j++)
+			for(int i = 0; i < src->width; i++)
+				if(mask->values[i]) rl_array_value(dest, i, j) = rl_array_value(src, i, j);
+		return dest;
 	}
-	return 1;
 }
 
-array_t* rl_array_equals(array_t* a, VALUE value) {
-  array_t *b = rl_array_new(a->width, a->height);
+void rl_array_copy_to(array_t* src, array_t* dest, array_t* mask) {
+	if(mask == NULL) {
+		if(src->width != dest->width || src->height != dest->height) 
+			rl_error("size mismatch");
+		for(int j = 0; j < src->height; j++)
+			for(int i = 0; i < src->width; i++)
+				rl_array_value(dest, i, j) = rl_array_value(src, i, j);
+	} else {
+		if(src->width != dest->width || src->width != mask->width || src->height != dest->height || src->height != mask->height) 
+			rl_error("size mismatch");
+		for(int j = 0; j < src->height; j++)
+			for(int i = 0; i < src->width; i++)
+				if(rl_array_value(mask, i, j)) rl_array_value(dest, i, j) = rl_array_value(src, i, j);
+	}
+}
 
+void rl_array_cell_automaton(array_t* a, const char* definition, int warp) {
+	VALUE value_dead = 0;
+	VALUE value_alive = 1;
+	VALUE value_will_die = 2;
+	VALUE value_will_live = 3;
+	char* birth_states = strchr(definition, 'B');
+	char* survive_states = strchr(definition, 'S');
+	if(birth_states == NULL) rl_error("invalid definition, no B specified");
+	if(survive_states == NULL) rl_error("invalid definition, no S specified");
+	int offset_x[8] = {-1, 0, 1, -1, 1, -1, 0, 1};
+	int offset_y[8] = {-1, -1, -1, 0, 0, 1, 1, 1};
+	for(int y = 0; y < a->height; y++) {
+		for(int x = 0; x < a->width; x++) {
+			int neighbors = 0;
+			for(int k = 0; k < 8; k++) {
+				int i = x + offset_x[k];
+				int j = y + offset_y[k];
+				if(warp) {
+					i %= a->width;
+					j %= a->height;
+				}
+				if(i < 0 || i >= a->width || j < 0 || j >= a->height) continue;
+				VALUE value = rl_array_value(a, i, j);
+				if(value == value_alive || value == value_will_die) neighbors++;
+			}
+
+			VALUE value = rl_array_value(a, x, y);
+			if(value == value_dead) {
+				for(char* c = birth_states + 1; *c && *c >= '0' && *c <= '8'; c++)
+					if(neighbors == *c - '0') {
+						value = value_will_live;
+						break;
+					}
+			} else if(value == value_alive) {
+				int found = 0;
+				for(char* c = survive_states + 1; *c && *c >= '0' && *c <= '8'; c++)
+					if(neighbors == *c - '0') {
+						found = 1; 
+						break;
+					}
+				if(!found) value = value_will_die;
+			}
+			rl_array_value(a, x, y) = value;
+		}
+	}
+	for(int y = 0; y < a->height; y++) {
+		for(int x = 0; x < a->width; x++) {
+			VALUE value = rl_array_value(a, x, y);
+			if(value == value_will_die) rl_array_value(a, x, y) = value_dead;
+			else if(value == value_will_live) rl_array_value(a, x, y) = value_alive;
+		}
+	}
+}
+
+#define rl_array_right_op_value(name, operator) \
+	array_t* rl_array_right_##name##_value(array_t* a, VALUE value) { \
+		array_t *b = rl_array_new(a->width, a->height); \
+		for(int j = 0; j < a->height; j++) \
+			for(int i = 0; i < a->width; i++) \
+				rl_array_value(b, i, j) = (rl_array_value(a, i, j) operator value); \
+		return b; \
+	}
+
+#define rl_array_right_op_other(name, operator) \
+	array_t* rl_array_right_##name##_other(array_t* a, array_t* other) { \
+		if(a->width != other->width || a->height != other->height) rl_error("size mismatch"); \
+		array_t *b = rl_array_new(a->width, a->height); \
+		for(int j = 0; j < a->height; j++) \
+			for(int i = 0; i < a->width; i++) \
+				rl_array_value(b, i, j) = (rl_array_value(a, i, j) operator rl_array_value(other, i, j)); \
+		return b; \
+	}
+
+#define rl_array_inplace_op_value(name, operator) \
+	void rl_array_inplace_##name##_value(array_t* a, VALUE value) { \
+		for(int j = 0; j < a->height; j++) \
+			for(int i = 0; i < a->width; i++) \
+				rl_array_value(a, i, j) = (rl_array_value(a, i, j) operator value); \
+	}
+
+#define rl_array_inplace_op_other(name, operator) \
+	void rl_array_inplace_##name##_other(array_t* other, array_t* a) { \
+		if(a->width != other->width || a->height != other->height) rl_error("size mismatch"); \
+		for(int j = 0; j < a->height; j++) \
+			for(int i = 0; i < a->width; i++) \
+				rl_array_value(a, i, j) = (rl_array_value(a, i, j) operator rl_array_value(other, i, j)); \
+	}
+
+#define rl_array_left_op_value(name, operator) \
+	array_t* rl_array_left_##name##_value(array_t* a, VALUE value) { \
+		array_t *b = rl_array_new(a->width, a->height); \
+		for(int j = 0; j < a->height; j++) \
+			for(int i = 0; i < a->width; i++) \
+				rl_array_value(b, i, j) = (value operator rl_array_value(a, i, j)); \
+		return b; \
+	}
+
+#define rl_array_left_op_other(name, operator) \
+	array_t* rl_array_left_##name##_other(array_t* other, array_t* a) { \
+		if(a->width != other->width || a->height != other->height) rl_error("size mismatch"); \
+		array_t *b = rl_array_new(a->width, a->height); \
+		for(int j = 0; j < a->height; j++) \
+			for(int i = 0; i < a->width; i++) \
+				rl_array_value(b, i, j) = (rl_array_value(other, i, j) operator rl_array_value(a, i, j)); \
+		return b; \
+	}
+
+#define rl_array_op_impl(name, operator) \
+	rl_array_left_op_value(name, operator); \
+	rl_array_left_op_other(name, operator); \
+	rl_array_right_op_value(name, operator); \
+	rl_array_right_op_other(name, operator); \
+	rl_array_inplace_op_value(name, operator); \
+	rl_array_inplace_op_other(name, operator);
+
+rl_array_op_impl(equal, ==);
+rl_array_op_impl(greater_than, >);
+rl_array_op_impl(less_than, <);
+rl_array_op_impl(greater_or_equal_than, >=);
+rl_array_op_impl(less_or_equal_than, <=);
+rl_array_op_impl(not_equal, !=);
+rl_array_op_impl(and, &);
+rl_array_op_impl(or, |);
+rl_array_op_impl(xor, ^);
+rl_array_op_impl(lshift, <<);
+rl_array_op_impl(rshift, >>);
+rl_array_op_impl(add, +);
+rl_array_op_impl(sub, -);
+rl_array_op_impl(mul, *);
+rl_array_op_impl(div, /);
+rl_array_op_impl(mod, %);
+
+array_t* rl_array_unary_minus(array_t* a) {
+	array_t *b = rl_array_new(a->width, a->height);
 	for(int j = 0; j < a->height; j++)
-		for(int i = 0; i < a->width; i++) 
-			array_value(b, i, j) = (array_value(a, i, j) == value);
-
+		for(int i = 0; i < a->width; i++)
+			rl_array_value(b, i, j) = -rl_array_value(a, i, j);
 	return b;
 }
 
-/* TODO */
-/*static int array_cell_automaton (lua_State *L) {
-  array_t *a = check_array(L, 1);
-  VALUE alive_value = luaL_optnumber(L, 2, 1);
-  VALUE dead_value = luaL_optnumber(L, 3, 0);
-  int initial_alive = luaL_optinteger(L, 4, 44);
-	int num_iterations = luaL_optinteger(L, 5, 5);
-	int t1_neighbors = luaL_optinteger(L, 6, 5);
-	int t1_value = luaL_optinteger(L, 7, alive_value);
-	int t2_neighbors = luaL_optinteger(L, 8, 5);
-	int t2_value = luaL_optinteger(L, 9, dead_value);
+array_t* rl_array_unary_not(array_t* a) {
+	array_t *b = rl_array_new(a->width, a->height);
+	for(int j = 0; j < a->height; j++)
+		for(int i = 0; i < a->width; i++)
+			rl_array_value(b, i, j) = !rl_array_value(a, i, j);
+	return b;
+}
 
-	for(int i = 0; i < a->width * a->height; i++) {
-		if(rl_random_next() % 100 < initial_alive) a->values[i] = alive_value;
-		else a->values[i] = dead_value;
-	}
+array_t* rl_array_unary_invert(array_t* a) {
+	array_t *b = rl_array_new(a->width, a->height);
+	for(int j = 0; j < a->height; j++)
+		for(int i = 0; i < a->width; i++)
+			rl_array_value(b, i, j) = ~rl_array_value(a, i, j);
+	return b;
+}
 
-	for(int i = 0; i < a->width; i++) a->values[i] = a->values[(a->height - 1) * a->width + i] = alive_value;
-	for(int i = 0; i < a->height; i++) a->values[i * a->width] = a->values[i * a->width + a->width - 1] = alive_value;
-	
-	int offset_x[9] = {-1, 0, 1, -1, 0, 1, -1, 0, 1};
-	int offset_y[9] = {-1, -1, -1, 0, 0, 0, 1, 1, 1};
-	for(int i = 0; i < num_iterations; i++) {
-		for(int y = 1; y < a->height - 1; y++)
-			for(int x = 1; x < a->width - 1; x++) {
-				int neighbors = 0;
-				for(int j = 0; j < 9; j++) if(a->values[(y + offset_y[j]) * a->width + x + offset_x[j]] == alive_value) neighbors++;
-				if(neighbors >= t1_neighbors) a->values[y * a->width + x] = t1_value;
-				else if(neighbors < t2_neighbors) a->values[y * a->width + x] = t2_value;
+int rl_array_any_equals(array_t* a, VALUE value) {
+	for(int j = 0; j < a->height; j++)
+		for(int i = 0; i < a->width; i++)
+			if(rl_array_value(a, i, j) == value) return 1;
+	return 0;
+}
+
+int rl_array_all_equal(array_t* a, VALUE value) {
+	for(int j = 0; j < a->height; j++)
+		for(int i = 0; i < a->width; i++)
+			if(rl_array_value(a, i, j) != value) return 0;
+	return 1;
+}
+
+int rl_array_count(array_t* a, VALUE value) {
+	int num = 0;
+	for(int j = 0; j < a->height; j++)
+		for(int i = 0; i < a->width; i++)
+			if(rl_array_value(a, i, j) == value) num++;
+	return num;
+}
+
+uint64_t rl_array_sum(array_t* a) {
+	uint64_t sum = 0;
+	for(int j = 0; j < a->height; j++)
+		for(int i = 0; i < a->width; i++)
+			sum += rl_array_value(a, i, j);
+	return sum;
+}
+
+array_t* rl_array_abs(array_t* a) {
+	array_t* b = rl_array_new(a->width, a->height);
+	for(int j = 0; j < a->height; j++)
+		for(int i = 0; i < a->width; i++) {
+			VALUE value = rl_array_value(a, i, j);
+			rl_array_value(b, i, j) = (value > 0 ? value : -value);
+		}
+	return b;
+}
+
+// TODO: need a way to normalize for range of uint32_t
+array_t* rl_array_matmul(array_t* a, array_t* b) {
+	if(a->width != b->height) rl_error("size mismatch %d != %d", a->width, b->height);
+	array_t* c = rl_array_new(b->width, a->height);
+	for(int j = 0; j < a->height; j++)
+		for(int i = 0; i < b->width; i++) {
+			uint64_t sum = 0; 
+			for(int k = 0; k < a->width; k++) 
+				sum += rl_array_value(a, k, j) * rl_array_value(b, i, k);
+			rl_array_value(c, i, j) = (VALUE) sum;
+		}
+	return b;
+}
+
+array_t* rl_array_apply_kernel(array_t* a, array_t* kernel) {
+	array_t* result = rl_array_new(a->width, a->height);
+	for(int j = 0; j < a->height; j++) {
+		for(int i = 0; i < a->width; i++) {
+			uint64_t sum = 0;
+			int num = 0;
+			for(int k_j = 0; k_j < kernel->height; k_j++) {
+				for(int k_i = 0; k_i < kernel->width; k_i++) {
+					int x = i + k_i - kernel->width / 2;
+					int y = j + k_j - kernel->height / 2;
+					if(x >= 0 && x < a->width && y >= 0 && y < a->height) {
+						VALUE value = rl_array_value(kernel, k_i, k_j);
+						sum += rl_array_value(a, x, y) * value;
+						num += value;
+					}
+				}
 			}
+			if(num != 0) rl_array_value(result, i, j) = sum / num;
+		}
 	}
-	lua_settop(L, 1);
-  return 1;
-}*/
-
+	return result;
+}

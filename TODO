@@ -1,26 +1,34 @@
+** rework array interface **
+reshape, transpose, rotate, mirror
+
+** stb-ttf **
+support for utf8
+dynamic cache (https://gamedev.stackexchange.com/questions/116895/opengl-dynamic-font-glyph-cache-library)
 
 ** General **
 write tests
 
 ** examples **
 finish minimal example game
+convert lua examples
 
 ** pyrogue **
 cleanup available modules 
-remove filesystem access (only assets shall be allowed)
-add REPL
-record screenshot, gif animation
 
 ** librogue **
-rework event handling
 expose line walking as iterator
-add basic pixel font
-finish and expose 2d indexing functions
-measure and draw single codepoint from font
+add basic embedded pixel font
+finish and expose 2d indexing functions (as ECS?)
 add sound support
 add animation support
 add compression of pref files
 
+DONE array view => slices like numpy
+DONE array_from_list
+DONE array: count, sum, dot, __abs__, find
+DONE array: apply_kernel (multiply elements by kernel, sum, divide by sum of kernel)
+DONE rework event handling
+DONE array binary ops: == != < > <= >= | & ^ + - * / %
 DONE investigate bug with loading py file on windows build
 DONE load directory modules from assets 
 DONE cleanup API

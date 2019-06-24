@@ -4,8 +4,6 @@ level = rl.Array(320, 240)
 
 rl.set_seed(0)
 
-blocked = rl.RED
-
 def init():
     global to_process
     to_process = set()
@@ -17,7 +15,7 @@ def init():
             if result is None:
                 break
             x, y = result
-            level[x, y] = blocked
+            level[x, y] = 1
             to_process.add((x, y))
 
 paused = False
@@ -36,19 +34,19 @@ def update(event):
             to_process.remove((x, y))
             
             if level[x, y - 1] == 0:
-                level[x, y - 1] = blocked
+                level[x, y - 1] = 1
                 to_process.add((x, y - 1))
             if level[x, y + 1] == 0:
-                level[x, y + 1] = blocked
+                level[x, y + 1] = 1
                 to_process.add((x, y + 1))
             if level[x - 1, y] == 0:
-                level[x - 1, y] = blocked
+                level[x - 1, y] = 1
                 to_process.add((x - 1, y))
             if level[x + 1, y] == 0:
-                level[x + 1, y] = blocked
+                level[x + 1, y] = 1
                 to_process.add((x + 1, y))
         rl.clear()
-        image = rl.array_to_image(level)
+        image = rl.array_to_image(level, palette=[rl.BLACK, rl.WHITE])
 
     rl.draw_image(image, 0, 0)
 
