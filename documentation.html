@@ -50,7 +50,7 @@ rl.run(update)
 <ul>
 <li>a value &gt; 0 is recieved when a key is pressed. The constants for key identities are the same than <a href="https://wiki.libsdl.org/SDL_Keycode">SDL</a> without the <code>SDL_</code> prefix.</li>
 <li><code>rl.QUIT</code> is recieved when the <code>rl.quit()</code> function is called or the window is closed.</li>
-<li><code>rl.MOUSE</code> is received when a mouse event occured. <code>rl.mouse()</code> can be used to retrive mouse coordinates.</li>
+<li><code>rl.MOUSE</code> is received when a mouse event occured. <code>rl.mouse()</code> can be used to retrive mouse coordinates and clicks.</li>
 <li><code>rl.REDRAW</code> is recieved for other events that require a redraw (such as window size changes)</li>
 </ul>
 <pre><code class="language-python">import rl
@@ -86,8 +86,10 @@ rl.run(update)
 rl.run(update, rl.ON_KEY)
 </code></pre>
 <h3><code>x, y, button = rl.mouse()</code></h3>
-<p>Returns the coordinates of the mouse, as well as the button being pressed. The coordinates are in pixels according to the resolution of the display (see <code>rl.init_display()</code>). The button can be <code>left = 1</code>, <code>middle = 2</code>, <code>right = 3</code>.</p>
+<p>Returns the coordinates of the mouse, as well as the button being pressed. The coordinates are in pixels according to the resolution of the display (see <code>rl.init_display()</code>). The button can be <code>rl.NO_BUTTON</code>, <code>rl.BUTTON1_DOWN</code>, <code>rl.BUTTON2_DOWN</code>, <code>rl.BUTTON3_DOWN</code> (button pressed), <code>rl.BUTTON1_UP</code>, <code>rl.BUTTON2_UP</code>, <code>rl.BUTTON3_UP</code> (button released). Button 1, 2 and 3 refer to left, center and right mouse buttons.</p>
 <pre><code class="language-python">x, y, button = rl.mouse()
+if button == rl.BUTTON1_DOWN:
+    print('pressed left mouse button')
 </code></pre>
 <h3><code>rl.shift_pressed()</code>, <code>rl.alt_pressed()</code>, <code>rl.ctrl_pressed()</code>, <code>rl.win_pressed()</code></h3>
 <p>Returns true if the corresponding modifier key is pressed.</p>
@@ -133,13 +135,13 @@ rl.draw_tile(tileset, 32, 55, 3) # draw tile number 3 at coord (32, 55)
 rl.draw_tile(tileset, 5, 5, 17, fg=rl.BLUE, bg=rl.RED) # colorize in addition
 </code></pre>
 <p>Note that the alpha channel of the image is used to determine transparent pixels.</p>
-<h3><code>rl.draw_text(font, x, y, text, color=rl.WHITE, align=rl.ALIGN_LEFT, line_height=0)</code></h3>
+<h3><code>rl.draw_text(font, x, y, text, color=rl.WHITE, align=rl.ALIGN_LEFT|rl.ALIGN_TOP, line_height=0)</code></h3>
 <p>Draw text on the screen at coordinates (x, y) using the given color. The font can be either a TTF font loaded with <code>rl.Font()</code> or an image loaded with <code>rl.Image()</code>. If it is an image, it is assumed to be a tileset with ASCII characters as letters.</p>
-<p>The align parameter selects the anchoring point of the text compared to the coordinates (x, y). Valid values are <code>rl.ALIGN_LEFT</code>, <code>rl.ALIGN_RIGHT</code> and <code>rl.ALIGN_CENTER</code>.</p>
+<p>The align parameter selects the anchoring point of the text compared to the coordinates (x, y). Valid values are <code>rl.ALIGN_LEFT</code>, <code>rl.ALIGN_RIGHT</code> and <code>rl.ALIGN_CENTER</code> for horizontal alignment, and <code>rl.ALIGN_TOP</code>, <code>rl.ALIGN_BOTTOM</code> and <code>rl.ALIGN_MIDDLE</code> for vertical alignment. Both types of alignment can be mixed with the <code>|</code> operator (<code>rl.ALIGN_CENTER|rl.ALIGN_MIDDLE</code> to center the text vertically and horizontaly).</p>
 <p>Note that only characters from 32 to 127 can be printed from TTF fonts. All tiles from 1 to 255 can be printed from a tileset (except <code>\n</code>).</p>
 <pre><code class="language-python">font = rl.Font('font.ttf', 10)
 image = rl.Image('font.png', 10, 10)
-rl.draw_text(font, 0, 0, 'Hello world')
+rl.draw_text(font, 0, 0, 'Hello world', rl.ALIGH_RIGHT)
 rl.draw_text(image, 0, 20, 'Hello world')
 </code></pre>
 <h3><code>width, height = rl.size_text(font, text)</code></h3>
@@ -202,6 +204,17 @@ The specification the number of rolls followed by 'd' or 'D', followed by the nu
 <pre><code class="language-python">x = rl.roll('3d5')
 x = rl.roll('1d12')
 </code></pre>
+<h3><code>element = rl.random_choice(list)</code></h3>
+<p>Choose a random element from a list and return it.</p>
+<pre><code class="language-python">chosen = rl.random_choice([1, 2, 3])
+print(chosen)
+</code></pre>
+<h3><code>element = rl.shuffle(list)</code></h3>
+<p>Shuffle elements from a list, modifying it inplace.</p>
+<pre><code class="language-python">numbers = [1, 2, 3]
+rl.shuffle(numbers)
+print(numbers)
+</code></pre>
 <h3><code>rl.set_seed(seed=0)</code></h3>
 <p>Set the random number state to the 64-bit integer <code>seed</code>. If <code>seed</code> is 0, then the state is set according to the current time.</p>
 <pre><code class="language-python">rl.set_seed(123) # set a fixed seed
@@ -254,8 +267,22 @@ print(a[10, 10]) # prints 1
 a[1, 3] = 42
 a[2, 1] = a[1, 3]
 </code></pre>
+<h3><code>array[start: end, start: end]</code></h3>
+<p>Slice indexing is supported similarly to numpy and yields a view into the
+array.  Either or both indexes can be a slice which result in a view to the
+corresponding indices. Note that slices of step != 1 are not supported. This
+kind of indexing supports assignment from an integer or an appropriately shaped
+array.</p>
+<pre><code class="language-python">a = rl.Array(80, 25)
+b = a[10: 30, 10: 40] # identical to previous view
+print(a[:,-1]) # last row
+a[:2, :2] = 42 # fill slice with value
+b = rl.Array(2, 2)
+b.fill(33)
+a[:2, :2] = b # fill slice with other array
+</code></pre>
 <h3>Unary and binary operators</h3>
-<p>Arrays support the following unary operators: <code>+</code> (does nothing), <code>-</code> (negative), <code>~</code> (bitwise complement of values). In addition, in boolean context, arrays are <code>True</code> if they contain any non-zero value, <code>False</code> otherwise.</p>
+<p>Arrays support the following unary operators: <code>+</code> (does nothing), <code>-</code> (negative), <code>~</code> (bitwise complement of values), abs(x) (absolute value of elements). In addition, in boolean context, arrays are <code>True</code> if they contain any non-zero value, <code>False</code> otherwise.</p>
 <p>Arrays support the following binary opeartors with arrays and integers as operands: <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, <code>&amp;</code> (bitwise and), <code>|</code> (bitwise or), <code>^</code> (bitwise xor), <code>&lt;&lt;</code> (left bitshift), <code>&gt;&gt;</code> (right bitshift). They work on each integer values of the array following C conventions (so division is like // in python) and return an array with the result. Inplace operators such as <code>+=</code> work too.</p>
 <p>Arrays support the following operators with arrays and integers as operands: <code>a.equals(b)</code>, <code>a.not_equals(b)</code>, <code>&gt;</code>, <code>&gt;=</code>, <code>&lt;</code>, <code>&lt;=</code>. They return an array of truth value encoded as integers (1 is true, 0 is false).</p>
 <pre><code class="language-python">a = rl.Array(2, 2)
@@ -320,6 +347,10 @@ max = a.max()
 <pre><code class="language-python">x_min, y_min = a.argmin()
 x_max, y_max = a.argmax()
 </code></pre>
+<h3><code>result = array.sum()</code></h3>
+<p>Return the sum of the array elements.</p>
+<h3><code>result = array.count(value)</code></h3>
+<p>Count the number of times a value appears in the array.</p>
 <h3><code>array.random_int(a, b)</code></h3>
 <p>Fill an array with random numbers between <code>a</code> and <code>b</code> inclusive.</p>
 <pre><code class="language-python">a.random_int(0, 42)
@@ -372,6 +403,14 @@ for i in range(10):
 <p>Computes the shortest path between two points in an array, considering that cells containing the <code>blocking</code> value cannot be moved through. Diagonal movements are authorized. If a path cannot be found, <code>None</code> is returned.</p>
 <pre><code class="language-python">for x, y in a.shortest_path(3, 2, 5, 6):
     print(x, y)
+</code></pre>
+<h3><code>result = array.apply_kernel(kernel)</code></h3>
+<p>Apply a kernel to each cell of the array (sum of kernel elements multiplied by array elements shifted by position in kernel, and divide by the sum of kernel elements).</p>
+<pre><code class="language-python">a = rl.Array(10, 10)
+a.random_int(0, 10)
+kernel = rl.Array(3, 3)
+kernel.fill(1) # blur kernel, average of element and neighbors
+b = a.apply_kernel(kernel)
 </code></pre>
 <h3><code>x, y = array.find_random(needle, tries=100)</code></h3>
 <p>Return the location of a value (the needle) in an array. Locations are tested randomly until one is found up to the number of specified tries. Returns (-1, -1) when unsuccessful.</p>
