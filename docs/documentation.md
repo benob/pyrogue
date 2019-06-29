@@ -39,7 +39,7 @@ Valid values for `when` are `rl.CONTINUOUSLY` to recieve updates continuously, `
 The update callback is a function taking one parameter which represents the event that triggered it. Events can be:
 * a value > 0 is recieved when a key is pressed. The constants for key identities are the same than [SDL](https://wiki.libsdl.org/SDL_Keycode) without the `SDL_` prefix.
 * `rl.QUIT` is recieved when the `rl.quit()` function is called or the window is closed.
-* `rl.MOUSE` is received when a mouse event occured. `rl.mouse()` can be used to retrive mouse coordinates.
+* `rl.MOUSE` is received when a mouse event occured. `rl.mouse()` can be used to retrive mouse coordinates and clicks.
 * `rl.REDRAW` is recieved for other events that require a redraw (such as window size changes)
 
 ```python
@@ -82,10 +82,12 @@ rl.run(update, rl.ON_KEY)
 
 ### `x, y, button = rl.mouse()`
 
-Returns the coordinates of the mouse, as well as the button being pressed. The coordinates are in pixels according to the resolution of the display (see `rl.init_display()`). The button can be `left = 1`, `middle = 2`, `right = 3`.
+Returns the coordinates of the mouse, as well as the button being pressed. The coordinates are in pixels according to the resolution of the display (see `rl.init_display()`). The button can be `rl.NO_BUTTON`, `rl.BUTTON1_DOWN`, `rl.BUTTON2_DOWN`, `rl.BUTTON3_DOWN` (button pressed), `rl.BUTTON1_UP`, `rl.BUTTON2_UP`, `rl.BUTTON3_UP` (button released). Button 1, 2 and 3 refer to left, center and right mouse buttons.
 
 ```python
 x, y, button = rl.mouse()
+if button == rl.BUTTON1_DOWN:
+	print('pressed left mouse button')
 ```
 
 ### `rl.shift_pressed()`, `rl.alt_pressed()`, `rl.ctrl_pressed()`, `rl.win_pressed()`
@@ -164,18 +166,18 @@ rl.draw_tile(tileset, 5, 5, 17, fg=rl.BLUE, bg=rl.RED) # colorize in addition
 
 Note that the alpha channel of the image is used to determine transparent pixels.
 
-### `rl.draw_text(font, x, y, text, color=rl.WHITE, align=rl.ALIGN_LEFT, line_height=0)`
+### `rl.draw_text(font, x, y, text, color=rl.WHITE, align=rl.ALIGN_LEFT|rl.ALIGN_TOP, line_height=0)`
 
 Draw text on the screen at coordinates (x, y) using the given color. The font can be either a TTF font loaded with `rl.Font()` or an image loaded with `rl.Image()`. If it is an image, it is assumed to be a tileset with ASCII characters as letters.
 
-The align parameter selects the anchoring point of the text compared to the coordinates (x, y). Valid values are `rl.ALIGN_LEFT`, `rl.ALIGN_RIGHT` and `rl.ALIGN_CENTER`.
+The align parameter selects the anchoring point of the text compared to the coordinates (x, y). Valid values are `rl.ALIGN_LEFT`, `rl.ALIGN_RIGHT` and `rl.ALIGN_CENTER` for horizontal alignment, and `rl.ALIGN_TOP`, `rl.ALIGN_BOTTOM` and `rl.ALIGN_MIDDLE` for vertical alignment. Both types of alignment can be mixed with the `|` operator (`rl.ALIGN_CENTER|rl.ALIGN_MIDDLE` to center the text vertically and horizontaly).
 
 Note that only characters from 32 to 127 can be printed from TTF fonts. All tiles from 1 to 255 can be printed from a tileset (except `\n`).
 
 ```python
 font = rl.Font('font.ttf', 10)
 image = rl.Image('font.png', 10, 10)
-rl.draw_text(font, 0, 0, 'Hello world')
+rl.draw_text(font, 0, 0, 'Hello world', rl.ALIGH_RIGHT)
 rl.draw_text(image, 0, 20, 'Hello world')
 ```
 

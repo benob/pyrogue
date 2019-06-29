@@ -55,6 +55,8 @@ typedef struct {
 	int is_fullscreen, is_maximized, use_integral_scale;
 	int update_filter;
 	void (*update_callback)(int);
+	int image_num; // for saving images
+	int saving_images;
 } display_t;
 
 static display_t display;
@@ -327,6 +329,10 @@ void td_colorize_tile(image_t* image, int x, int y, int tile, uint32_t fg, uint3
 #endif
 }
 
+void td_draw_array_rects(array_t* array, int x, int y, int cell_width, int cell_height, int info_size, uint32_t* palette) {
+	// TODO
+}
+
 void td_draw_array(image_t* image, array_t* a, int x, int y, int x_shift, int y_shift, int info_size, int* info_mapping, uint32_t* info_fg, uint32_t* info_bg) {
 	if(image->texture == NULL) rl_error("invalid image");
 	if(x_shift == 0) x_shift = image->tile_width;
@@ -390,6 +396,13 @@ void td_draw_array(image_t* image, array_t* a, int x, int y, int x_shift, int y_
 // TODO: align is not implemented
 void td_draw_text_from_tiles(image_t* image, int orig_x, int orig_y, const char* text, uint32_t color, int align) {
 	if(image->texture == NULL) rl_error("invalid image");
+	int width = strlen(text) * image->tile_width;
+	int height = image->tile_height;
+	if(align == 0) align = TD_ALIGN_LEFT | TD_ALIGN_TOP;
+	if(align & TD_ALIGN_CENTER) orig_x -= width / 2;
+	else if(align & TD_ALIGN_RIGHT) orig_x -= width;
+	if(align & TD_ALIGN_MIDDLE) orig_y -= height / 2;
+	else if(align & TD_ALIGN_BOTTOM) orig_y -= height;
 	int x = orig_x, y = orig_y;
 #ifdef USE_SDLGPU
 	SDL_Color fg = {td_color_r(color), td_color_g(color), td_color_b(color), td_color_a(color)};
@@ -427,6 +440,13 @@ void td_draw_text_from_tiles(image_t* image, int orig_x, int orig_y, const char*
 }
 
 void td_draw_text(font_t* font, int orig_x, int orig_y, const char* text, uint32_t color, int align, int line_height) {
+	int width, height;
+	td_size_text(font, text, &width, &height);
+	if(align == 0) align = TD_ALIGN_LEFT | TD_ALIGN_TOP;
+	if(align & TD_ALIGN_CENTER) orig_x -= width / 2;
+	else if(align & TD_ALIGN_RIGHT) orig_x -= width;
+	if(align & TD_ALIGN_MIDDLE) orig_y -= height / 2;
+	else if(align & TD_ALIGN_BOTTOM) orig_y -= height;
 	int x = orig_x, y = orig_y + (int) (font->ascent * font->scale);
 	if(line_height == 0) line_height = font->line_height;
 	SDL_Color fg = {td_color_r(color), td_color_g(color), td_color_b(color), td_color_a(color)};
@@ -444,10 +464,6 @@ void td_draw_text(font_t* font, int orig_x, int orig_y, const char* text, uint32
 				char line[length + 1];
 				strncpy(line, text, length);
 				line[length] = '\0';
-				int width = STBTTF_MeasureText(font, line);
-				// TODO: does not work with multiline text
-				if(align == TD_ALIGN_CENTER) x -= width / 2;
-				else if(align == TD_ALIGN_RIGHT) x -= width;
 #ifdef USE_SDLGPU
 				STBTTF_RenderText(display.screen, font, x, y, line, fg);
 #else
@@ -605,19 +621,35 @@ static void process_events() {
 				key = event.text.text[0];
 				break;
 			case SDL_MOUSEMOTION:
+			case SDL_MOUSEBUTTONUP:
+			case SDL_MOUSEBUTTONDOWN:
+				// convert mouse location
 				display.mouse_x = (event.motion.x - display.scaled_rect.x) 
 					* display.width * display.device_pixel_ratio / display.scaled_rect.w;
 				display.mouse_y = (event.motion.y - display.scaled_rect.y) 
 					* display.height * display.device_pixel_ratio / display.scaled_rect.h;
+				// clip to visible screen
+				if(display.mouse_x < 0) display.mouse_x = 0;
+				if(display.mouse_x >= display.width) display.mouse_x = display.width - 1;
+				if(display.mouse_y < 0) display.mouse_y = 0;
+				if(display.mouse_y >= display.height) display.mouse_y = display.height - 1;
 				key = TD_MOUSE;
-				break;
-			case SDL_MOUSEBUTTONUP:
-				display.mouse_button = 0;
-				key = TD_MOUSE;
-				break;
-			case SDL_MOUSEBUTTONDOWN:
-				display.mouse_button = event.button.button;
-				key = TD_MOUSE;
+				// handle buttons
+				if(event.type == SDL_MOUSEBUTTONUP) {
+					switch(event.button.button) {
+						case SDL_BUTTON_LEFT: display.mouse_button = TD_BUTTON1_UP; break;
+						case SDL_BUTTON_MIDDLE: display.mouse_button = TD_BUTTON2_UP; break;
+						case SDL_BUTTON_RIGHT: display.mouse_button = TD_BUTTON3_UP; break;
+					}
+				} else if(event.type == SDL_MOUSEBUTTONDOWN) {
+					switch(event.button.button) {
+						case SDL_BUTTON_LEFT: display.mouse_button = TD_BUTTON1_DOWN; break;
+						case SDL_BUTTON_MIDDLE: display.mouse_button = TD_BUTTON2_DOWN; break;
+						case SDL_BUTTON_RIGHT: display.mouse_button = TD_BUTTON3_DOWN; break;
+					}
+				} else {
+					display.mouse_button = TD_NO_BUTTON;
+				}
 				break;
 			case SDL_KEYDOWN:
 				key = event.key.keysym.sym;
@@ -633,6 +665,8 @@ static void process_events() {
 					} else if(key == SDLK_q) {
 						// TODO: use customizable exit handler
 						exit(1); // force quit
+					} else if(key == SDLK_v) {
+						display.saving_images = !display.saving_images;
 					}
 					//key = TD_REDRAW;
 					return;
@@ -648,6 +682,13 @@ static void process_events() {
 			|| (key != TD_PASS && key != TD_MOUSE && (display.update_filter & TD_ON_KEY)) 
 			|| (display.update_filter & TD_CONTINUOUSLY)) {
 		display.update_callback(key);
+		if(display.saving_images) {
+			char filename[1024];
+			snprintf(filename, 1024, "pyrogue-%010d.png", display.image_num);
+			printf("saving frame to '%s'\n", filename);
+			GPU_SaveImage(display.screen_image, filename, GPU_FILE_PNG);
+			display.image_num++;
+		}
 		td_present();
 	}
 }
@@ -755,4 +796,5 @@ int td_ctrl_pressed() {
 int td_win_pressed() {
 	return SDL_GetModState() & KMOD_GUI;
 }
+
 

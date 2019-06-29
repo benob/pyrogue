@@ -2,6 +2,7 @@
 reshape, transpose, rotate, mirror
 
 ** stb-ttf **
+measure multiline text
 support for utf8
 dynamic cache (https://gamedev.stackexchange.com/questions/116895/opengl-dynamic-font-glyph-cache-library)
 

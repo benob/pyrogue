@@ -1,7 +1,5 @@
 import rl
 
-rl.init_display('Time example', 320, 240)
-
 class Action:
     def __init__(self, actor, cost):
         self.actor = actor

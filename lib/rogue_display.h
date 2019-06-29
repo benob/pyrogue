@@ -28,10 +28,11 @@ typedef struct {
 typedef STBTTF_Font font_t;
 
 // text alignment
-enum {TD_ALIGN_LEFT, TD_ALIGN_RIGHT, TD_ALIGN_CENTER};
+enum {TD_ALIGN_LEFT=1, TD_ALIGN_RIGHT=2, TD_ALIGN_CENTER=4, TD_ALIGN_TOP=8, TD_ALIGN_BOTTOM=16, TD_ALIGN_MIDDLE=32};
 // events
 enum {TD_QUIT = -3, TD_MOUSE = -2, TD_REDRAW = -1, TD_PASS = 0};
-// event types
+enum {TD_NO_BUTTON, TD_BUTTON1_DOWN, TD_BUTTON2_DOWN, TD_BUTTON3_DOWN, TD_BUTTON1_UP, TD_BUTTON2_UP, TD_BUTTON3_UP};
+// update frequency
 enum {TD_CONTINUOUSLY = 1, TD_ON_KEY = 2, TD_ON_MOUSE = 4};
 
 #define TD_NUM_IMAGES 32
