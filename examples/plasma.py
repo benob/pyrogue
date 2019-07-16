@@ -25,7 +25,7 @@ def redraw(event):
             array[x, y] = int(128 + 128 * value / 4)
 
     rl.clear()
-    rl.draw_array(array, tileset, 0, 0, fg=colors)
+    rl.draw_array(array, 0, 0, image=tileset, fg_palette=colors)
     shift += 10
 
 rl.run(redraw)

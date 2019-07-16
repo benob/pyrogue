@@ -56,7 +56,7 @@ array_t* td_image_to_array(image_t* image);
 void td_draw_image(image_t* image, int x, int y);
 void td_draw_tile(image_t* image, int x, int y, int tile);
 void td_colorize_tile(image_t* image, int x, int y, int tile, uint32_t fg, uint32_t bg);
-void td_draw_array(image_t*, array_t* a, int x, int y, int x_shift, int y_shift, int info_size, int* info_mapping, uint32_t* info_fg, uint32_t* info_bg);
+void td_draw_array(array_t* a, int x, int y, int x_shift, int y_shift, image_t* tile_image, int* tile_map, int tile_map_size, uint32_t tile_mask, uint32_t* fg_palette, int fg_palette_size, uint32_t fg_mask, uint32_t* bg_palette, int bg_palette_size, uint32_t bg_mask);
 // TODO: print utf8 characters
 void td_draw_text(font_t* font, int orig_x, int orig_y, const char* text, uint32_t color, int align, int line_height);
 void td_draw_text_from_tiles(image_t* image, int orig_x, int orig_y, const char* text, uint32_t color, int align);

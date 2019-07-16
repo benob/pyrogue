@@ -44,7 +44,7 @@ def redraw(event):
             screen[i, j] = int(value)
 
     rl.clear()
-    rl.draw_array(screen, tileset, 0, 0, mapping=[0, ord('.')] + list(range(2, 256)), fg=[rl.color(i, - i // 2, i) for i in range(256)])
+    rl.draw_array(screen, 0, 0, image=tileset, tile_map=[0, ord('.')] + list(range(2, 256)), fg_palette=[rl.color(i, - i // 2, i) for i in range(256)])
     time += 0.005
 
 rl.run(redraw)

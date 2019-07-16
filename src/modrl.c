@@ -1112,23 +1112,26 @@ STATIC mp_obj_t mod_td_draw_tile(size_t n_args, const mp_obj_t *args) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_td_draw_tile_obj, 4, 6, mod_td_draw_tile);
 
-//void td_draw_array(int index, array_t* a, int x, int y, int x_shift, int y_shift, int info_size, int* info_mapping, uint32_t* info_fg, uint32_t* info_bg);
 mp_obj_t mod_td_draw_array(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
 	static const mp_arg_t allowed_args[] = {
 		{ MP_QSTR_array, MP_ARG_OBJ | MP_ARG_REQUIRED, {.u_obj = MP_OBJ_NULL}},
-		{ MP_QSTR_image, MP_ARG_OBJ | MP_ARG_REQUIRED, {.u_obj = MP_OBJ_NULL} },
 		{ MP_QSTR_x, MP_ARG_INT | MP_ARG_REQUIRED, {.u_int = 0} },
 		{ MP_QSTR_y, MP_ARG_INT | MP_ARG_REQUIRED, {.u_int = 0} },
-		{ MP_QSTR_x_shift, MP_ARG_INT, {.u_int = 0} },
-		{ MP_QSTR_y_shift, MP_ARG_INT, {.u_int = 0} },
-		{ MP_QSTR_mapping, MP_ARG_OBJ, {.u_rom_obj = MP_ROM_PTR(&mp_const_none_obj)} },
-		{ MP_QSTR_fg, MP_ARG_OBJ, {.u_rom_obj = MP_ROM_PTR(&mp_const_none_obj)} },
-		{ MP_QSTR_bg, MP_ARG_OBJ, {.u_rom_obj = MP_ROM_PTR(&mp_const_none_obj)} },
+		/*{ MP_QSTR_x_shift, MP_ARG_INT, {.u_int = 0} },
+		{ MP_QSTR_y_shift, MP_ARG_INT, {.u_int = 0} },*/
+		{ MP_QSTR_image, MP_ARG_OBJ | MP_ARG_REQUIRED, {.u_obj = MP_OBJ_NULL} },
+		{ MP_QSTR_tile_map, MP_ARG_OBJ, {.u_rom_obj = MP_ROM_PTR(&mp_const_none_obj)} },
+		{ MP_QSTR_fg_palette, MP_ARG_OBJ, {.u_rom_obj = MP_ROM_PTR(&mp_const_none_obj)} },
+		{ MP_QSTR_bg_palette, MP_ARG_OBJ, {.u_rom_obj = MP_ROM_PTR(&mp_const_none_obj)} },
+		{ MP_QSTR_packed, MP_ARG_OBJ, {.u_rom_obj = MP_ROM_PTR(&mp_const_false_obj)} },
+		/*{ MP_QSTR_tile_mask, MP_ARG_OBJ, {.u_rom_obj = MP_ROM_PTR(&mp_const_none_obj)} },
+		{ MP_QSTR_fg_mask, MP_ARG_OBJ, {.u_rom_obj = MP_ROM_PTR(&mp_const_none_obj)} },
+		{ MP_QSTR_bg_mask, MP_ARG_OBJ, {.u_rom_obj = MP_ROM_PTR(&mp_const_none_obj)} },*/
 	};
 
 	// parse args
 	struct {
-		mp_arg_val_t array, image, x, y, x_shift, y_shift, mapping, fg, bg;
+		mp_arg_val_t array, x, y, /*x_shift, y_shift,*/ image, tile_map, fg_palette, bg_palette, packed/*, tile_mask, fg_mask, bg_mask*/;
 	} args;
 
 	mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, (mp_arg_val_t*)&args);
@@ -1143,48 +1146,68 @@ mp_obj_t mod_td_draw_array(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw
 	mp_int_t x = args.x.u_int;
 	mp_int_t y = args.y.u_int;
 
-	int* mapping = NULL;
-	uint32_t* fg = NULL;
-	uint32_t* bg = NULL;
-
-	int size = 0;
-	if(args.mapping.u_obj != mp_const_none) {
-		size = mp_obj_get_int(mp_obj_len(args.mapping.u_obj));
-		mapping = malloc(size * sizeof(int));
-		mp_obj_t iterable = mp_getiter(args.mapping.u_obj, NULL);
+	int* tile_map = NULL;
+	int tile_map_size = 0;
+	if(args.tile_map.u_obj != mp_const_none) {
+		tile_map_size = mp_obj_get_int(mp_obj_len(args.tile_map.u_obj));
+		tile_map = malloc(tile_map_size * sizeof(int32_t));
+		mp_obj_t iterable = mp_getiter(args.tile_map.u_obj, NULL);
 		mp_obj_t item;
 		int i = 0;
 		while ((item = mp_iternext(iterable)) != MP_OBJ_STOP_ITERATION) {
-			mapping[i++] = mp_obj_get_int(item);
+			tile_map[i++] = mp_obj_get_int(item);
 		}
 	}
 
-	if(args.fg.u_obj != mp_const_none) {
-		size = mp_obj_get_int(mp_obj_len(args.fg.u_obj));
-		fg = malloc(size * sizeof(int));
-		mp_obj_t iterable = mp_getiter(args.fg.u_obj, NULL);
+	uint32_t* fg_palette = NULL;
+	int fg_palette_size = 0;
+	if(args.fg_palette.u_obj != mp_const_none) {
+		fg_palette_size = mp_obj_get_int(mp_obj_len(args.fg_palette.u_obj));
+		fg_palette = malloc(fg_palette_size * sizeof(int32_t));
+		mp_obj_t iterable = mp_getiter(args.fg_palette.u_obj, NULL);
 		mp_obj_t item;
 		int i = 0;
 		while ((item = mp_iternext(iterable)) != MP_OBJ_STOP_ITERATION) {
-			fg[i++] = mp_obj_get_int(item);
+			fg_palette[i++] = mp_obj_get_int(item);
 		}
 	}
 
-	if(args.bg.u_obj != mp_const_none) {
-		size = mp_obj_get_int(mp_obj_len(args.bg.u_obj));
-		bg = malloc(size * sizeof(int));
-		mp_obj_t iterable = mp_getiter(args.bg.u_obj, NULL);
+	uint32_t* bg_palette = NULL;
+	int bg_palette_size = 0;
+	if(args.bg_palette.u_obj != mp_const_none) {
+		bg_palette_size = mp_obj_get_int(mp_obj_len(args.bg_palette.u_obj));
+		bg_palette = malloc(bg_palette_size * sizeof(int32_t));
+		mp_obj_t iterable = mp_getiter(args.bg_palette.u_obj, NULL);
 		mp_obj_t item;
 		int i = 0;
 		while ((item = mp_iternext(iterable)) != MP_OBJ_STOP_ITERATION) {
-			bg[i++] = mp_obj_get_int(item);
+			bg_palette[i++] = mp_obj_get_int(item);
 		}
 	}
 
-	td_draw_array(image->image, array->array, x, y, args.x_shift.u_int, args.y_shift.u_int, size, mapping, fg, bg);
-	if(mapping != NULL) free(mapping);
-	if(fg != NULL) free(fg);
-	if(bg != NULL) free(bg);
+  uint32_t tile_mask, fg_mask, bg_mask;
+  if(mp_obj_is_true(args.packed.u_obj)) {
+    tile_mask = 0x0000ffff;
+    fg_mask =   0x00ff0000;
+    bg_mask =   0xff000000;
+  } else {
+    tile_mask = fg_mask = bg_mask = 0xffffffff;
+  }
+
+  /*if(args.tile_mask.u_obj != mp_const_none) tile_mask = mp_obj_get_int(args.tile_mask.u_obj);
+  if(args.fg_mask.u_obj != mp_const_none) fg_mask = mp_obj_get_int(args.fg_mask.u_obj);
+  if(args.bg_mask.u_obj != mp_const_none) bg_mask = mp_obj_get_int(args.bg_mask.u_obj);*/
+
+	td_draw_array(array->array, x, y, /*args.x_shift.u_int, args.y_shift.u_int, */
+      0, 0, image->image, 
+      tile_map, tile_map_size, tile_mask, 
+      fg_palette, fg_palette_size, fg_mask, 
+      bg_palette, bg_palette_size, bg_mask);
+
+	if(tile_map != NULL) free(tile_map);
+	if(fg_palette != NULL) free(fg_palette);
+	if(bg_palette != NULL) free(bg_palette);
+
 	return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_KW(mod_td_draw_array_obj, 3, mod_td_draw_array);
@@ -1367,6 +1390,24 @@ STATIC mp_obj_t mod_td_color_a(mp_obj_t color_in) {
 	return mp_obj_new_int(result);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_td_color_a_obj, mod_td_color_a);*/
+
+STATIC mp_obj_t mod_rl_pack_tile(mp_obj_t tile_in, mp_obj_t fg_in, mp_obj_t bg_in) {
+	uint32_t tile = (uint32_t) mp_obj_get_int(tile_in);
+	uint32_t fg = (uint32_t) mp_obj_get_int(fg_in);
+	uint32_t bg = (uint32_t) mp_obj_get_int(bg_in);
+	return mp_obj_new_int((tile & 0xffff) | ((fg & 0xff) << 16) | ((bg & 0xff) << 24));
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_3(mod_rl_pack_tile_obj, mod_rl_pack_tile);
+
+STATIC mp_obj_t mod_rl_unpack_tile(mp_obj_t value_in) {
+  uint32_t value = (uint32_t) mp_obj_get_int(value_in);
+	mp_obj_tuple_t *result = MP_OBJ_TO_PTR(mp_obj_new_tuple(3, NULL));
+	result->items[0] = mp_obj_new_int(value & 0xffff);
+	result->items[1] = mp_obj_new_int((value >> 16) & 0xff);
+	result->items[2] = mp_obj_new_int((value >> 24) & 0xff);
+	return result;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_rl_unpack_tile_obj, mod_rl_unpack_tile);
 
 STATIC mp_obj_t mod_td_mouse() {
 	mp_int_t x = td_mouse_x();
@@ -1755,6 +1796,8 @@ STATIC const mp_rom_map_elem_t mp_module_rl_globals_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR_draw_image), MP_ROM_PTR(&mod_td_draw_image_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_draw_tile), MP_ROM_PTR(&mod_td_draw_tile_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_draw_array), MP_ROM_PTR(&mod_td_draw_array_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_pack_tile), MP_ROM_PTR(&mod_rl_pack_tile_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_unpack_tile), MP_ROM_PTR(&mod_rl_unpack_tile_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_draw_text), MP_ROM_PTR(&mod_td_draw_text_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_size_text), MP_ROM_PTR(&mod_td_size_text_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_fill_rect), MP_ROM_PTR(&mod_td_fill_rect_obj) },

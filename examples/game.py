@@ -387,16 +387,16 @@ def redraw():
             bg=[tile.bg for tile in Tile.mapping])'''
 
     # draw memorized tiles
-    rl.draw_array(level.memory, tileset, 0, 0, 
-            mapping=[tile.num for tile in Tile.mapping],
-            fg=[rl.color(255, 255, 255, 192) for tile in Tile.mapping])
+    rl.draw_array(level.memory, 0, 0, image=tileset,
+            tile_map=[tile.num for tile in Tile.mapping],
+            fg_palette=[rl.color(255, 255, 255, 192) for tile in Tile.mapping])
     # draw level masked with fov
     to_draw = rl.Array(WIDTH, HEIGHT)
     level.array.copy_to(to_draw, fov)
-    rl.draw_array(to_draw, tileset, 0, 0, 
-            mapping=[tile.num for tile in Tile.mapping],
-            fg=[tile.fg for tile in Tile.mapping],
-            bg=[tile.bg for tile in Tile.mapping])
+    rl.draw_array(to_draw, 0, 0, image=tileset,
+            tile_map=[tile.num for tile in Tile.mapping],
+            fg_palette=[tile.fg for tile in Tile.mapping],
+            bg_palette=[tile.bg for tile in Tile.mapping])
 
     # draw actors
     actors.sort(key=lambda x: x.z)

@@ -637,13 +637,40 @@ Return the location of a value (the needle) in an array. Locations are tested ra
 x, y = a.find_random(1)
 ```
 
-### `rl.draw_array(image, x, y, x_shift=0, y_shift=0, mapping=None, fg=None, bg=None)`
+### `rl.draw_array(array, x, y, image, tile_map=None, fg_palette=None, bg_palette=None, packed=False)`
 
-Draw an array of tiles on the screen at coordinates x, y. By default, coordinates are shifted by the `tile_width` and `tile_height` of the image, but other values can be specified in `x_shift` and `y_shift`. Optionaly, values can be mapped for selecting tiles and coloring them with foreground (`fg`) and background (`bg`) colors.
+Draw an array of tiles from `image` at coordinates `(x, y)`, according to the values in `array`. By default, the values in the array are used as tile index in the `image`. 
+`rl.draw_array` accepts an optional `tile_map` list which maps tile indexes before drawing them. The `fg_palette` and `bg_palette` arguments are lists containing colors for respectively colorizing the tile and filling its background. If not given, the tile and background are not colorized. Indexes in the palettes are the same as the value of the tile if `packed` is set to `False` (effectively binding tile identity and color).
 
 ```python
-rl.draw_array(tileset, x, y, mapping=[1,2,3], fg=[rl.RED, rl.BLUE, rl.GREEN])
+array = rl.Array(10, 10)
+array.random_int(0, 255)
+rl.draw_array(array, x, y, tileset, tile_map=[37, 22, 13], fg_palette=[rl.RED, rl.BLUE, rl.GREEN])
 ```
+
+If `packed` is set to `True`, each cell of the array can be associated with different fg and bg color indexes. If so, the values in the array must be packed tiles.
+A packed tile is represented as an integer encoding the triplet `(tile, fg, bg)` where `tile` is a tile number between 0 and 65535, `fg` and `bg` are color indexes from 0 to 255 in corresponding palettes. Conversion between triplets and integer representations can be performed with the `value = rl.pack_tile(tile, fg, bg)`, and `tile, fg, bg = rl.unpack_tile(value)` functions.
+
+
+```python
+array = rl.Array(10, 10)
+array.fill(rl.pack_tile(2, 1, 0))
+rl.draw_array(array, x, y, tileset, tile_map=[37, 22, 13], fg_palette=[rl.RED, rl.BLUE, rl.GREEN], packed=True)
+```
+
+### `rl.pack_tile(tile, fg, bg)`, `tile, fg, bg = rl.unpack_tile(value)`
+
+Pack a tile number, foreground and background color as a 32-bit integer for use with `rl.draw_array`. 
+* `tile` is a tile index between 0 and 65535
+* `fg` is a color index in the foreground palette between 0 and 255
+* `bg` is a color index in the background palette between 0 and 255
+`rl.unpack_tile` can be used to reverse the operation and obtain the tile index, fg and bg colors from an integer representation.
+
+```python
+array[i, j] = rl.pack_tile(42, 3, 5)
+tile, fg, bg = rl.unpack_tile(array[i, j])
+```
+
 
 ### `image = rl.array_to_image(array, tile_width=8, tile_height=8, palette=None)`
 

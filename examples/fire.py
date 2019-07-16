@@ -5,7 +5,7 @@ HEIGHT = 25
 TILE_WIDTH = 9
 TILE_HEIGHT = 16
 
-rl.init_display('fire', WIDTH * TILE_WIDTH, HEIGHT * TILE_HEIGHT)
+rl.init_display('Fire example', WIDTH * TILE_WIDTH, HEIGHT * TILE_HEIGHT)
 tiles = rl.Image('data/cp437.png', TILE_WIDTH, TILE_HEIGHT)
 
 def gradient(start, stop, steps):
@@ -19,9 +19,6 @@ chars = [ord(x) for x in reversed('ABCDEFGHIJKLMNOPQRSTUVWXYZ#')]
 fire = rl.Array(WIDTH, HEIGHT)
 
 def redraw(event):
-    if event == rl.ESCAPE:
-        rl.quit()
-
     for i in range(1, WIDTH - 1):
         fire[i, HEIGHT - 1] = len(palette) - 1 - rl.random_int(0, 3)
     for j in range(HEIGHT - 1):
@@ -32,7 +29,7 @@ def redraw(event):
             fire[i, j] = value
 
     rl.clear()
-    rl.draw_array(fire, tiles, 0, 0, mapping=chars, fg=palette)
+    rl.draw_array(fire, 0, 0, image=tiles, tile_map=chars, fg_palette=palette)
 
 rl.run(redraw)
 

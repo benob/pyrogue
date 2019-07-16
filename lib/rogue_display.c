@@ -329,67 +329,107 @@ void td_colorize_tile(image_t* image, int x, int y, int tile, uint32_t fg, uint3
 #endif
 }
 
-void td_draw_array_rects(array_t* array, int x, int y, int cell_width, int cell_height, int info_size, uint32_t* palette) {
-	// TODO
+/* slow scan for first bit set to 1 */
+static int shift_from_mask(uint32_t number) {
+  int i = 0;
+  while(i < 32 && ((number & 1) == 0)) {
+    number >>= 1;
+    i++;
+  }
+  return i;
 }
 
-void td_draw_array(image_t* image, array_t* a, int x, int y, int x_shift, int y_shift, int info_size, int* info_mapping, uint32_t* info_fg, uint32_t* info_bg) {
-	if(image->texture == NULL) rl_error("invalid image");
-	if(x_shift == 0) x_shift = image->tile_width;
-	if(y_shift == 0) y_shift = image->tile_height;
+void td_draw_array(array_t* a, int x, int y, int x_shift, int y_shift, image_t* tile_image, int* tile_map, int tile_map_size, uint32_t tile_mask, uint32_t* fg_palette, int fg_palette_size, uint32_t fg_mask, uint32_t* bg_palette, int bg_palette_size, uint32_t bg_mask) {
+
+  int tile_width, tile_height;
+	if(tile_image) {
+    if(tile_image->texture == NULL) rl_error("invalid image");
+    if(x_shift == 0) x_shift = tile_image->tile_width;
+    if(y_shift == 0) y_shift = tile_image->tile_height;
+    tile_width = tile_image->tile_width;
+    tile_height = tile_image->tile_height;
+  } else {
+    if(x_shift == 0) x_shift = 1;
+    if(y_shift == 0) y_shift = 1;
+    tile_width = x_shift;
+    tile_height = y_shift;
+  }
+
+  int tile_shift = shift_from_mask(tile_mask);
+  int fg_shift = shift_from_mask(fg_mask);
+  int bg_shift = shift_from_mask(bg_mask);
+
 	/* split background and foreground drawing to prevent slow switch of gl primitive type */
-	for(int j = 0; j < a->height; j++) {
-		for(int i = 0; i < a->width; i++) {
-			int num = rl_array_get(a, i, j);
-			if(num < 0) continue;
-			if(info_bg != NULL && num >= info_size) continue;
-			uint32_t bg = info_bg ? info_bg[num] : 0;
-			if(bg != 0) {
+  if(bg_palette != NULL) {
+    for(int j = 0; j < a->height; j++) {
+      for(int i = 0; i < a->width; i++) {
+        int num = rl_array_get(a, i, j);
+        int bg_num = (num & bg_mask) >> bg_shift;
+        if(bg_num >= 0 && bg_num < bg_palette_size) {
+          uint32_t bg = bg_palette[bg_num];
 #ifdef USE_SDLGPU
-				SDL_Color bg_color = {td_color_r(bg), td_color_g(bg), td_color_b(bg), td_color_a(bg)};
-				GPU_Rect dst_rect = {x + x_shift * i, y + y_shift * j, image->tile_width, image->tile_height};
-				GPU_RectangleFilled2(display.screen, dst_rect, bg_color);
+          SDL_Color bg_color = {td_color_r(bg), td_color_g(bg), td_color_b(bg), td_color_a(bg)};
+          GPU_Rect dst_rect = {x + x_shift * i, y + y_shift * j, tile_width, tile_height};
+          GPU_RectangleFilled2(display.screen, dst_rect, bg_color);
 #else
-				SDL_Rect dst_rect = {x + x_shift * i, y + y_shift * j, image->tile_width, image->tile_height};
-				SDL_SetRenderDrawColor(display.renderer, td_color_r(bg), td_color_g(bg), td_color_b(bg), td_color_a(bg));
-				SDL_RenderFillRect(display.renderer, &dst_rect);
+          SDL_Rect dst_rect = {x + x_shift * i, y + y_shift * j, tile_width, tile_height};
+          SDL_SetRenderDrawColor(display.renderer, td_color_r(bg), td_color_g(bg), td_color_b(bg), td_color_a(bg));
+          SDL_RenderFillRect(display.renderer, &dst_rect);
 #endif
-			}
-		}
-	}
-	for(int j = 0; j < a->height; j++) {
-		for(int i = 0; i < a->width; i++) {
-			int num = rl_array_get(a, i, j);
-			if(num < 0) continue;
-			if((info_mapping != NULL || info_fg != NULL) && num >= info_size) continue;
-			int tile = info_mapping != NULL ? info_mapping[num] : num;
-			int tile_x = (tile % image->tiles_per_line) * image->tile_width;
-			int tile_y = (tile / image->tiles_per_line) * image->tile_height;
-			uint32_t fg = info_fg ? info_fg[num] : 0;
+        }
+      }
+      printf("\n");
+    }
+  }
+
+  if(tile_image != NULL) {
+    for(int j = 0; j < a->height; j++) {
+      for(int i = 0; i < a->width; i++) {
+        int num = rl_array_get(a, i, j);
+        int fg_num = (num & fg_mask) >> fg_shift;
+        int tile_num = (num & tile_mask) >> tile_shift;
+
+        if(fg_palette != NULL) {
+          uint32_t fg = 0xffffffff; // default to no colormod
+          if(fg_num >= 0 && fg_num < fg_palette_size) fg = fg_palette[fg_num];
 #ifdef USE_SDLGPU
-			SDL_Color fg_color = {td_color_r(fg), td_color_g(fg), td_color_b(fg), td_color_a(fg)};
-			GPU_Rect src_rect = {tile_x, tile_y, image->tile_width, image->tile_height};
-			GPU_Rect dst_rect = {x + x_shift * i, y + y_shift * j, image->tile_width, image->tile_height};
-			if(fg != 0) GPU_SetColor(image->texture, fg_color);
-			else GPU_UnsetColor(image->texture);
-			GPU_BlitRect(image->texture, &src_rect, display.screen, &dst_rect);
+          SDL_Color fg_color = {td_color_r(fg), td_color_g(fg), td_color_b(fg), td_color_a(fg)};
+          GPU_SetColor(tile_image->texture, fg_color);
 #else
-			SDL_Rect src_rect = {tile_x, tile_y, image->tile_width, image->tile_height};
-			SDL_Rect dst_rect = {x + x_shift * i, y + y_shift * j, image->tile_width, image->tile_height};
-			if(fg != 0) {
-				SDL_SetTextureColorMod(image->texture, td_color_r(fg), td_color_g(fg), td_color_b(fg));
-				SDL_SetTextureAlphaMod(image->texture, td_color_a(fg));
-			}
-			SDL_RenderCopy(display.renderer, image->texture, &src_rect, &dst_rect);
+          SDL_SetTextureColorMod(tile_image->texture, td_color_r(fg), td_color_g(fg), td_color_b(fg));
+          SDL_SetTextureAlphaMod(tile_image->texture, td_color_a(fg));
 #endif
-		}
-	}
+        }
+
+        int tile = tile_num; 
+        if(tile_map != NULL) {
+          if(tile_num >= 0 && tile_num < tile_map_size) tile = tile_map[tile_num];
+          else continue;
+        }
+        int tile_x = (tile % tile_image->tiles_per_line) * tile_width;
+        int tile_y = (tile / tile_image->tiles_per_line) * tile_height;
 #ifdef USE_SDLGPU
-	GPU_UnsetColor(image->texture);
+        GPU_Rect src_rect = {tile_x, tile_y, tile_width, tile_height};
+        GPU_Rect dst_rect = {x + x_shift * i, y + y_shift * j, tile_width, tile_height};
+        GPU_BlitRect(tile_image->texture, &src_rect, display.screen, &dst_rect);
 #else
-	SDL_SetTextureColorMod(image->texture, 255, 255, 255);
-	SDL_SetTextureAlphaMod(image->texture, 255);
+        SDL_Rect src_rect = {tile_x, tile_y, tile_width, tile_height};
+        SDL_Rect dst_rect = {x + x_shift * i, y + y_shift * j, tile_width, tile_height};
+        SDL_RenderCopy(display.renderer, tile_image->texture, &src_rect, &dst_rect);
 #endif
+      }
+    }
+  }
+
+  // restore state
+  if(tile_image) {
+#ifdef USE_SDLGPU
+    GPU_UnsetColor(tile_image->texture);
+#else
+    SDL_SetTextureColorMod(tile_image->texture, 255, 255, 255);
+    SDL_SetTextureAlphaMod(tile_image->texture, 255);
+#endif
+  }
 }
 
 
