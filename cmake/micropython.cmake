@@ -1,4 +1,4 @@
-set(MP ${CMAKE_SOURCE_DIR}/micropython)
+set(MP ${CMAKE_SOURCE_DIR}/deps/micropython)
 
 set(GENHDR ${CMAKE_BINARY_DIR}/genhdr)
 

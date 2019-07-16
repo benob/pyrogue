@@ -1,5 +1,5 @@
 [submodule "micropython"]
-	path = micropython
+	path = deps/micropython
 	url = https://github.com/dpgeorge/micropython.git
 	branch = py-gc-root-stack-v3
 [submodule "deps/sdl-gpu"]
