@@ -1,9 +1,8 @@
 import math
 import rl
 
-WIDTH, HEIGHT = 160, 120
+WIDTH, HEIGHT = 80, 60
 
-rl.set_seed(0)
 rl.init_display("Array image", WIDTH, HEIGHT)
 
 pixels = rl.Array(WIDTH, HEIGHT)
@@ -20,4 +19,4 @@ def update(event):
     angle += 0.01
 
 
-rl.run(update)
+rl.run(update, rl.ON_REDRAW)

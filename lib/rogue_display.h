@@ -27,16 +27,39 @@ typedef struct {
 
 typedef STBTTF_Font font_t;
 
-// text alignment
-enum {TD_ALIGN_LEFT=1, TD_ALIGN_RIGHT=2, TD_ALIGN_CENTER=4, TD_ALIGN_TOP=8, TD_ALIGN_BOTTOM=16, TD_ALIGN_MIDDLE=32};
-// events
-enum {TD_QUIT = -3, TD_MOUSE = -2, TD_REDRAW = -1, TD_PASS = 0};
-enum {TD_NO_BUTTON, TD_BUTTON1_DOWN, TD_BUTTON2_DOWN, TD_BUTTON3_DOWN, TD_BUTTON1_UP, TD_BUTTON2_UP, TD_BUTTON3_UP};
-// update frequency
-enum {TD_CONTINUOUSLY = 1, TD_ON_KEY = 2, TD_ON_MOUSE = 4};
+// constants
+enum {
+  // event filter
+  TD_ON_REDRAW = 1 << 1,
+  TD_ON_KEY = 1 << 2,
+  TD_ON_MOUSE = 1 << 3,
+  TD_ON_EVENT = (TD_ON_REDRAW|TD_ON_KEY|TD_ON_MOUSE),
 
-#define TD_NUM_IMAGES 32
-#define TD_NUM_BUFFERS 4
+  // events
+  TD_REDRAW = 1 << 4, 
+  TD_KEY = 1 << 5,
+  TD_MOUSE_MOVED = 1 << 6,
+  TD_MOUSE_DOWN = 1 << 7,
+  TD_MOUSE_UP = 1 << 8, 
+  TD_QUIT = 1 << 9,
+
+  //  button state
+  TD_MOUSE_LEFT = 1 << 10,
+  TD_MOUSE_MIDDLE = 1 << 11,
+  TD_MOUSE_RIGHT = 1 << 12,
+
+  // text alignment
+  TD_ALIGN_LEFT = 1 << 13,
+  TD_ALIGN_RIGHT = 1 << 14,
+  TD_ALIGN_CENTER = 1 << 15,
+  TD_ALIGN_TOP = 1 << 16,
+  TD_ALIGN_BOTTOM = 1 << 17,
+  TD_ALIGN_MIDDLE = 1 << 18,
+};
+
+#define INVALID_BITS(x, bits) (x & (~bits))
+#define TD_FILTER_BITS (TD_ON_REDRAW|TD_ON_KEY|TD_ON_MOUSE)
+#define TD_ALIGN_BITS (TD_ALIGN_LEFT|TD_ALIGN_RIGHT|TD_ALIGN_CENTER|TD_ALIGN_TOP|TD_ALIGN_BOTTOM|TD_ALIGN_MIDDLE)
 
 #define td_color_r(color) ((color >> 0) & 255)
 #define td_color_g(color) ((color >> 8) & 255)
@@ -74,6 +97,7 @@ uint32_t td_hsv_color(unsigned int h, unsigned char s, unsigned char v, unsigned
 int td_mouse_x();
 int td_mouse_y();
 int td_mouse_button();
+int td_key();
 void rl_force_redraw();
 int td_shift_pressed();
 int td_alt_pressed();

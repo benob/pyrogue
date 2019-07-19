@@ -130,12 +130,14 @@ for i in range(10):
     game.add_actor(Actor('monster', rl.color(127 + speed * 8, 0, 0), speed, MonsterController()))
 game.add_actor(Actor('player', rl.BLUE, 10, PlayerController()))
 
-def update(key):
-    if key == rl.ESCAPE:
-        rl.quit()
-    elif key > 0:
-        PlayerController.add_key(key)
-    game.process()
+def update(event):
+    if event == rl.KEY:
+        key = rl.key()
+        if key == rl.ESCAPE:
+            rl.quit()
+        elif key > 0:
+            PlayerController.add_key(key)
+        game.process()
     rl.clear()
     for actor in game.actors:
         actor.draw()

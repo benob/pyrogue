@@ -7,16 +7,15 @@ if (EMSCRIPTEN)
 	set(EMSCRIPTEN_FLAGS "-s USE_SDL=2 -s FORCE_FILESYSTEM=1 -s TOTAL_MEMORY=100MB -s USE_WEBGL2=1 -s EXPORTED_FUNCTIONS=[\"_pyrogue_init\",\"_pyrogue_shutdown\",\"_pyrogue_run_string\",\"_pyrogue_run\",\"_pyrogue_quit\",\"_rl_force_redraw\"] -s EXTRA_EXPORTED_RUNTIME_METHODS=[\"ccall\",\"cwrap\"]")
 
 	set(CMAKE_C_FLAGS "-m32 ${CMAKE_CXX_FLAGS} ${EMSCRIPTEN_FLAGS}")
-	set(SDL2_LIBRARIES "-s USE_SDL=2")
+	set(SDL2_LIBRARY "-s USE_SDL=2")
 	add_definitions(${EMSCRIPTEN_FLAGS})
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${EMSCRIPTEN_FLAGS}")
 	SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -g4 -s ASSERTIONS=1 ${EMSCRIPTEN_FLAGS}")
 else ()
-	include(FindPkgConfig)
-	pkg_search_module(SDL2 REQUIRED sdl2)
+  find_package(SDL2 REQUIRED)
 	set(OpenGL_GL_PREFERENCE LEGACY)
 	find_package(OpenGL REQUIRED)
-	find_package(GLEW REQUIRED)
+  find_package(GLEW REQUIRED)
 	set(SDLGPU_LIBRARIES ${OPENGL_gl_LIBRARY} ${GLEW_LIBRARY})
 endif ()
 
@@ -32,7 +31,7 @@ set(SDLGPU_INCLUDE_DIRS
 	${CMAKE_SOURCE_DIR}/deps/sdl-gpu/src/externals/glew/GL
 )
 
-include_directories(${SDL2_INCLUDE_DIRS} ${SDLGPU_INCLUDE_DIRS} lib deps src)
+include_directories(${SDL2_INCLUDE_DIR} ${SDLGPU_INCLUDE_DIRS} lib deps src)
 
 set(SDLGPU ${CMAKE_SOURCE_DIR}/deps/sdl-gpu/src)
 # librogue.a
@@ -104,11 +103,11 @@ target_compile_definitions(rogue PRIVATE
 	${SDLGPU_DEFINITIONS}
 )
 
-target_link_libraries(rogue ${SDL2_LIBRARIES} ${SDLGPU_LIBRARIES} -lm)
+target_link_libraries(rogue ${SDL2_LIBRARY} ${SDLGPU_LIBRARIES} -lm)
 
 # micropython module rl
 set(micropython_EXTRA_MODULES ${CMAKE_SOURCE_DIR}/src/modrl.c)
-set(micropython_EXTRA_MODULES_CFLAGS ${SDL2_CFLAGS} ${SDLGPU_CFLAGS} -I${CMAKE_SOURCE_DIR}/deps)
+set(micropython_EXTRA_MODULES_CFLAGS -I${SDL2_INCLUDE_DIR} ${SDLGPU_CFLAGS} -I${CMAKE_SOURCE_DIR}/deps)
 include(cmake/micropython.cmake)
 target_link_libraries(micropython rogue)
 
@@ -116,12 +115,4 @@ target_link_libraries(micropython rogue)
 add_executable(pyrogue src/pyrogue.c)
 target_compile_options(pyrogue PRIVATE -DNO_QSTR ${micropython_CFLAGS})
 target_link_libraries(pyrogue micropython)
-
-if(!EMSCRIPTEN)
-# c examples
-add_executable(plasma examples/plasma.c)
-target_link_libraries(plasma rogue)
-#add_executable(test_filesystem examples/test_filesystem.c)
-#target_link_libraries(test_filesystem rogue)
-endif()
 

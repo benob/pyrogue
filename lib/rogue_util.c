@@ -10,6 +10,7 @@ static void default_error_handler(const char* message) {
 }
 
 error_handler_t _rl_current_error_handler = default_error_handler;
+char _error_buffer[1024]; // needed for message to survive long jump
 
 void rl_set_error_handler(error_handler_t error_handler) {
 	if(error_handler == NULL) _rl_current_error_handler = default_error_handler;

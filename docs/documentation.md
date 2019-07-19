@@ -13,8 +13,9 @@ import rl
 WIDTH, HEIGHT = 320, 240
 
 def update(event):
-	x, y = rl.random_int(0, WIDTH - 1), rl.random_int(0, HEIGHT - 1)
-	rl.fill_rect(x, y, 50, 50, rl.random_color())
+  if event == rl.REDRAW:
+    x, y = rl.random_int(0, WIDTH - 1), rl.random_int(0, HEIGHT - 1)
+    rl.fill_rect(x, y, 50, 50, rl.random_color())
 
 rl.init_display('example', WIDTH, HEIGHT)
 rl.run(update)
@@ -30,17 +31,17 @@ rl.run(update)
 
 ## <a name="input"></a> Input
 
-### `rl.run(update_callback, when=rl.CONTINUOUSLY)`
+### `rl.run(update_callback, when=rl.ON_ANY)`
 
-Pyrogue's display functions are only honored if called from an update callback which is called every time events occur and the screen needs to be repainted. `rl.run()` is a blocking function which calls the update function repeatedly according to the `when` parameter.
+Pyrogue's display functions are only honored if called from an `update` function called every time events occur and the screen needs to be repainted. `rl.run()` is a blocking function which calls the update function repeatedly according to the `when` parameter.
 
-Valid values for `when` are `rl.CONTINUOUSLY` to recieve updates continuously, `rl.ON_KEY` to recieve updates when a key is pressed, and `rl.ON_MOUSE` to receive updates on mouse events. The last two can be combined (`rl.ON_KEYS|rl.ON_MOUSE`) to recieve both kinds of events.
+Valid values for `when` are `rl.ON_REDRAW` to receive updates continuously (about 30-60 times per second), `rl.ON_KEY` to receive updates when a key is pressed, `rl.ON_MOUSE` to receive updates on mouse events, and `rl.ON_ANY` which covers all types of events. Values can be combined to receive multiple kinds of events (`rl.ON_KEYS|rl.ON_MOUSE`).
 
 The update callback is a function taking one parameter which represents the event that triggered it. Events can be:
-* a value > 0 is recieved when a key is pressed. The constants for key identities are the same than [SDL](https://wiki.libsdl.org/SDL_Keycode) without the `SDL_` prefix.
-* `rl.QUIT` is recieved when the `rl.quit()` function is called or the window is closed.
-* `rl.MOUSE` is received when a mouse event occured. `rl.mouse()` can be used to retrive mouse coordinates and clicks.
-* `rl.REDRAW` is recieved for other events that require a redraw (such as window size changes)
+* `rl.QUIT` is received when the `rl.quit()` function is called or the window is closed.
+* `rl.REDRAW` is received when the screen needs to be redrawn (such as window size changes)
+* `rl.KEY` is received when a key is pressed. Use `rl.key()` to retrieve the corresponding key. 
+* `rl.MOUSE_MOVED`, `rl.MOUSE_DOWN`, `rl.MOUSE_UP` are received when a mouse event occured. `rl.mouse()` can be used to get mouse coordinates and active buttons.
 
 ```python
 import rl
@@ -48,25 +49,50 @@ import rl
 x, y = 50, 50
 
 def update(event):
-	global x, y
+  global x, y
 
-	# move rectangle by 10 pixels in the direction of the pressed key
-	if event == rl.LEFT:
-		x -= 10
-	elif event == rl.RIGHT:
-		x += 10
-	elif event == rl.UP:
-		y -= 10
-	elif event == rl.DOWN:
-		y += 10
-	# or use mouse to move the rectangle
-	elif event == rl.MOUSE:
-		x, y, button = rl.mouse()
+  if event == rl.KEY:
+    key = rl.key()
+    # move rectangle by 10 pixels in the direction of the pressed key
+    if event == rl.LEFT:
+      x -= 10
+    elif event == rl.RIGHT:
+      x += 10
+    elif event == rl.UP:
+      y -= 10
+    elif event == rl.DOWN:
+      y += 10
+    # or use mouse to move the rectangle
+  elif event == rl.MOUSE_DOWN:
+    x, y, button = rl.mouse()
 
-	rl.clear()
-	rl.fill_rect(x, y, 50, 50, rl.GREEN)
+  rl.clear()
+  rl.fill_rect(x, y, 50, 50, rl.GREEN)
 
-rl.run(update)
+rl.run(update, rl.ON_MOUSE|rl.ON_KEY)
+```
+
+The pattern exposed in this last example can be improved because it uses globals for maintaining state. A better pattern is to use a class to hold the state and use a method of that class as update function:
+
+```python
+import rl
+
+class Game:
+  def __init__(self):
+    # store state in instance
+    self.x = 50
+    self.y = 50
+
+  def update(self, event):
+    # use same update function, but refer to self.x and self.y
+    # ...
+    rl.fill_rect(self.x, self.y, 50, 50, rl.GREEN)
+
+  def run(self):
+    rl.run(self.update, rl.ON_MOUSE|rl.ON_KEY)
+
+game = Game()
+game.run()
 ```
 
 ### `rl.quit()`
@@ -75,28 +101,45 @@ Terminates a `rl.run()` call.
 
 ```python
 def update(event):
-	if event > 0:
-		rl.quit() # quit on any key
-rl.run(update, rl.ON_KEY)
+  if event == rl.KEY:
+    rl.quit() # quit on any key
+rl.run(update)
+```
+
+### `key = rl.key()`
+
+Returns the last typed key.
+The constants for key identities are the same as [SDL](https://wiki.libsdl.org/SDL_Keycode), without the `SDL_` prefix; they are all part of the `rl` namespace (such as `rl.RETURN` or `rl.LEFT`).
+
+```python
+key = rl.key()
+if key == rl.ESCAPE:
+  print('pressed ESCAPE')
 ```
 
 ### `x, y, button = rl.mouse()`
 
-Returns the coordinates of the mouse, as well as the button being pressed. The coordinates are in pixels according to the resolution of the display (see `rl.init_display()`). The button can be `rl.NO_BUTTON`, `rl.BUTTON1_DOWN`, `rl.BUTTON2_DOWN`, `rl.BUTTON3_DOWN` (button pressed), `rl.BUTTON1_UP`, `rl.BUTTON2_UP`, `rl.BUTTON3_UP` (button released). Button 1, 2 and 3 refer to left, center and right mouse buttons.
+Returns the coordinates of the mouse, as well as the button being pressed. The coordinates are in pixels according to the resolution of the display (see `rl.init_display()`). 
+The `button` value is a integer denoting which buttons are pressed among `rl.MOUSE_LEFT`, `rl.MOUSE_MIDDLE` and `rl.MOUSE_RIGHT`. The state of an individual button can be obtained by using the binary AND operator, such as `button & rl.MOUSE_LEFT`.
 
 ```python
 x, y, button = rl.mouse()
-if button == rl.BUTTON1_DOWN:
-	print('pressed left mouse button')
+if button & rl.BUTTON_LEFT:
+  print('pressed left mouse button at coordinates', x, y)
 ```
 
 ### `rl.shift_pressed()`, `rl.alt_pressed()`, `rl.ctrl_pressed()`, `rl.win_pressed()`
 
-Returns true if the corresponding modifier key is pressed.
+Returns `True` if the corresponding modifier key is pressed.
+
+```python
+if key == rl.A and rl.ctrl_pressed():
+  # <Ctrl-A> is pressed
+```
 
 ## <a name="drawing"></a>Drawing
 
-The display is a pixel surface resized to fit the pyrogue window. Alt-Enter can put the game in fullscreen. Alt-q force-quits. When starting pyrogue, a default resolution of 320x240 is already setup.
+The display is a pixel surface resized to fit the pyrogue window. Alt-Enter can put the game in fullscreen. Alt-q force-quits. When starting pyrogue, a default resolution of 320x240 is already setup, but it can be changed with `rl.init_display`.
 
 ### `rl.init_display(title, width, height)`
 
@@ -227,9 +270,9 @@ transparent_blue = rl.color('#1f0000ff') # 6-digit with transparency
 In addition, pyrogue defines constants for the [pico8 palette](https://www.romanzolotarev.com/pico-8-color-palette/):
 ```python
 pico8_colors = [rl.BLACK, rl.DARKBLUE, rl.DARKPURPLE, rl.DARKGREEN,
-	rl.BROWN, rl.DARKGRAY, rl.LIGHTGRAY, rl.WHITE,
-	rl.RED, rl.ORANGE, rl.YELLOW, rl.GREEN, 
-	rl.BLUE, rl.INDIGO, rl.PINK, rl.PEACH,
+  rl.BROWN, rl.DARKGRAY, rl.LIGHTGRAY, rl.WHITE,
+  rl.RED, rl.ORANGE, rl.YELLOW, rl.GREEN, 
+  rl.BLUE, rl.INDIGO, rl.PINK, rl.PEACH,
 ]
 ```
 
@@ -422,7 +465,7 @@ c = b * 2 + 3
 print(c << 1)
 ```
 
-Note that `==` and `!=` are not supported due to a bug in micropython.
+Note that `==` and `!=` are not supported yet due to a [bug](https://github.com/micropython/micropython/issues/4865) in micropython.
 
 ### `number = array.width()`, `number = array.height()`
 
@@ -437,7 +480,7 @@ print(a.width()) # should print 5
 
 Print the content of an array to the terminal. Mainly useful for debugging.
 Only positive values are displayed. `chars` is a string where each character corresponds
-to the symbol printed for value of the array equals to its index.
+to the symbol printed when an array value equals its index.
 `bg` and `fg` are optional strings for selecting colors for the corresponding characters.
 The colors are denoted by characters '1-9a-f' corresponding to 16 basic ANSI terminal colors.
 
@@ -570,7 +613,7 @@ Tests whether cell (x1, y1) has line of sight to cell (x2, y2) in the given arra
 
 ```python
 if level.can_see(player.x, player.y, monster.x, monster.y):
-	print('I can see a monster.')
+  print('I can see a monster.')
 ```
 
 ### `fov = array.field_of_view(x, y, radius, blocking=1)`
@@ -605,7 +648,7 @@ a.random_int(0, 1)
 
 # 10 steps of the game of life automaton
 for i in range(10):
-	a.cell_automaton('B3/S23') 
+  a.cell_automaton('B3/S23') 
 ```
 
 ### `path = array.shortest_path(x1, y1, x2, y2, blocking=1)`
@@ -614,7 +657,7 @@ Computes the shortest path between two points in an array, considering that cell
 
 ```python
 for x, y in a.shortest_path(3, 2, 5, 6):
-	print(x, y)
+  print(x, y)
 ```
 
 ### `result = array.apply_kernel(kernel)`
@@ -746,11 +789,11 @@ Iterate over a straight line from (x1, y1) to (x2, y2). `rl.walk_line_next()` re
 ```python
 rl.walk_line_start(10, 10, 20, 30)
 while True:
-	result = rl.walk_line_next()
-	if result is None:
-		break
-	x, y = result
-	# use (x, y)
+  result = rl.walk_line_next()
+  if result is None:
+    break
+  x, y = result
+  # use (x, y)
 ```
 
 The same algorithm as in `array.line()` is used.

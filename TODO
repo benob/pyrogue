@@ -7,10 +7,12 @@ support for utf8
 dynamic cache (https://gamedev.stackexchange.com/questions/116895/opengl-dynamic-font-glyph-cache-library)
 
 ** General **
+write gif videos
 write tests
 
 ** examples **
 finish minimal example game
+port tutorial
 convert lua examples
 
 ** pyrogue **

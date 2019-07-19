@@ -174,7 +174,7 @@ STATIC int do_str(const char *str, uint32_t size, const char* name) {
 }
 
 void error_handler(const char* message) {
-		mp_raise_msg(&mp_type_OSError, message);
+  mp_raise_msg(&mp_type_Exception, message);
 }
 
 const char* get_manifest_value(const char* data, const char* key) {
@@ -343,7 +343,8 @@ MP_NOINLINE int cmdline_main(int argc, char** argv) {
 	if(argc == 1) {
 		if(!pyrogue_run(argv[0])) usage(argv[0]);
 	} else if(argc == 2) {
-		pyrogue_run(argv[1]);
+    if(!strcmp(argv[1], "-h") || !strcmp(argv[1], "--help")) usage(argv[0]);
+    else pyrogue_run(argv[1]);
 	} else if (argc == 3 && !strcmp(argv[1], "-extract")) {
 		fs_extract_embed(argv[0], argv[2]);
 		return 0;

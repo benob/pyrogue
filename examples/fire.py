@@ -31,6 +31,6 @@ def redraw(event):
     rl.clear()
     rl.draw_array(fire, 0, 0, image=tiles, tile_map=chars, fg_palette=palette)
 
-rl.run(redraw)
+rl.run(redraw, rl.ON_REDRAW)
 
 

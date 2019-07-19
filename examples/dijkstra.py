@@ -15,13 +15,13 @@ font = rl.Font('data/font.ttf', 8)
 
 def update(event):
     global level
-    if event == rl.MOUSE:
+    if event == rl.MOUSE_DOWN:
         x, y, button = rl.mouse()
-        if button == rl.BUTTON1_UP or button == rl.BUTTON3_UP:
+        if button:
             x //= cell_width
             y //= cell_height
             if x >= 0 and x < level.width() and y >=0 and y < level.height():
-                if button == rl.BUTTON1_UP:
+                if button & rl.MOUSE_LEFT:
                     level[x, y] = -1
                 else:
                     level[x, y] = 0
@@ -45,6 +45,6 @@ def update(event):
     for i in range(level.width()):
         rl.draw_line(i * cell_width, 0, i * cell_width, 240)
 
-rl.run(update)
+rl.run(update, rl.ON_MOUSE)
 
 

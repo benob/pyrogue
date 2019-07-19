@@ -37,7 +37,7 @@
 #define MICROPY_USE_INTERNAL_PRINTF (0) // disable internal printf
 #define MICROPY_ALLOC_PATH_MAX      (PATH_MAX)
 #define MICROPY_ENABLE_GC           (1)
-#define MICROPY_ENABLE_FINALISER    (1) // TODO: need to enable to retrieve allocated memory
+#define MICROPY_ENABLE_FINALISER    (1) 
 #ifdef __EMSCRIPTEN__
 #define MICROPY_STACK_CHECK         (0)
 #define MICROPY_MEM_STATS           (0)
@@ -58,7 +58,7 @@
 #define MICROPY_FLOAT_IMPL          (MICROPY_FLOAT_IMPL_DOUBLE)
 #define MICROPY_LONGINT_IMPL        (MICROPY_LONGINT_IMPL_LONGLONG)
 #define MICROPY_STREAMS_NON_BLOCK   (0)
-#define MICROPY_OPT_COMPUTED_GOTO   (1)
+#define MICROPY_OPT_COMPUTED_GOTO   (0) // unsupported by llvm wasm generator (emscripten port) as of july 2019
 #define MICROPY_OPT_CACHE_MAP_LOOKUP_IN_BYTECODE (1)
 #define MICROPY_OPT_MPZ_BITWISE (1)
 #define MICROPY_OPT_MATH_FACTORIAL (1)

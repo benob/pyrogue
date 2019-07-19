@@ -39,6 +39,7 @@ typedef struct {
 	int width, height;
 	int window_width, window_height;
 	int running, was_init;
+  int key;
 	int mouse_x, mouse_y, mouse_button;
 	SDL_Window* window;
 	SDL_Renderer* renderer;
@@ -55,8 +56,6 @@ typedef struct {
 	int is_fullscreen, is_maximized, use_integral_scale;
 	int update_filter;
 	void (*update_callback)(int);
-	int image_num; // for saving images
-	int saving_images;
 } display_t;
 
 static display_t display;
@@ -635,7 +634,7 @@ void td_quit() {
 }
 
 static void process_events() {
-	int key = TD_PASS;
+  int need_redraw = 0;
 	SDL_Event event;
 	while(SDL_PollEvent(&event) != 0) {
 		switch(event.type) {
@@ -650,49 +649,47 @@ static void process_events() {
 #endif
 					display.window_width = event.window.data1;
 					display.window_height = event.window.data2;
-					key = TD_PASS;
-					td_present();
+          need_redraw = 1;
 				} else if(event.window.event == SDL_WINDOWEVENT_EXPOSED) {
-					key = TD_PASS;
-					td_present();
+          need_redraw = 1;
 				}
 				break;
 			case SDL_TEXTINPUT:
-				key = event.text.text[0];
+				display.key = event.text.text[0];
+        if(display.update_filter & TD_ON_KEY) {
+          display.update_callback(TD_KEY);
+          need_redraw = 1;
+        }
 				break;
 			case SDL_MOUSEMOTION:
 			case SDL_MOUSEBUTTONUP:
-			case SDL_MOUSEBUTTONDOWN:
+			case SDL_MOUSEBUTTONDOWN: {
+        int mouse_x, mouse_y, mouse_state;
+        mouse_state = SDL_GetMouseState(&mouse_x, &mouse_y);
+
 				// convert mouse location
-				display.mouse_x = (event.motion.x - display.scaled_rect.x) 
+				display.mouse_x = (mouse_x - display.scaled_rect.x) 
 					* display.width * display.device_pixel_ratio / display.scaled_rect.w;
-				display.mouse_y = (event.motion.y - display.scaled_rect.y) 
+				display.mouse_y = (mouse_y - display.scaled_rect.y) 
 					* display.height * display.device_pixel_ratio / display.scaled_rect.h;
-				// clip to visible screen
-				if(display.mouse_x < 0) display.mouse_x = 0;
-				if(display.mouse_x >= display.width) display.mouse_x = display.width - 1;
-				if(display.mouse_y < 0) display.mouse_y = 0;
-				if(display.mouse_y >= display.height) display.mouse_y = display.height - 1;
-				key = TD_MOUSE;
+
 				// handle buttons
-				if(event.type == SDL_MOUSEBUTTONUP) {
-					switch(event.button.button) {
-						case SDL_BUTTON_LEFT: display.mouse_button = TD_BUTTON1_UP; break;
-						case SDL_BUTTON_MIDDLE: display.mouse_button = TD_BUTTON2_UP; break;
-						case SDL_BUTTON_RIGHT: display.mouse_button = TD_BUTTON3_UP; break;
-					}
-				} else if(event.type == SDL_MOUSEBUTTONDOWN) {
-					switch(event.button.button) {
-						case SDL_BUTTON_LEFT: display.mouse_button = TD_BUTTON1_DOWN; break;
-						case SDL_BUTTON_MIDDLE: display.mouse_button = TD_BUTTON2_DOWN; break;
-						case SDL_BUTTON_RIGHT: display.mouse_button = TD_BUTTON3_DOWN; break;
-					}
-				} else {
-					display.mouse_button = TD_NO_BUTTON;
-				}
+        display.mouse_button = 0;
+        if(mouse_state & SDL_BUTTON(SDL_BUTTON_LEFT)) display.mouse_button |= TD_MOUSE_LEFT;
+        if(mouse_state & SDL_BUTTON(SDL_BUTTON_MIDDLE)) display.mouse_button |= TD_MOUSE_MIDDLE;
+        if(mouse_state & SDL_BUTTON(SDL_BUTTON_RIGHT)) display.mouse_button |= TD_MOUSE_RIGHT;
+
+        if(display.update_filter & TD_ON_MOUSE) {
+          if(event.type == SDL_MOUSEBUTTONUP) display.update_callback(TD_MOUSE_UP);
+          else if(event.type == SDL_MOUSEBUTTONDOWN) display.update_callback(TD_MOUSE_DOWN);
+          else if(display.mouse_x >= 0 && display.mouse_x < display.width && display.mouse_y >= 0 && display.mouse_y < display.height) 
+            display.update_callback(TD_MOUSE_MOVED);
+          need_redraw = 1;
+        }
 				break;
-			case SDL_KEYDOWN:
-				key = event.key.keysym.sym;
+      }
+			case SDL_KEYDOWN: {
+				int key = event.key.keysym.sym;
 				if(SDL_GetModState() & KMOD_ALT) {
 					if(key == SDLK_RETURN) {
 						if(display.is_fullscreen) {
@@ -702,38 +699,35 @@ static void process_events() {
 							SDL_SetWindowFullscreen(display.window, SDL_WINDOW_FULLSCREEN_DESKTOP);
 							display.is_fullscreen = 1;
 						}
+            need_redraw = 1;
 					} else if(key == SDLK_q) {
 						// TODO: use customizable exit handler
 						exit(1); // force quit
-					} else if(key == SDLK_v) {
-						display.saving_images = !display.saving_images;
 					}
-					//key = TD_REDRAW;
-					return;
-				} else if(key >= 32 && key < 127) continue;
-				else if(key != SDLK_LALT && key != SDLK_LSHIFT && key != SDLK_LCTRL && key != SDLK_RALT && key != SDLK_RSHIFT && key != SDLK_RCTRL && key != SDLK_LGUI && key != SDLK_RGUI) { 
-				} else {
-					key = TD_PASS;
-				}
-				break;
+        } else if((key < 32 || key > 127)
+            && key != SDLK_LALT && key != SDLK_LSHIFT && key != SDLK_LCTRL 
+            && key != SDLK_RALT && key != SDLK_RSHIFT && key != SDLK_RCTRL 
+            && key != SDLK_LGUI && key != SDLK_RGUI) { 
+          display.key = key;
+          if(display.update_filter & TD_ON_KEY) {
+            display.update_callback(TD_KEY);
+            need_redraw = 1;
+          }
+        }
+        break;
+
+      }
 		}
 	}
-	if((key == TD_MOUSE && (display.update_filter & TD_ON_MOUSE)) 
-			|| (key != TD_PASS && key != TD_MOUSE && (display.update_filter & TD_ON_KEY)) 
-			|| (display.update_filter & TD_CONTINUOUSLY)) {
-		display.update_callback(key);
-		if(display.saving_images) {
-			char filename[1024];
-			snprintf(filename, 1024, "pyrogue-%010d.png", display.image_num);
-			printf("saving frame to '%s'\n", filename);
-			GPU_SaveImage(display.screen_image, filename, GPU_FILE_PNG);
-			display.image_num++;
-		}
-		td_present();
-	}
+  if(display.update_filter & TD_ON_REDRAW) {
+    display.update_callback(TD_REDRAW);
+    need_redraw = 1;
+  }
+  if(need_redraw) td_present();
 }
 
 void td_run(void (*update_callback)(int key), int update_filter) {
+  if(INVALID_BITS(update_filter, TD_FILTER_BITS)) rl_error("invalid event filter");
 	display.update_callback = update_callback;
 	display.update_filter = update_filter;
 	display.running = 1;
@@ -746,6 +740,7 @@ void td_run(void (*update_callback)(int key), int update_filter) {
 		process_events();
 	}
 #endif
+	update_callback(TD_QUIT);
 }
 
 uint32_t td_color(unsigned char r, unsigned char g, unsigned char b, unsigned char a) {
@@ -815,6 +810,10 @@ int td_mouse_y() {
 
 int td_mouse_button() {
 	return display.mouse_button;
+}
+
+int td_key() {
+  return display.key;
 }
 
 uint32_t td_random_color() {

@@ -414,7 +414,8 @@ def redraw():
     rl.draw_text(font, 0, Tile.HEIGHT * HEIGHT, '\n'.join(messages[-4:]))
 
 def handler(event):
-    if handle_input(event) != rl.REDRAW:
+    if event == rl.KEY:
+        handle_input(rl.key())
         update()
     redraw()
 

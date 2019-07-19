@@ -8,9 +8,8 @@ current = 0
 
 def update(event):
     global current
-    if event == rl.SPACE:
+    if event == rl.KEY:
         current += 1
-    elif event == rl.RETURN:
         cells.random_int(0, 1)
     cells.cell_automaton(definitions[current % len(definitions)])
     rl.draw_image(rl.array_to_image(cells, palette=[rl.BLACK, rl.WHITE]), 0, 0)

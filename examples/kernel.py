@@ -14,4 +14,4 @@ def update(event):
     level = level.apply_kernel(kernel)
     rl.draw_image(rl.array_to_image(level, palette=palette), 0, 0)
 
-rl.run(update)
+rl.run(update, rl.ON_REDRAW)

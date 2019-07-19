@@ -19,4 +19,4 @@ def update(event):
     rl.fill_rect(50, 100, 40, 40, rl.color('#1e84d4')) # 6-digit hex color
     rl.fill_rect(100, 100, 40, 40, rl.color('#1f1e84d4')) # 6-digit with alpha channel
 
-rl.run(update)
+rl.run(update, rl.ON_KEY)

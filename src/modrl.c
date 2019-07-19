@@ -1421,6 +1421,11 @@ STATIC mp_obj_t mod_td_mouse() {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_td_mouse_obj, mod_td_mouse);
 
+STATIC mp_obj_t mod_td_key() {
+  return mp_obj_new_int(td_key());
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_td_key_obj, mod_td_key);
+
 STATIC mp_obj_t mod_td_shift_pressed() {
 	mp_int_t result = td_shift_pressed();
 	return mp_obj_new_bool(result);
@@ -1452,7 +1457,7 @@ static void run_callback(int key) {
 
 STATIC mp_obj_t mod_td_run(size_t n_args, const mp_obj_t *args) {
 	event_callback = args[0];
-	mp_int_t update_filter = TD_CONTINUOUSLY;
+	mp_int_t update_filter = TD_ON_EVENT;
 	if(n_args > 1) update_filter = mp_obj_get_int(args[1]);
 	td_run(run_callback, update_filter);
 	return mp_const_none;
@@ -1814,6 +1819,7 @@ STATIC const mp_rom_map_elem_t mp_module_rl_globals_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR_color_a), MP_ROM_PTR(&mod_td_color_a_obj) },*/
 	{ MP_ROM_QSTR(MP_QSTR_random_color), MP_ROM_PTR(&mod_td_random_color_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_mouse), MP_ROM_PTR(&mod_td_mouse_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_key), MP_ROM_PTR(&mod_td_key_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_shift_pressed), MP_ROM_PTR(&mod_td_shift_pressed_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_alt_pressed), MP_ROM_PTR(&mod_td_alt_pressed_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_ctrl_pressed), MP_ROM_PTR(&mod_td_ctrl_pressed_obj) },
@@ -1834,18 +1840,18 @@ STATIC const mp_rom_map_elem_t mp_module_rl_globals_table[] = {
 
 	// events
 	{ MP_ROM_QSTR(MP_QSTR_QUIT), MP_ROM_INT(TD_QUIT) },
-	{ MP_ROM_QSTR(MP_QSTR_MOUSE), MP_ROM_INT(TD_MOUSE) },
+	{ MP_ROM_QSTR(MP_QSTR_KEY), MP_ROM_INT(TD_KEY) },
+	{ MP_ROM_QSTR(MP_QSTR_MOUSE_MOVED), MP_ROM_INT(TD_MOUSE_MOVED) },
+	{ MP_ROM_QSTR(MP_QSTR_MOUSE_DOWN), MP_ROM_INT(TD_MOUSE_DOWN) },
+	{ MP_ROM_QSTR(MP_QSTR_MOUSE_UP), MP_ROM_INT(TD_MOUSE_UP) },
 	{ MP_ROM_QSTR(MP_QSTR_REDRAW), MP_ROM_INT(TD_REDRAW) },
 	// mouse
-	{ MP_ROM_QSTR(MP_QSTR_NO_BUTTON), MP_ROM_INT(TD_NO_BUTTON) },
-	{ MP_ROM_QSTR(MP_QSTR_BUTTON1_DOWN), MP_ROM_INT(TD_BUTTON1_DOWN) },
-	{ MP_ROM_QSTR(MP_QSTR_BUTTON2_DOWN), MP_ROM_INT(TD_BUTTON2_DOWN) },
-	{ MP_ROM_QSTR(MP_QSTR_BUTTON3_DOWN), MP_ROM_INT(TD_BUTTON3_DOWN) },
-	{ MP_ROM_QSTR(MP_QSTR_BUTTON1_UP), MP_ROM_INT(TD_BUTTON1_UP) },
-	{ MP_ROM_QSTR(MP_QSTR_BUTTON2_UP), MP_ROM_INT(TD_BUTTON2_UP) },
-	{ MP_ROM_QSTR(MP_QSTR_BUTTON3_UP), MP_ROM_INT(TD_BUTTON3_UP) },
+	{ MP_ROM_QSTR(MP_QSTR_MOUSE_LEFT), MP_ROM_INT(TD_MOUSE_LEFT) },
+	{ MP_ROM_QSTR(MP_QSTR_MOUSE_MIDDLE), MP_ROM_INT(TD_MOUSE_MIDDLE) },
+	{ MP_ROM_QSTR(MP_QSTR_MOUSE_RIGHT), MP_ROM_INT(TD_MOUSE_RIGHT) },
 	// update filters
-	{ MP_ROM_QSTR(MP_QSTR_CONTINUOUSLY), MP_ROM_INT(TD_CONTINUOUSLY) },
+	{ MP_ROM_QSTR(MP_QSTR_ON_EVENT), MP_ROM_INT(TD_ON_EVENT) },
+	{ MP_ROM_QSTR(MP_QSTR_ON_REDRAW), MP_ROM_INT(TD_ON_REDRAW) },
 	{ MP_ROM_QSTR(MP_QSTR_ON_KEY), MP_ROM_INT(TD_ON_KEY) },
 	{ MP_ROM_QSTR(MP_QSTR_ON_MOUSE), MP_ROM_INT(TD_ON_MOUSE) },
 

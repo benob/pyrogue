@@ -235,7 +235,7 @@ set(micropython_SOURCE
 	${micropython_EXTRA_MODULES}
 	)
 
-add_library(micropython ${micropython_SOURCE} ${GENHDR}/qstrdefs.generated.h)
+add_library(micropython STATIC ${micropython_SOURCE} ${GENHDR}/qstrdefs.generated.h)
 target_compile_options(micropython PRIVATE ${micropython_CFLAGS})
 if (EMSCRIPTEN)
 	target_compile_definitions(micropython PRIVATE FFCONF_H=\"${MP}/lib/oofatfs/ffconf.h\" MICROPY_ROOT_STACK=1)

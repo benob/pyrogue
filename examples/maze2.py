@@ -21,11 +21,11 @@ def prim():
 
 def update(event):
     global queue
-    if event > 0:
+    if event == rl.KEY:
         level.fill(0)
         queue = [(rl.random_int(0, 319), rl.random_int(0, 239))]
     for i in range(64):
         prim()
     rl.draw_image(rl.array_to_image(level, palette=[rl.LIGHTGRAY, rl.DARKGRAY]), 0, 0)
 
-rl.run(update)
+rl.run(update, rl.ON_REDRAW|rl.ON_KEY)
