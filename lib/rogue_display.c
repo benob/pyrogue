@@ -222,6 +222,7 @@ image_t* td_array_to_image(array_t* a, int tile_width, int tile_height, int pale
 
 #ifdef USE_SDLGPU
 	image->texture = GPU_CreateImage(a->width, a->height, GPU_FORMAT_RGBA);
+	GPU_SetImageFilter(image->texture, GPU_FILTER_NEAREST);
 	GPU_SetAnchor(image->texture, 0, 0);
 	GPU_SetBlending(image->texture, 1);
 	GPU_SetBlendMode(image->texture, GPU_BLEND_NORMAL);

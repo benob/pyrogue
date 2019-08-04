@@ -97,5 +97,6 @@ uint64_t rl_array_sum(array_t* a);
 array_t* rl_array_abs(array_t* a);
 array_t* rl_array_matmul(array_t* a, array_t* b);
 array_t* rl_array_apply_kernel(array_t* a, array_t* kernel);
+int rl_array_flood_fill(array_t* a, int x, int y, VALUE fill_value, int use_diagonals);
 
 #endif

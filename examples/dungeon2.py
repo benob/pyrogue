@@ -63,14 +63,17 @@ def city():
                 view.view(1, 1, width - 2, height - 2).fill(1)
                 #view[width // 2, 0] = 1
 
-rl.set_seed()
-x = rl.random_int(50, 320 - 50)
-y = rl.random_int(50, 240 - 50) 
-h_corridor(x, x + rl.random_int(50, 100), y)
-y = rl.random_int(0, 99)
-v_corridor(100, y, y + rl.random_int(50, 100))
+def generate():
+    level.fill(0)
+    for i in range(4):
+        x = rl.random_int(20, 320 - 20)
+        y = rl.random_int(20, 240 - 20) 
+        h_corridor(0, 319, y)
+        y = rl.random_int(0, 99)
+        v_corridor(x, 0, 239)
 
 def update(event):
+    generate()
     rl.draw_image(rl.array_to_image(level, palette=[rl.BLACK, rl.WHITE, rl.RED]), 0, 0)
 
 rl.run(update, rl.ON_KEY)

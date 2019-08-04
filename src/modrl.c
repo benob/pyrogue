@@ -875,6 +875,19 @@ STATIC mp_obj_t mod_rl_array_apply_kernel(mp_obj_t self_in, mp_obj_t kernel_in) 
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(mod_rl_array_apply_kernel_obj, mod_rl_array_apply_kernel);
 
+STATIC mp_obj_t mod_rl_array_flood_fill(size_t n_args, const mp_obj_t *args) {
+	mp_check_self(mp_obj_is_type(args[0], &mp_type_rl_array));
+	mp_obj_rl_array_t *self = MP_OBJ_TO_PTR(args[0]);
+	mp_int_t x = mp_obj_get_int(args[1]);
+	mp_int_t y = mp_obj_get_int(args[2]);
+	mp_int_t value = mp_obj_get_int(args[3]);
+	mp_int_t use_diagonals = 0;
+	if(n_args > 4) use_diagonals = mp_obj_is_true(args[4]);
+	mp_int_t result = rl_array_flood_fill(self->array, x, y, value, use_diagonals);
+	return mp_obj_new_int(result);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_rl_array_flood_fill_obj, 4, 5, mod_rl_array_flood_fill);
+
 STATIC const mp_rom_map_elem_t mod_rl_array_locals_dict_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR_to_string), MP_ROM_PTR(&mod_rl_array_to_string_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_view), MP_ROM_PTR(&mod_rl_array_view_obj) },
@@ -908,6 +921,7 @@ STATIC const mp_rom_map_elem_t mod_rl_array_locals_dict_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR_count), MP_ROM_PTR(&mod_rl_array_count_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_sum), MP_ROM_PTR(&mod_rl_array_sum_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_apply_kernel), MP_ROM_PTR(&mod_rl_array_apply_kernel_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_flood_fill), MP_ROM_PTR(&mod_rl_array_flood_fill_obj) },
 };
 
 STATIC MP_DEFINE_CONST_DICT(mod_rl_array_locals_dict, mod_rl_array_locals_dict_table);
